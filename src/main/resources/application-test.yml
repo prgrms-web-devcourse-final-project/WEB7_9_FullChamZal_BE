@@ -1,0 +1,24 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+
+  datasource:
+    url: jdbc:h2:mem:db_test;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
