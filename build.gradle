@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'back'
+version = '0.0.1-SNAPSHOT'
+description = 'FCZ'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 1. Application Core (핵심 기능)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 2. Developer Tools (개발 편의 기능)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.springframework.retry:spring-retry:2.0.5'
+    implementation 'org.aspectj:aspectjweaver'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+    // 3. API Documentation (OpenAPI/Swagger)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
+    // 4. Database Drivers (런타임 드라이버)
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.mysql:mysql-connector-j:9.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // 5. Testing (테스트 전용)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers'
+}
+
+// CI 테스트 제외
+tasks.withType(Test).configureEach {
+    useJUnitPlatform {
+        if (System.getenv("CI") == "true") {
+            excludeTags("redis", "integration")
+        }
+    }
+}
+

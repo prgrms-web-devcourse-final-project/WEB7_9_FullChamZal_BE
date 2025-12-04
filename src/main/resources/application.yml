@@ -1,0 +1,39 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+
+  profiles:
+    default: dev
+
+  output:
+    ansi:
+      enabled: always
+
+  datasource:
+    hikari:
+      auto-commit: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+    show-sql: true
+
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+
+springdoc:
+  default-produces-media-type: application/json
+
+logging:
+  level:
+    com.example.demo: INFO
