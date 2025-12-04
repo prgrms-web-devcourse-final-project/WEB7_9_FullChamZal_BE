@@ -43,7 +43,7 @@ application*.log
 
 # Environment variables
 .env
-.env
+.env.properties
 .env.local
 .env.*.local
 .env.development
