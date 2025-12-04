@@ -30,17 +30,18 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     // 2. Developer Tools (개발 편의 기능)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    implementation 'org.springframework.retry:spring-retry:2.0.5'
+    implementation 'org.springframework.retry:spring-retry'
     implementation 'org.aspectj:aspectjweaver'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     // 3. API Documentation (OpenAPI/Swagger)
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
     // 4. Database Drivers (런타임 드라이버)
     runtimeOnly 'com.h2database:h2'
@@ -49,12 +50,13 @@ dependencies {
 
     // 5. Testing (테스트 전용)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.assertj:assertj-core:3.26.3'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:testcontainers'
+    testCompileOnly 'org.projectlombok:lombok:1.18.32'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
 }
 
 // CI 테스트 제외

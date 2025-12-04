@@ -2,8 +2,10 @@ package back.fcz.global.config.swagger;
 
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.examples.Example;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponses;
@@ -20,6 +22,19 @@ import static java.util.stream.Collectors.groupingBy;
 
 @Configuration
 public class SwaggerConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("풀스택 참 잘하는 집 API 문서")
+                        .description("""
+                                느린 우체통(가제) 프로젝트의 API 문서입니다.
+                                시간·위치 기반 디지털 캡슐(메시지/사진/음성)을 생성·조회·해제하는 기능을 제공합니다.
+                                """)
+                        .version("v1.0.0")
+                );
+    }
 
     /**
      * 커스텀 어노테이션이 붙은 메서드에 대해 Swagger 응답 예시를 자동으로 생성합니다.
