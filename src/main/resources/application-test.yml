@@ -25,10 +25,8 @@ spring:
 
 security:
   encryption:
-    aes:
-      key: "12345678901234567890123456789012"
-    sha:
-      salt: "test-salt-for-phone-number-hashing"
+    aes-key: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="
+    sha-salt: "test-salt-for-phone-number-hashing"
 
 jwt:
   secret-key: "test-jwt-secret-key-minimum-32-bytes-required-for-hs256-algorithm-!!!"
