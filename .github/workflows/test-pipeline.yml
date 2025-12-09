@@ -51,5 +51,5 @@ jobs:
         if: always()
         with:
           files: build/test-results/**/*.xml
-          comment_mode: update
+          comment_mode: always
           check_name: Test Results
