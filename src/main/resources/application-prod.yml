@@ -62,3 +62,7 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+cookie:
+  secure: true
+  same-site: None

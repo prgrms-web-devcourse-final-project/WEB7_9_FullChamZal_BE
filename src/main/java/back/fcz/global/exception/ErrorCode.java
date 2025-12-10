@@ -17,7 +17,27 @@ public enum ErrorCode {
     // ========== 암호화 에러 ==========
     ENCRYPTION_FAILED("CRY001", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 암호화에 실패했습니다."),
     DECRYPTION_FAILED("CRY002", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 복호화에 실패했습니다."),
-    HASHING_FAILED("CRY003", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 해싱에 실패했습니다.");
+    HASHING_FAILED("CRY003", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 해싱에 실패했습니다."),
+
+    // ========== JWT 인증 에러 ==========
+    TOKEN_EXPIRED("AUTH001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
+    TOKEN_INVALID("AUTH002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    TOKEN_SIGNATURE_INVALID("AUTH003", HttpStatus.UNAUTHORIZED, "토큰 서명이 유효하지 않습니다."),
+    TOKEN_MALFORMED("AUTH004", HttpStatus.UNAUTHORIZED, "토큰 형식이 올바르지 않습니다."),
+    TOKEN_UNSUPPORTED("AUTH005", HttpStatus.UNAUTHORIZED, "지원되지 않는 토큰입니다."),
+    TOKEN_EMPTY("AUTH006", HttpStatus.UNAUTHORIZED, "토큰이 비어있습니다."),
+    TOKEN_BLACKLISTED("AUTH007", HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
+    TOKEN_USER_TYPE_MISMATCH("AUTH008", HttpStatus.FORBIDDEN, "토큰의 사용자 타입이 일치하지 않습니다."),
+    TOKEN_SUBJECT_INVALID("AUTH009", HttpStatus.UNAUTHORIZED, "토큰 SUBJECT 형식이 올바르지 않습니다."),
+
+    // ========== 권한 에러 ==========
+    ACCESS_DENIED("PERM001", HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INSUFFICIENT_PERMISSION("PERM002", HttpStatus.FORBIDDEN, "권한이 부족합니다."),
+
+
+    // ========== Redis 에러 ==========
+    REDIS_CONNECTION_ERROR("REDISM001", HttpStatus.SERVICE_UNAVAILABLE, "일시적인 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+
 
     private final String code;
     private final HttpStatus status;
