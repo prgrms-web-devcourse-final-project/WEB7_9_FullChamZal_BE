@@ -29,7 +29,7 @@ public class UnlockService {
 
     // 위치 해제 조건 검증
     public boolean isLocationConditionMet(long capsuleId, double currentLat, double currentLng) {
-        if(currentLat < 0 || currentLng < 0) {
+        if(currentLat < -90 || currentLat > 90 || currentLng < -180 || currentLng > 180) {
             throw new BusinessException(ErrorCode.INVALID_LATITUDE_LONGITUDE);
         }
 
