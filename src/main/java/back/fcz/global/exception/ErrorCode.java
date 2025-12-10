@@ -34,9 +34,13 @@ public enum ErrorCode {
     ACCESS_DENIED("PERM001", HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     INSUFFICIENT_PERMISSION("PERM002", HttpStatus.FORBIDDEN, "권한이 부족합니다."),
 
-
     // ========== Redis 에러 ==========
-    REDIS_CONNECTION_ERROR("REDISM001", HttpStatus.SERVICE_UNAVAILABLE, "일시적인 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    REDIS_CONNECTION_ERROR("REDIS001", HttpStatus.SERVICE_UNAVAILABLE, "일시적인 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
+
+    // ========== Auth 도메인 에러 ==========
+    DUPLICATE_USER_ID("AUTH001", HttpStatus.CONFLICT, "이미 존재하는 아이디입니다."),
+    DUPLICATE_NICKNAME("AUTH002", HttpStatus.CONFLICT, "이미 존재하는 닉네임입니다."),
+    DUPLICATE_PHONENUM("AUTH003", HttpStatus.CONFLICT, "이미 존재하는 전화번호입니다.");
 
 
     private final String code;

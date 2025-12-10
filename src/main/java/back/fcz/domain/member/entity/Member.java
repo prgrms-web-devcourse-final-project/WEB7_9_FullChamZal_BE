@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(
         name = "member",
@@ -29,7 +31,7 @@ public class Member extends BaseEntity {
     @Column(name = "user_id", nullable = false, unique = true, length = 100)
     private String userId;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
     @Column(name = "name", nullable = false, length = 50)
@@ -59,6 +61,8 @@ public class Member extends BaseEntity {
     @Column(name = "oauth_id", length = 100)
     private String oauthId;
 
+    private LocalDateTime nicknameChangedAt;
+
     @Builder
     private Member(String userId, String passwordHash, String name, String nickname,
                    String phoneNumber, String phoneHash, MemberStatus status, MemberRole role,
@@ -73,5 +77,25 @@ public class Member extends BaseEntity {
         this.role = role != null ? role : MemberRole.USER;
         this.oauthProvider = oauthProvider;
         this.oauthId = oauthId;
+    }
+
+    public static Member create(String userId, String passwordHash, String name, String nickname,
+                                String encryptedPhone, String phoneHash) {
+        Member member = new Member(
+                userId,
+                passwordHash,
+                name,
+                nickname,
+                encryptedPhone,
+                phoneHash,
+                MemberStatus.ACTIVE,
+                MemberRole.USER,
+                null,
+                null
+        );
+
+        member.nicknameChangedAt = LocalDateTime.now();
+
+        return member;
     }
 }
