@@ -22,3 +22,20 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
+
+# 아래 key 값들은 실제로 사용하는 키 값이 아닌 테스트용 더미 값입니다.
+
+security:
+  encryption:
+    aes-key: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="
+    sha-salt: "test-salt-for-phone-number-hashing"
+
+jwt:
+  secret-key: "test-jwt-secret-key-minimum-32-bytes-required-for-hs256-algorithm-!!!"
+  access-token:
+    expiration: 10800000 # 3시간
+  refresh-token:
+    expiration: 2592000000 # 30일
+
+cors:
+  allowed-origins: "http://localhost:3000"

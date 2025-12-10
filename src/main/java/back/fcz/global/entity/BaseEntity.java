@@ -1,5 +1,6 @@
 package back.fcz.global.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -14,15 +15,18 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
     @CreatedDate
-    private LocalDateTime createDate;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
-    private LocalDateTime modifyDate;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    private LocalDateTime deleteDate;
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     // soft delete 시 markDeleted() 호출 시, 삭제 시간 기록
     public void markDeleted() {
-        this.deleteDate = LocalDateTime.now();
+        this.deletedAt = LocalDateTime.now();
     }
 }

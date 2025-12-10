@@ -25,8 +25,15 @@
 ## 영향 받는 도메인
 
 - [ ] Global
-- [ ] 
-- [ ] 
+- [ ] Member
+- [ ] Guest
+- [ ] Capsule / 생명 주기
+- [ ] Capsule / 조회
+- [ ] UnLock
+- [ ] Admin
+- [ ] Bookmark
+- [ ] StoryTrack
+- [ ] Notification
 
 ## 확인했나요?
 - [ ] 코드 컨벤션
