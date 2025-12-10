@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -21,11 +22,16 @@ public class SecurityConfig {
     };
 
     @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 // H2 console은 frame 기반이므로 반드시 허용 필요
-                .headers(headers -> headers.frameOptions().disable())
+                .headers(headers -> headers.disable())
 
                 // CSRF는 개발 환경에서 비활성화
                 .csrf(csrf -> csrf.disable())
