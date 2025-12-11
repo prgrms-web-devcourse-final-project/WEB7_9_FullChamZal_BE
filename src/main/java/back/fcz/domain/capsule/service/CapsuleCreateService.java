@@ -11,6 +11,8 @@ import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.crypto.PhoneCrypto;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +46,11 @@ public class CapsuleCreateService {
     // 공개 캡슐 생성
     public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate){
         Capsule capsule = capsuleCreate.toEntity();
+
+        Member member = memberRepository.findById(capsuleCreate.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        capsule.setMemberId(member);
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
 
@@ -54,7 +61,7 @@ public class CapsuleCreateService {
     public SecretCapsuleCreateResponseDTO selfCreateCapsule(SecretCapsuleCreateRequestDTO capsuleCreate, String password){
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
-                .orElseThrow(() -> new RuntimeException("Member not found")); // 에러코드 작성
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
@@ -64,7 +71,7 @@ public class CapsuleCreateService {
 
         Capsule saved = capsuleRepository.save(secretCapsule);
 
-        String url  = domain + secretCapsule.getUuid();
+        String url  = domain + saved.getUuid();
 
         return SecretCapsuleCreateResponseDTO.from(saved, url);
     }
@@ -72,46 +79,40 @@ public class CapsuleCreateService {
     // 비공개 캡슐 생성 - 전화 번호 조회
     public SecretCapsuleCreateResponseDTO creatCapsule(SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
 
-        // 캡슐 생성
         Capsule capsule = capsuleCreate.toEntity();
         capsule.setUuid(setUUID());
 
-        // 전화 번호로 멤버 조회
-        Member member = memberRepository.findByphoneNumber(receiveTel);
+        Member member = memberRepository.findById(capsuleCreate.memberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if(member != null){ // 회원
-            // 캡슐 저장
+        Member recipient = memberRepository.findByphoneNumber(receiveTel);
+
+        if(recipient != null){ // 회원
             capsule.setMemberId(member);
             capsule.setProtected(1);
             Capsule saved = capsuleRepository.save(capsule);
 
-            // URL 생성
-            String url = domain + capsule.getUuid();
-
-
-            // 수신자 테이블 저장
-            CapsuleRecipient recipient = CapsuleRecipient.builder()
+            CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                     .capsuleId(saved)
                     .recipientName(capsuleCreate.nickName())
                     .recipientPhone(capsuleCreate.phoneNum())
-                    .recipientPhoneHash(phoneCrypto.hash(capsuleCreate.phoneNum())) // 해시 생성 코드 사용
+                    .recipientPhoneHash(phoneCrypto.hash(capsuleCreate.phoneNum()))
                     .isSenderSelf(false)
                     .build();
 
-            recipientRepository.save(recipient);
+            recipientRepository.save(recipientRecord);
+
+            String url = domain + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url);
 
         }else{ // 비회원
-            // 캡슐 비밀번호 생성
             String capsulePW = generatePassword();
             capsule.setCapPassword(capsulePW);
 
-            // URL 생성
-            String url = domain + capsule.getUuid();
-
-            // 캡슐 테이블에 저장
             Capsule saved = capsuleRepository.save(capsule);
+
+            String url = domain + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url);
         }

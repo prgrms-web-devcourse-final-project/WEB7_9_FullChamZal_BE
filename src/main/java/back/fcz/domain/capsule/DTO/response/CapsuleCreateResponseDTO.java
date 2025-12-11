@@ -38,7 +38,7 @@ public record CapsuleCreateResponseDTO(
         );
 
         return new CapsuleCreateResponseDTO(
-                null, // memberId (추후 Member 연동되면 추가)
+                capsule.getMemberId().getMemberId(),
                 capsule.getCapsuleId(),
                 capsule.getNickname(),
                 capsule.getTitle(),

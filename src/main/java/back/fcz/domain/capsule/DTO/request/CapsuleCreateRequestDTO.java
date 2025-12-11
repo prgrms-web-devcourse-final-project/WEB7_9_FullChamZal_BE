@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 
 import java.time.LocalDateTime;
 
+
 public record CapsuleCreateRequestDTO(
         Long memberId,
         String nickname,
@@ -16,8 +17,8 @@ public record CapsuleCreateRequestDTO(
         String unlockType,
         LocalDateTime unlockAt,
         String locationName,
-        int locationLat,
-        int locationLng,
+        Double locationLat,
+        Double locationLng,
         int locationRadiusM,
         int maxViewCount
 ) {
@@ -40,8 +41,8 @@ public record CapsuleCreateRequestDTO(
                 .locationRadiusM(locationRadiusM)
                 .maxViewCount(maxViewCount)
                 .currentViewCount(0)
-                .isDeleted(false)
-                .isProtected(false)
+                .isDeleted(0)
+                .isProtected(0)
                 .build();
     }
 }
