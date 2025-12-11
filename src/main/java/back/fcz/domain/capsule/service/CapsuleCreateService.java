@@ -8,6 +8,7 @@ import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
@@ -28,6 +29,7 @@ import java.util.UUID;
 public class CapsuleCreateService {
 
     private final CapsuleRepository capsuleRepository;
+    private final CapsuleOpenLogRepository capsuleOpenLogRepository;
     private final CapsuleRecipientRepository recipientRepository;
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
@@ -129,6 +131,11 @@ public class CapsuleCreateService {
             Long capsuleId,
             CapsuleUpdateRequestDTO updateDTO
     ){
+        // 수정 가능한 상태인지 확인
+        capsuleOpenLogRepository.findByCapsuleId(capsuleId)
+                .ifPresent(open -> { throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE); });
+
+        // 수정 진행
         Capsule targetCapsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
