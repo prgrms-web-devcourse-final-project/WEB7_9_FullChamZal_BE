@@ -38,8 +38,8 @@ public record SecretCapsuleCreateRequestDTO(
                 .locationRadiusM(viewingRadius)
                 .maxViewCount(maxViewCount)
                 .currentViewCount(0)
-                .isDeleted(false)
-                .isProtected(false)
+                .isDeleted(0)
+                .isProtected(0)
                 .build();
     }
 }

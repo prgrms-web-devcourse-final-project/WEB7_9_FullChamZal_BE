@@ -59,9 +59,9 @@ public class Capsule extends BaseEntity {
     @Column(name = "current_view_count")
     private int currentViewCount = 0;     // 현재 조회 인원
     @Column(name = "is_deleted")
-    private boolean isDeleted = false;         // 삭제 여부(Soft Delete, 삭제 전0, 삭제후 1)
+    private Integer isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전0, 삭제후 1)
     @Column(name = "is_protected")
-    private boolean isProtected = false;      // 보호 여부
+    private Integer isProtected = 0;      // 보호 여부(보호 : 0, 미보호 : 1)
 
     public void setMemberId(Member member){
         this.memberId = member;
@@ -73,5 +73,9 @@ public class Capsule extends BaseEntity {
 
     public void setCapPassword(String capPassword){
         this.capPassword = capPassword;
+    }
+
+    public void setProtected(int protectedValue){
+        this.isProtected = protectedValue;
     }
 }
