@@ -36,7 +36,7 @@ public class CapsuleCreateService {
         return UUID.randomUUID().toString();
     }
 
-    // 비밀번호 생성 - 4자리 숫자 번호
+    // 캡슐 비밀번호 생성 - 4자리 숫자 번호
     private String generatePassword() {
         Random random = new Random();
         int number = random.nextInt(9000) + 1000;
@@ -58,7 +58,7 @@ public class CapsuleCreateService {
     }
 
     // 비공개 캡슐 생성 - URL + 비밀번호 조회
-    public SecretCapsuleCreateResponseDTO selfCreateCapsule(SecretCapsuleCreateRequestDTO capsuleCreate, String password){
+    public SecretCapsuleCreateResponseDTO privateCapsulePassword (SecretCapsuleCreateRequestDTO capsuleCreate, String password){
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -66,18 +66,18 @@ public class CapsuleCreateService {
         Capsule secretCapsule = capsuleCreate.toEntity();
 
         secretCapsule.setUuid(setUUID());
-        secretCapsule.setCapPassword(password);
+        secretCapsule.setCapPassword(phoneCrypto.encrypt(password)); // 사용자가 지정한 비밀번호 저장
         secretCapsule.setMemberId(member);
 
         Capsule saved = capsuleRepository.save(secretCapsule);
 
         String url  = domain + saved.getUuid();
 
-        return SecretCapsuleCreateResponseDTO.from(saved, url);
+        return SecretCapsuleCreateResponseDTO.from(saved, url, password);
     }
 
     // 비공개 캡슐 생성 - 전화 번호 조회
-    public SecretCapsuleCreateResponseDTO creatCapsule(SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
+    public SecretCapsuleCreateResponseDTO privateCapsulePhone (SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
 
         Capsule capsule = capsuleCreate.toEntity();
         capsule.setUuid(setUUID());
@@ -95,8 +95,8 @@ public class CapsuleCreateService {
             CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                     .capsuleId(saved)
                     .recipientName(capsuleCreate.nickName())
-                    .recipientPhone(capsuleCreate.phoneNum())
-                    .recipientPhoneHash(phoneCrypto.hash(capsuleCreate.phoneNum()))
+                    .recipientPhone(receiveTel)
+                    .recipientPhoneHash(phoneCrypto.hash(receiveTel))
                     .isSenderSelf(false)
                     .build();
 
@@ -104,17 +104,17 @@ public class CapsuleCreateService {
 
             String url = domain + saved.getUuid();
 
-            return SecretCapsuleCreateResponseDTO.from(saved, url);
+            return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
         }else{ // 비회원
-            String capsulePW = generatePassword();
-            capsule.setCapPassword(capsulePW);
+            String capsulePW = generatePassword(); // 생성한 비밀번호
+            capsule.setCapPassword(phoneCrypto.encrypt(capsulePW));
 
             Capsule saved = capsuleRepository.save(capsule);
 
             String url = domain + saved.getUuid();
 
-            return SecretCapsuleCreateResponseDTO.from(saved, url);
+            return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
     }
 

@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 public record SecretCapsuleCreateRequestDTO(
         Long memberId,
         String nickName,
-        String phoneNum,
         String title,
         String content,
         String visibility,

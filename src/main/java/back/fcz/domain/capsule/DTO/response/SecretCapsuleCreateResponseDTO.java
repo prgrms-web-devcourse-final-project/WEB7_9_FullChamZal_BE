@@ -22,7 +22,7 @@ public record SecretCapsuleCreateResponseDTO (
         int maxViewCount,
         int currentViewCount
 ){
-    public static SecretCapsuleCreateResponseDTO from(Capsule capsule, String url) {
+    public static SecretCapsuleCreateResponseDTO from(Capsule capsule, String url, String password) {
 
         UnlockDTO unlockDTO = new UnlockDTO(
                 capsule.getUnlockAt(),             // LocalDateTime unlockAt
@@ -44,7 +44,7 @@ public record SecretCapsuleCreateResponseDTO (
                 capsule.getCapsuleId(),
                 capsule.getNickname(),
                 url,
-                capsule.getCapPassword(),
+                password,
                 capsule.getTitle(),
                 capsule.getContent(),
                 capsule.getVisibility(),
