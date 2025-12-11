@@ -1,43 +1,77 @@
 package back.fcz.global.security;
 
+import back.fcz.global.security.jwt.filter.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/swagger-resources/**",
+            "/webjars/**"
     };
 
     private static final String[] H2_WHITELIST = {
             "/h2-console/**"
     };
 
+    // 인증 없이 접근 가능한 공개 API 경로
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/api/v1/auth/**"
+    };
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // H2 console은 frame 기반이므로 반드시 허용 필요
-                .headers(headers -> headers.frameOptions().disable())
+                // CSRF 비활성화 (JWT 방식에서는 불필요)
+                .csrf(AbstractHttpConfigurer::disable)
 
-                // CSRF는 개발 환경에서 비활성화
-                .csrf(csrf -> csrf.disable())
+                // CORS 활성화
+                .cors(cors -> {})
+
+                // 세션 관리 정책 - JWT 사용해서 세션 사용 X
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // H2 콘솔 Frame Options만 선택적으로 허용
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.sameOrigin())
+                )
 
                 // 개발 엔드포인트 예외 허용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers(H2_WHITELIST).permitAll()
-                        .anyRequest().permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
                 )
-                .formLogin(login -> login.disable())
-                .httpBasic(basic -> basic.disable());
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
