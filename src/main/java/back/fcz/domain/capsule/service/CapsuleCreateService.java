@@ -103,6 +103,7 @@ public class CapsuleCreateService {
             recipientRepository.save(recipientRecord);
 
             String url = domain + saved.getUuid();
+            System.out.println("전화번호 회원 캡슐 생성");
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
@@ -114,6 +115,7 @@ public class CapsuleCreateService {
             Capsule saved = capsuleRepository.save(capsule);
 
             String url = domain + saved.getUuid();
+            System.out.println("전화번호 비회원 캡슐 생성");
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
