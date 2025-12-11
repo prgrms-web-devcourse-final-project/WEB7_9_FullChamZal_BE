@@ -55,7 +55,8 @@ public enum ErrorCode {
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
-    INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다.");
+    INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다."),
+    INVALID_RADIUS("UNL003", HttpStatus.BAD_REQUEST, "반경 값은 null, 500m, 1km, 1.5km 중 하나여야 합니다.");
 
     private final String code;
     private final HttpStatus status;
