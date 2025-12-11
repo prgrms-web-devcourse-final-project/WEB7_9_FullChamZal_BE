@@ -90,7 +90,7 @@ public class CapsuleCreateService {
 
         Optional<Member> recipient = memberRepository.findByPhoneHash(phoneCrypto.hash(receiveTel));
 
-        if(recipient.isPresent()){ // 회원
+        if(memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel))){ // 회원
             capsule.setMemberId(member);
             capsule.setProtected(1);
             Capsule saved = capsuleRepository.save(capsule);

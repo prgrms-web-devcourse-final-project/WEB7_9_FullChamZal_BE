@@ -25,7 +25,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -125,11 +124,14 @@ class CapsuleCreateServiceTest {
         when(memberRepository.findById(1L))
                 .thenReturn(Optional.of(member));
 
-        lenient().when(phoneCrypto.hash(anyString()))
+        when(phoneCrypto.hash("01000000000"))
                 .thenReturn("hashedPhone");
 
         when(memberRepository.findByPhoneHash("hashedPhone"))
                 .thenReturn(Optional.of(recipient));
+
+        when(memberRepository.existsByPhoneHash("hashedPhone"))
+                .thenReturn(true);
 
         when(capsuleRepository.save(any(Capsule.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -146,6 +148,7 @@ class CapsuleCreateServiceTest {
         assertNull(response.capPW());
         assertEquals("title", response.title());
     }
+
 
 
 
