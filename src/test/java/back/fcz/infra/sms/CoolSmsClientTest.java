@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
-@Tag("sms")
 public class CoolSmsClientTest {
 
     @Test
