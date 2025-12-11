@@ -54,7 +54,7 @@ public class Capsule extends BaseEntity {
     @Column(name = "current_view_count")
     private int currentViewCount;     // 현재 조회 인원
     @Column(name = "is_deleted")
-    private boolean isDeleted;         // 삭제 여부(Soft Delete, 삭제 전0, 삭제후 1)
+    private int isDeleted;         // 삭제 여부(Soft Delete, 삭제 전 0, 사용자 삭제 후 1, 관리자 삭제 후 2)
     @Column(name = "is_protected")
     private boolean isProtected;      // 보호 여부
 
