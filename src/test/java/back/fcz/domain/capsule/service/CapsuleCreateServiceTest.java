@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -26,6 +25,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CapsuleCreateServiceTest {
@@ -67,8 +68,8 @@ class CapsuleCreateServiceTest {
         Capsule capsule = dto.toEntity();
         capsule.setMemberId(member);
 
-        Mockito.when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        Mockito.when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
 
         // when
         CapsuleCreateResponseDTO response = capsuleCreateService.publicCapsuleCreate(dto);
@@ -96,9 +97,9 @@ class CapsuleCreateServiceTest {
         Capsule capsule = dto.toEntity();
         capsule.setMemberId(member);
 
-        Mockito.when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        Mockito.when(phoneCrypto.encrypt(originalPassword)).thenReturn(encryptedPassword);
-        Mockito.when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(phoneCrypto.encrypt(originalPassword)).thenReturn(encryptedPassword);
+        when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
 
         // when
         SecretCapsuleCreateResponseDTO response =
@@ -110,7 +111,6 @@ class CapsuleCreateServiceTest {
         assertEquals(originalPassword, response.capPW()); // 반환은 원본 PW
     }
 
-    // 비공개 캡슐 생성 (전화번호 방식 - 회원 수신자)
     @Test
     void testPrivateCapsulePhone_MemberRecipient() {
         // given
@@ -122,14 +122,20 @@ class CapsuleCreateServiceTest {
 
         Member recipient = Member.testMember(2L, "reciever", "recieverName");
 
-        Capsule savedCapsule = dto.toEntity();
-        savedCapsule.setMemberId(member);
-        savedCapsule.setProtected(1);
+        when(memberRepository.findById(1L))
+                .thenReturn(Optional.of(member));
 
-        Mockito.when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        Mockito.when(memberRepository.findByphoneNumber("01000000000")).thenReturn(recipient);
-        Mockito.when(capsuleRepository.save(any(Capsule.class))).thenReturn(savedCapsule);
-        Mockito.when(phoneCrypto.hash("01000000000")).thenReturn("hashedPhone");
+        lenient().when(phoneCrypto.hash(anyString()))
+                .thenReturn("hashedPhone");
+
+        when(memberRepository.findByPhoneHash("hashedPhone"))
+                .thenReturn(Optional.of(recipient));
+
+        when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(recipientRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         SecretCapsuleCreateResponseDTO response =
@@ -137,9 +143,12 @@ class CapsuleCreateServiceTest {
 
         // then
         assertNotNull(response);
-        assertNull(response.capPW()); // 회원 수신자 → 비밀번호 없음
+        assertNull(response.capPW());
         assertEquals("title", response.title());
     }
+
+
+
 
     // 비공개 캡슐 생성 (전화번호 방식 - 비회원 수신자)
     @Test
@@ -151,11 +160,22 @@ class CapsuleCreateServiceTest {
                 37.11, 127.22, 300, "red", "white", 10
         );
 
-        Mockito.when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        Mockito.when(memberRepository.findByphoneNumber("01000000000")).thenReturn(null);
-        Mockito.when(capsuleRepository.save(any(Capsule.class)))
+        when(memberRepository.findById(1L))
+                .thenReturn(Optional.of(member));
+
+        // 해시값 가짜로 생성
+        when(phoneCrypto.hash(anyString()))
+                .thenReturn("hashedPhone");
+
+        // hashedPhone 으로 찾으면 회원 없음 → 비회원 분기
+        when(memberRepository.findByPhoneHash("hashedPhone"))
+                .thenReturn(Optional.empty());
+
+        when(phoneCrypto.encrypt(anyString()))
+                .thenReturn("encryptedPw");
+
+        when(capsuleRepository.save(any(Capsule.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        Mockito.when(phoneCrypto.encrypt(anyString())).thenReturn("encrypted");
 
         // when
         SecretCapsuleCreateResponseDTO response =
@@ -163,8 +183,10 @@ class CapsuleCreateServiceTest {
 
         // then
         assertNotNull(response);
-        assertNotNull(response.capPW()); // 비회원 → 비밀번호 반드시 존재
+        assertNotNull(response.capPW()); // 비회원 → 비밀번호 존재
     }
+
+
 
     // memberId가 존재하지 않을 때 예외 테스트
     @Test
@@ -177,7 +199,7 @@ class CapsuleCreateServiceTest {
                 100, 10
         );
 
-        Mockito.when(memberRepository.findById(99L)).thenReturn(Optional.empty());
+        when(memberRepository.findById(99L)).thenReturn(Optional.empty());
 
         // when & then
         BusinessException ex = assertThrows(
@@ -197,7 +219,7 @@ class CapsuleCreateServiceTest {
                 37.11, 127.22, 300, "red", "white", 10
         );
 
-        Mockito.when(memberRepository.findById(99L)).thenReturn(Optional.empty());
+        when(memberRepository.findById(99L)).thenReturn(Optional.empty());
 
         // when & then
         BusinessException ex = assertThrows(

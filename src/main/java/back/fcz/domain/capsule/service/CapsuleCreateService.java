@@ -14,6 +14,7 @@ import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -30,7 +31,8 @@ public class CapsuleCreateService {
     private final PhoneCrypto phoneCrypto;
 
     // url 도메인
-    String domain = "http://localhost:8080/api/v1/capsule/"; // 임시로 엔드포인트 사용
+    @Value("${capsule.domain}")
+    private String domain;
 
     // UUID 생성
     public String setUUID(){
@@ -88,7 +90,7 @@ public class CapsuleCreateService {
 
         Optional<Member> recipient = memberRepository.findByPhoneHash(phoneCrypto.hash(receiveTel));
 
-        if(recipient != null){ // 회원
+        if(recipient.isPresent()){ // 회원
             capsule.setMemberId(member);
             capsule.setProtected(1);
             Capsule saved = capsuleRepository.save(capsule);
@@ -104,7 +106,6 @@ public class CapsuleCreateService {
             recipientRepository.save(recipientRecord);
 
             String url = domain + saved.getUuid();
-            System.out.println("전화번호 회원 캡슐 생성");
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
@@ -116,7 +117,6 @@ public class CapsuleCreateService {
             Capsule saved = capsuleRepository.save(capsule);
 
             String url = domain + saved.getUuid();
-            System.out.println("전화번호 비회원 캡슐 생성");
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
