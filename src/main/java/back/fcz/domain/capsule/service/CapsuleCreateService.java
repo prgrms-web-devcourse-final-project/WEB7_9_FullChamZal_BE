@@ -16,6 +16,7 @@ import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -85,7 +86,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Member recipient = memberRepository.findByphoneNumber(receiveTel);
+        Optional<Member> recipient = memberRepository.findByPhoneHash(phoneCrypto.hash(receiveTel));
 
         if(recipient != null){ // 회원
             capsule.setMemberId(member);
