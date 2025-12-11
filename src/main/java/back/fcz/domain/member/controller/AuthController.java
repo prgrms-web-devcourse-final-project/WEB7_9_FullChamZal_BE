@@ -125,4 +125,43 @@ public class AuthController {
         CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite());
         return ResponseEntity.ok(ApiResponse.success());
     }
+
+    @Operation(
+            summary = "토큰 재발급",
+            description = "Refresh Token을 이용하여 새로운 Access Token을 발급합니다. " +
+                    " Refresh Token은 쿠키에서 자동으로 추출됩니다."
+    )
+    @ApiErrorCodeExample({
+            ErrorCode.TOKEN_NOT_FOUND,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.TOKEN_EXPIRED
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<Void>> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            String refreshToken = CookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_NOT_FOUND));
+
+            String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
+
+            ResponseCookie accessCookie = ResponseCookie.from(CookieUtil.ACCESS_TOKEN_COOKIE, newAccessToken)
+                    .httpOnly(true)
+                    .secure(cookieProperties.isSecure())
+                    .sameSite(cookieProperties.getSameSite())
+                    .path("/")
+                    .maxAge(jwtProperties.getAccessToken().getExpiration() / 1000)
+                    .build();
+
+            response.addHeader("Set-Cookie", accessCookie.toString());
+
+            log.info("Access Token 재발급 성공");
+            return ResponseEntity.ok(ApiResponse.success());
+        } catch (BusinessException e) {
+            log.warn("토큰 재발급 실패: errorCode={}, message={}", e.getErrorCode(), e.getMessage());
+            throw e;
+        }
+    }
 }

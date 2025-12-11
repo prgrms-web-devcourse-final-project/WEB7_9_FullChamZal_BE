@@ -9,7 +9,9 @@ import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.global.security.jwt.JwtProperties;
 import back.fcz.global.security.jwt.JwtProvider;
+import back.fcz.global.security.jwt.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ public class AuthService {
     private final PhoneCrypto phoneCrypto;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtProperties jwtProperties;
 
     public MemberSignupResponse signup(MemberSignupRequest request) {
         if (memberRepository.existsByUserId(request.userId())) {
@@ -74,6 +78,12 @@ public class AuthService {
         String refreshToken = jwtProvider.generateMemberRefreshToken(
                 member.getMemberId(),
                 member.getRole().name()
+        );
+
+        refreshTokenService.saveMemberRefreshToken(
+                member.getMemberId(),
+                refreshToken,
+                jwtProperties.getRefreshToken().getExpiration() / 1000
         );
 
         return new LoginTokensResponse(accessToken, refreshToken);
