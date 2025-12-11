@@ -70,7 +70,7 @@ public class NearbyOpenCapsuleServiceTest {
 
     @Test
     @DisplayName("radius가 null일 경우, 기본값 1000m가 사용된다")
-    void getNearbyOpenCapsules_UsesDefaultRadius() {
+    void getNearbyOpenCapsules_default_radius() {
         // given
         Capsule capsule = createCapsule(1L, 37.5709, 126.9780);
         when(capsuleRepository.findOpenCapsule("PUBLIC", 0)).thenReturn(List.of(capsule));
