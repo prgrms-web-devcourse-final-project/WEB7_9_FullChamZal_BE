@@ -36,6 +36,7 @@ public enum ErrorCode {
     TOKEN_BLACKLISTED("AUTH007", HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
     TOKEN_USER_TYPE_MISMATCH("AUTH008", HttpStatus.FORBIDDEN, "토큰의 사용자 타입이 일치하지 않습니다."),
     TOKEN_SUBJECT_INVALID("AUTH009", HttpStatus.UNAUTHORIZED, "토큰 SUBJECT 형식이 올바르지 않습니다."),
+    TOKEN_NOT_FOUND("AUTH010", HttpStatus.UNAUTHORIZED, "토큰을 찾을 수 없습니다."),
 
     // ========== 권한 에러 ==========
     ACCESS_DENIED("PERM001", HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
