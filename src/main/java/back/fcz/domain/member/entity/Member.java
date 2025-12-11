@@ -97,4 +97,8 @@ public class Member extends BaseEntity {
 
         return member;
     }
+
+    public boolean isActive() {
+        return this.status == MemberStatus.ACTIVE && this.getDeletedAt() == null;
+    }
 }

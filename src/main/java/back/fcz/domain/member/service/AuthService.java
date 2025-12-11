@@ -59,11 +59,8 @@ public class AuthService {
     }
 
     public LoginTokensResponse login(MemberLoginRequest request) {
-        Member member = memberRepository.findByUserId(request.userId());
-
-        if (member == null) {
-            throw new BusinessException(ErrorCode.INVALID_USER_ID);
-        }
+        Member member = memberRepository.findByUserId(request.userId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_USER_ID));
 
         if (!passwordEncoder.matches(request.password(), member.getPasswordHash())) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);

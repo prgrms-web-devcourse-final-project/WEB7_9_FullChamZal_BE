@@ -46,6 +46,10 @@ public enum ErrorCode {
     INVALID_USER_ID("AUTH004", HttpStatus.CONFLICT, "아이디가 존재하지 않습니다."),
     INVALID_PASSWORD("AUTH005", HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
 
+    // ========== Member 도메인 에러 ==========
+    MEMBER_NOT_FOUND("MEM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
+    MEMBER_NOT_ACTIVE("MEM002", HttpStatus.FORBIDDEN, "비활성화된 계정입니다."),
+
     // ========== 캡슐 에러 ==========
     CAPSULE_NOT_FOUND("CPS001", HttpStatus.NOT_FOUND, "해당 캡슐을 찾을 수 없습니다."),
 
