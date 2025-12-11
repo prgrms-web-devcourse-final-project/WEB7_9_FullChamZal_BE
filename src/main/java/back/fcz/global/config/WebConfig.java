@@ -22,7 +22,8 @@ public class WebConfig {
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowCredentials(true)
                         .allowedHeaders("*")
-                        .exposedHeaders("Set-Cookie", "Authorization");
+                        .exposedHeaders("Set-Cookie", "Authorization")
+                        .maxAge(3600);
             }
         };
     }

@@ -2,11 +2,15 @@ package back.fcz.domain.capsule.entity;
 
 import back.fcz.global.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-
+@Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Capsule extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,9 +43,9 @@ public class Capsule extends BaseEntity {
     @Column(name = "location_name")
     private String locationName;      // 장소 이름(별명)
     @Column(name = "location_lat")
-    private int locationLat;       // 위도
+    private Double locationLat;       // 위도
     @Column(name = "location_lng")
-    private int locationLng;       // 경도
+    private Double locationLng;       // 경도
 
     @Column(name = "location_radius_m")
     private int locationRadiusM;      // 조회 반경 : 50, 100, 300, 500, 1000

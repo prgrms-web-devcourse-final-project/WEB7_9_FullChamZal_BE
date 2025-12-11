@@ -1,0 +1,80 @@
+package back.fcz.domain.unlock.service;
+
+import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class UnlockService {
+    private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
+    private final CapsuleRepository capsuleRepository;
+
+    // 시간 해제 조건 검증
+    public boolean isTimeConditionMet(long capsuleId, LocalDateTime currentTime) {
+        if(currentTime == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
+
+        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(
+                () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        LocalDateTime capsuleTime = capsule.getUnlockAt();
+
+        // 캡슐의 시간 해제 조건 <= 사용자의 현재 시간 이면 true (해제 가능)
+        return !capsuleTime.isAfter(currentTime);
+    }
+
+    // 위치 해제 조건 검증
+    public boolean isLocationConditionMet(long capsuleId, double currentLat, double currentLng) {
+        if(currentLat < -90 || currentLat > 90 || currentLng < -180 || currentLng > 180) {
+            throw new BusinessException(ErrorCode.INVALID_LATITUDE_LONGITUDE);
+        }
+
+        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(
+                () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        double capsuleLat = capsule.getLocationLat();
+        double capsuleLng = capsule.getLocationLng();
+        int radiusM = capsule.getLocationRadiusM();
+
+        double distance = calculateDistanceInMeters(capsuleLat, capsuleLng, currentLat, currentLng);
+
+        // 계산된 거리 ≤ 반경 이면 true (해제 가능)
+        return distance <= radiusM;
+    }
+
+    // 시간 + 위치 해제 조건 검증
+    public boolean isTimeAndLocationConditionMet(long capsuleId, LocalDateTime currentTime, double currentLat, double currentLng) {
+        if(currentTime == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
+        if(currentLat < -90 || currentLat > 90 || currentLng < -180 || currentLng > 180) {
+            throw new BusinessException(ErrorCode.INVALID_LATITUDE_LONGITUDE);
+        }
+
+        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(
+                () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        LocalDateTime capsuleTime = capsule.getUnlockAt();
+        double capsuleLat = capsule.getLocationLat();
+        double capsuleLng = capsule.getLocationLng();
+        int radiusM = capsule.getLocationRadiusM();
+
+        double distance = calculateDistanceInMeters(capsuleLat, capsuleLng, currentLat, currentLng);
+        boolean condition = !capsuleTime.isAfter(currentTime) && distance <= radiusM;
+
+        return condition;
+    }
+
+    // 사용자 현재 위치와 캡슐 위치 조건 간 거리 계산 (Haversine Formula)
+    public double calculateDistanceInMeters(double capsuleLat, double capsuleLng, double currentLat, double currentLng) {
+
+        double deltaLat = Math.toRadians(currentLat - capsuleLat);
+        double deltaLng = Math.toRadians(currentLng - capsuleLng);
+        double squareRoot = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
+                + Math.cos(Math.toRadians(capsuleLat)) * Math.cos(Math.toRadians(currentLat)) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+        double distance = 2 * EARTH_RADIUS_M * Math.atan2(Math.sqrt(squareRoot), Math.sqrt(1 - squareRoot));
+
+        return distance;
+    }
+}
