@@ -8,6 +8,7 @@ import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -22,6 +23,7 @@ public class NearbyOpenCapsuleService {
     private final int DEFAULT_RADIUS_M = 1000;  // 기본 반경 값 1km
 
     // 사용자 근처 공개 캡슐 리스트 조회
+    @Transactional
     public List<NearbyOpenCapsuleResponse> getNearbyOpenCapsules(NearbyOpenCapsuleRequest request) {
         double currentLat = request.currentLatitude();
         double currentLng = request.currentLongitude();
