@@ -19,6 +19,8 @@ public enum ErrorCode {
     DECRYPTION_FAILED("CRY002", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 복호화에 실패했습니다."),
     HASHING_FAILED("CRY003", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 해싱에 실패했습니다."),
 
+    //=========== SMS 에러 ==========
+    SMS_SEND_FAILED("SMS001", HttpStatus.INTERNAL_SERVER_ERROR, "문자 발송에 실패했습니다."),
     // ========== JWT 인증 에러 ==========
     TOKEN_EXPIRED("AUTH001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     TOKEN_INVALID("AUTH002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
