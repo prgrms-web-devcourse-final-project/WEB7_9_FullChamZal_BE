@@ -31,7 +31,7 @@ security:
     sha-salt: "test-salt-for-phone-number-hashing"
 
 jwt:
-  secret-key: "test-jwt-secret-key-minimum-32-bytes-required-for-hs256-algorithm-!!!"
+  secret: "test-jwt-secret-key-minimum-32-bytes-required-for-hs256-algorithm-!!!"
   access-token:
     expiration: 10800000 # 3시간
   refresh-token:

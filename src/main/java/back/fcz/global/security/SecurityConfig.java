@@ -33,7 +33,7 @@ public class SecurityConfig {
 
     // 인증 없이 접근 가능한 공개 API 경로
     private static final String[] PUBLIC_ENDPOINTS = {
-
+            "/api/v1/auth/**"
     };
 
     @Bean

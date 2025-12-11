@@ -41,7 +41,7 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     // 3. API Documentation (OpenAPI/Swagger)
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
     // 4. Database Drivers (런타임 드라이버)
     runtimeOnly 'com.h2database:h2'

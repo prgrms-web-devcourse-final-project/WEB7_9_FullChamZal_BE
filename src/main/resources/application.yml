@@ -44,7 +44,7 @@ security:
     sha-salt: ${SHA_SALT}
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY}
+  secret: ${JWT_SECRET_KEY}
   access-token:
     expiration: 10800000 # 3시간 (3 * 60 * 60 * 1000)
   refresh-token:
