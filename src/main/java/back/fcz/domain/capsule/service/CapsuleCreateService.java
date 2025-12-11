@@ -1,8 +1,10 @@
 package back.fcz.domain.capsule.service;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
@@ -123,6 +125,24 @@ public class CapsuleCreateService {
     }
 
     // 캡슐 수정
+    public CapsuleUpdateResponseDTO updateCapsule(
+            Long capsuleId,
+            CapsuleUpdateRequestDTO updateDTO
+    ){
+        Capsule targetCapsule = capsuleRepository.findById(capsuleId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+        if(updateDTO.title() != null){
+            targetCapsule.setTitle(updateDTO.title());
+        }
+
+        if(updateDTO.content() != null){
+            targetCapsule.setContent(updateDTO.content());
+        }
+
+        Capsule saved = capsuleRepository.save(targetCapsule);
+        return CapsuleUpdateResponseDTO.from(saved);
+    }
 
     // 캡슐 삭제
 }
