@@ -26,7 +26,11 @@ public record MemberUpdateRequest(
         String newPassword,
 
         @Schema(description = "새 전화번호 (숫자만 11자리)", example = "01087654321")
-        @Pattern(regexp = "^010[0-9]{8}$", message = "전화번호는 010으로 시작하는 11자리 숫자여야 합니다.")
+        @Pattern(
+                regexp = "^01[016789]\\d{8}$",
+                message = "전화번호는 010, 011, 016~019로 시작하는 11자리 숫자여야 합니다"
+        )
+        @Size(min = 11, max = 11, message = "전화번호는 정확히 11자리여야 합니다.")
         String phoneNumber
 ) {
     // 닉네임 변경 요청 확인
