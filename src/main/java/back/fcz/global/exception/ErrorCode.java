@@ -51,7 +51,21 @@ public enum ErrorCode {
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
-    INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다.");
+    INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다."),
+
+    // ========== 관리자(Admin) 에러 ==========
+    ADMIN_MEMBER_NOT_FOUND("ADM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
+    ADMIN_CAPSULE_NOT_FOUND("ADM002", HttpStatus.NOT_FOUND, "존재하지 않는 캡슐입니다."),
+    ADMIN_REPORT_NOT_FOUND("ADM003", HttpStatus.NOT_FOUND, "존재하지 않는 신고입니다."),
+    ADMIN_REPORT_ALREADY_DONE("ADM004", HttpStatus.CONFLICT, "이미 처리된 신고입니다."),
+    ADMIN_INVALID_MEMBER_STATUS_CHANGE("ADM005", HttpStatus.BAD_REQUEST, "유효하지 않은 회원 상태 변경입니다."),
+    ADMIN_CANNOT_CHANGE_SELF_STATUS("ADM006", HttpStatus.FORBIDDEN, "자기 자신의 계정 상태는 변경할 수 없습니다."),
+    ADMIN_INVALID_CAPSULE_STATUS_CHANGE("ADM007", HttpStatus.BAD_REQUEST, "유효하지 않은 캡슐 상태 변경입니다."),
+    ADMIN_INVALID_REPORT_STATUS_CHANGE("ADM008", HttpStatus.BAD_REQUEST, "유효하지 않은 신고 상태 변경입니다."),
+    ADMIN_PHONE_VERIFICATION_NOT_FOUND("ADM009", HttpStatus.NOT_FOUND, "존재하지 않는 전화번호 인증 내역입니다.");
+    // ADMIN_CAPSULE_INVALID_STATUS_CHANGE("ADM00y", HttpStatus.BAD_REQUEST, "잘못된 캡슐 상태 변경 요청입니다."),
+
+
 
     private final String code;
     private final HttpStatus status;
