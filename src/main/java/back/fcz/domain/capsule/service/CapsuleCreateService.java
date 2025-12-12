@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
@@ -152,4 +153,37 @@ public class CapsuleCreateService {
     }
 
     // 캡슐 삭제
+    // 수신자 삭제
+    public CapsuleDeleteResponseDTO receiverDelete(
+            Long capsuleId
+    ){
+        // 수신자 캡슐 존재 확인
+        CapsuleRecipient capsule = recipientRepository.findByCapsuleId_CapsuleId(capsuleId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+        // deletedAt 갱신
+        capsule.markDeleted();
+
+        return new CapsuleDeleteResponseDTO(
+            capsuleId,
+            capsuleId + "번 캡슐이 삭제 되었습니다."
+        );
+    }
+
+    // 발신자 삭제
+     public CapsuleDeleteResponseDTO senderDelete(
+             Long capsuleId
+     ){
+        // 발신자 캡슐 존재 확인
+         Capsule capsule = capsuleRepository.findById(capsuleId)
+                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+         // deletedAt 갱신
+         capsule.markDeleted();
+
+         return new CapsuleDeleteResponseDTO(
+                 capsuleId,
+                 capsuleId + "번 캡슐이 삭제 되었습니다."
+         );
+     }
 }
