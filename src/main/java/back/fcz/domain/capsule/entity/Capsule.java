@@ -42,9 +42,6 @@ public class Capsule extends BaseEntity {
     @Column(name = "visibility", nullable = false)
     private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개)
 
-    @Column(name = "cap_password")
-    private String capPassword;
-
     @Column(name = "unlock_type", nullable = false)
     private String unlockType;       // 해제 조건 : TIME, LOCATION, TIME_AND_LOCATION
     @Column(name = "unlock_at")

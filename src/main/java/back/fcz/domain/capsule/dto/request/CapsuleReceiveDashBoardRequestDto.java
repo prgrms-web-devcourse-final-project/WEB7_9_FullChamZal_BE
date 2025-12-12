@@ -1,4 +1,4 @@
-package back.fcz.domain.capsule.dto.request;
+package back.fcz.domain.capsule.DTO.request;
 
 public record CapsuleReceiveDashBoardRequestDto(
 

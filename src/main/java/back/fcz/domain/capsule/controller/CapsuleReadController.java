@@ -1,9 +1,9 @@
 package back.fcz.domain.capsule.controller;
 
-import back.fcz.domain.capsule.dto.request.CapsuleReadRequestDto;
-import back.fcz.domain.capsule.dto.request.CapsuleSendDashBoardRequestDto;
-import back.fcz.domain.capsule.dto.response.CapsuleReadResponseDto;
-import back.fcz.domain.capsule.dto.response.CapsuleSendDashBoardResponseDto;
+import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDto;
+import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDto;
+import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDto;
+import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDto;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
@@ -34,7 +34,7 @@ public class CapsuleReadController {
     ) {
         Capsule resultCapsule = capsuleReadService.getCapsule(capsuleReadRequestDto.capsuleId());
         //isProtected확인(0이면 수신자가 비회원  /  1이면 수신자가 회원)
-        if(resultCapsule.isProtected()){  //isProtected=1 -> 회원
+        if(resultCapsule.getIsProtected()==1){  //isProtected=1 -> 회원
 
             if(capsuleReadService.phoneNumberVerification(resultCapsule, capsuleReadRequestDto.phoneNumber(),
                     capsuleReadRequestDto.unlockAt(), capsuleReadRequestDto.locationLat(), capsuleReadRequestDto.locationLng()))

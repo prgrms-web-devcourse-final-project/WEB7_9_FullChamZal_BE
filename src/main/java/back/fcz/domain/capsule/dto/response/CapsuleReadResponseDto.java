@@ -1,4 +1,4 @@
-package back.fcz.domain.capsule.dto.response;
+package back.fcz.domain.capsule.DTO.response;
 
 import java.time.LocalDateTime;
 
