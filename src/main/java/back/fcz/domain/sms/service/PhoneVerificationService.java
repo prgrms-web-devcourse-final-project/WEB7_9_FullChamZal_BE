@@ -95,7 +95,7 @@ public class PhoneVerificationService {
         String message = prefix + "[Dear._] 인증번호 [" + code + "]를 입력해주세요. (유효시간 " + CODE_EXPIRATION_MINUTES + "분)";
         coolSmsClient.sendSms(nomalizedPhoneNumber, message);
 
-        return new SendSmsCodeResponse(true, CODE_EXPIRATION_MINUTES);
+        return new SendSmsCodeResponse(true, RESEND_COOLDOWN_SECONDS);
     }
 
     // 인증 코드 검증 로직
