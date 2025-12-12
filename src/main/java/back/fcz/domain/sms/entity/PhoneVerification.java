@@ -2,7 +2,6 @@ package back.fcz.domain.sms.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,17 +16,18 @@ import java.time.LocalDateTime;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class PhoneVerification {
+    private static final int CODE_EXPIRATION_MINUTES = 3; // 인증 번호 만료 시간 (분)
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "phone_number", nullable = false, length = 500)
-    private String phoneNumber;
-
     @Column(name = "phone_number_hash", nullable = false, length = 64)
     private String phoneNumberHash;
+
+    @Column(name = "code", nullable = false, length = 64)
+    private String code;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "purpose", nullable = false, length = 20)
@@ -38,7 +38,7 @@ public class PhoneVerification {
     private PhoneVerificationStatus status;
 
     @Column(name = "attempt_count", nullable = false)
-    private int attemptCount = 0;
+    private int attemptCount;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -49,15 +49,27 @@ public class PhoneVerification {
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt;
 
+    public PhoneVerification(String phoneNumberHash,
+                             String code,
+                             PhoneVerificationPurpose purpose) {
+        this.phoneNumberHash = phoneNumberHash;
+        this.code = code;
+        this.purpose = purpose;
+    }
+
     @PrePersist
     protected void onCreate(){
         this.createdAt = LocalDateTime.now();
-        this.expiredAt = LocalDateTime.now().plusMinutes(3);  // 인증 번호 요청 후 3분 후 만료
+        this.expiredAt = LocalDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES);  // 인증 번호 요청 후 3분 후 만료
         this.status = PhoneVerificationStatus.PENDING;
+        this.attemptCount = 0;
     }
 
     public boolean isExpired(LocalDateTime now){    // 현재 시간이 만료 시간 이후인지 확인
         return now.isAfter(expiredAt);
+    }
+    public void markExpired(){    // 만료 상태로 변경
+        this.status = PhoneVerificationStatus.EXPIRED;
     }
     public void markVerified(LocalDateTime now){   // 인증 성공 시 상태 변경 및 인증 시간 기록
         this.status = PhoneVerificationStatus.VERIFIED;
@@ -65,5 +77,12 @@ public class PhoneVerification {
     }
     public void incrementAttemptCount(){    // 인증 시도 횟수 증가 : API호출 제약
         this.attemptCount++;
+    }
+
+    public void reset(String newCode, LocalDateTime now){
+        this.code = newCode;
+        this.expiredAt = now.plusMinutes(CODE_EXPIRATION_MINUTES);
+        this.status = PhoneVerificationStatus.PENDING;
+        this.attemptCount = 0;
     }
 }
