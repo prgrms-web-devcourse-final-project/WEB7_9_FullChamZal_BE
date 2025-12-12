@@ -1,10 +1,14 @@
 package back.fcz.domain.capsule.service;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.entity.CapsuleOpenLog;
+import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
@@ -13,10 +17,12 @@ import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -32,15 +38,14 @@ class CapsuleCreateServiceTest {
 
     @Mock
     CapsuleRepository capsuleRepository;
-
     @Mock
     CapsuleRecipientRepository recipientRepository;
-
     @Mock
     MemberRepository memberRepository;
-
     @Mock
     PhoneCrypto phoneCrypto;
+    @Mock
+    CapsuleOpenLogRepository capsuleOpenLogRepository;
 
     @InjectMocks
     CapsuleCreateService capsuleCreateService;
@@ -52,6 +57,10 @@ class CapsuleCreateServiceTest {
     void setup() {
         member = Member.testMember(1L, "testUser", "Test User");
     }
+
+    // ==================
+    // 캡슐 생성 테스트
+    // ==================
 
     // 공개 캡슐 생성 테스트
     @Test
@@ -150,9 +159,6 @@ class CapsuleCreateServiceTest {
     }
 
 
-
-
-
     // 비공개 캡슐 생성 (전화번호 방식 - 비회원 수신자)
     @Test
     void testPrivateCapsulePhone_NonMemberRecipient() {
@@ -188,7 +194,6 @@ class CapsuleCreateServiceTest {
         assertNotNull(response);
         assertNotNull(response.capPW()); // 비회원 → 비밀번호 존재
     }
-
 
 
     // memberId가 존재하지 않을 때 예외 테스트
@@ -234,4 +239,166 @@ class CapsuleCreateServiceTest {
     }
 
 
+    // =======================
+    // 캡슐 수정 테스트
+    // =======================
+
+
+    @Test
+    @DisplayName("캡슐 수정 성공")
+    void updateCapsule_success() {
+        // given
+        Long capsuleId = 1L;
+
+        Member member = Member.testMember(10L, "tester", "테스터");
+
+        Capsule capsule = Capsule.builder()
+                .capsuleId(capsuleId)
+                .memberId(member)
+                .title("old title")
+                .content("old content")
+                .build();
+
+        CapsuleUpdateRequestDTO dto =
+                new CapsuleUpdateRequestDTO("new title", "new content");
+
+        // 캡슐열람 로그 없음 → 수정 가능
+        Mockito.when(capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId))
+                .thenReturn(Optional.empty());
+
+        Mockito.when(capsuleRepository.findById(capsuleId))
+                .thenReturn(Optional.of(capsule));
+
+        Mockito.when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        CapsuleUpdateResponseDTO response =
+                capsuleCreateService.updateCapsule(capsuleId, dto);
+
+        // then
+        assertEquals("new title", response.updatedTitle());
+        assertEquals("new content", response.updatedContent());
+    }
+
+
+    @Test
+    @DisplayName("캡슐 열람 기록이 존재하면 수정 불가")
+    void updateCapsule_fail_dueToOpenedCapsule() {
+        // given
+        Long capsuleId = 1L;
+
+        // 열람 로그가 존재한다고 가정
+        Mockito.when(capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId))
+                .thenReturn(Optional.of(new CapsuleOpenLog()));
+
+        // when & then
+        BusinessException ex = assertThrows(
+                BusinessException.class,
+                () -> capsuleCreateService.updateCapsule(
+                        capsuleId,
+                        new CapsuleUpdateRequestDTO("title", "content")
+                )
+        );
+
+        assertEquals(ErrorCode.CAPSULE_NOT_UPDATE, ex.getErrorCode());
+    }
+
+
+    @Test
+    @DisplayName("캡슐을 찾을 수 없으면 예외 발생")
+    void updateCapsule_fail_capsuleNotFound() {
+        // given
+        Long capsuleId = 100L;
+
+        Mockito.when(capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId))
+                .thenReturn(Optional.empty());
+
+        Mockito.when(capsuleRepository.findById(capsuleId))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        BusinessException ex = assertThrows(
+                BusinessException.class,
+                () -> capsuleCreateService.updateCapsule(
+                        capsuleId,
+                        new CapsuleUpdateRequestDTO("title", "content")
+                )
+        );
+
+        assertEquals(ErrorCode.CAPSULE_NOT_FOUND, ex.getErrorCode());
+    }
+
+
+    @Test
+    @DisplayName("title만 수정되는 경우")
+    void updateCapsule_onlyTitle() {
+        // given
+        Long capsuleId = 1L;
+
+        Member member = Member.testMember(10L, "tester", "테스터");
+
+        Capsule capsule = Capsule.builder()
+                .capsuleId(capsuleId)
+                .memberId(member)
+                .title("old title")
+                .content("old content")
+                .build();
+
+        CapsuleUpdateRequestDTO dto =
+                new CapsuleUpdateRequestDTO("new title", null);
+
+        Mockito.when(capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId))
+                .thenReturn(Optional.empty());
+
+        Mockito.when(capsuleRepository.findById(capsuleId))
+                .thenReturn(Optional.of(capsule));
+
+        Mockito.when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        CapsuleUpdateResponseDTO response =
+                capsuleCreateService.updateCapsule(capsuleId, dto);
+
+        // then
+        assertEquals("new title", response.updatedTitle());
+        assertEquals("old content", response.updatedContent());
+    }
+
+    @Test
+    @DisplayName("content만 수정되는 경우")
+    void updateCapsule_onlyContent() {
+        // given
+        Long capsuleId = 1L;
+
+        Member member = Member.testMember(10L, "tester", "테스터");
+
+        Capsule capsule = Capsule.builder()
+                .capsuleId(capsuleId)
+                .memberId(member)
+                .title("old title")
+                .content("old content")
+                .build();
+
+        CapsuleUpdateRequestDTO dto =
+                new CapsuleUpdateRequestDTO(null, "new content");
+
+        Mockito.when(capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId))
+                .thenReturn(Optional.empty());
+
+        Mockito.when(capsuleRepository.findById(capsuleId))
+                .thenReturn(Optional.of(capsule));
+
+        Mockito.when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        CapsuleUpdateResponseDTO response =
+                capsuleCreateService.updateCapsule(capsuleId, dto);
+
+        // then
+        assertEquals("old title", response.updatedTitle());
+        assertEquals("new content", response.updatedContent());
+    }
 }
