@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers(H2_WHITELIST).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
