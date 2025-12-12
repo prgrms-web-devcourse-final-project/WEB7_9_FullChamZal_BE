@@ -34,6 +34,7 @@
 - [ ] Bookmark
 - [ ] StoryTrack
 - [ ] Notification
+- [ ] Report
 
 ## 확인했나요?
 - [ ] 코드 컨벤션

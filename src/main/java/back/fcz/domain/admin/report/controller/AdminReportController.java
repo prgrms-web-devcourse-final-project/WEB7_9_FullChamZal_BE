@@ -7,6 +7,7 @@ import back.fcz.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,7 +23,7 @@ public class AdminReportController {
      * 3-1 신고 목록 조회
      */
     @GetMapping
-    public ApiResponse<PageResponse<AdminReportSummaryResponse>> getReports(
+    public ResponseEntity<ApiResponse<PageResponse<AdminReportSummaryResponse>>> getReports(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String status,
@@ -37,30 +38,30 @@ public class AdminReportController {
         );
 
         PageResponse<AdminReportSummaryResponse> result = adminReportService.getReports(cond);
-        return ApiResponse.success(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     /**
      * 3-2 신고 상세 조회
      */
     @GetMapping("/{reportId}")
-    public ApiResponse<AdminReportDetailResponse> getReportDetail(
+    public ResponseEntity<ApiResponse<AdminReportDetailResponse>> getReportDetail(
             @PathVariable Long reportId
     ) {
         AdminReportDetailResponse detail = adminReportService.getReportDetail(reportId);
-        return ApiResponse.success(detail);
+        return ResponseEntity.ok(ApiResponse.success(detail));
     }
 
     /**
      * 3-3 신고 상태 변경
      */
     @PatchMapping("/{reportId}/status")
-    public ApiResponse<AdminReportStatusUpdateResponse> updateReportStatus(
+    public ResponseEntity<ApiResponse<AdminReportStatusUpdateResponse>> updateReportStatus(
             @PathVariable Long reportId,
             @RequestBody @Valid AdminReportStatusUpdateRequest request
     ) {
         AdminReportStatusUpdateResponse response =
                 adminReportService.updateReportStatus(reportId, request);
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
