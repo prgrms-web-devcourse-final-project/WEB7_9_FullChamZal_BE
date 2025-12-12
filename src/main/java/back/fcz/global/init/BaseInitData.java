@@ -1,5 +1,9 @@
 package back.fcz.global.init;
 
+import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
+import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
@@ -18,6 +22,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+
 
 @Component
 @Profile({"local","dev"})
@@ -29,6 +37,9 @@ public class BaseInitData implements CommandLineRunner {
     private final PhoneCrypto phoneCrypto;
     private final BCryptPasswordEncoder passwordEncoder;
     private final PhoneVerificationRepository phoneVerificationRepository;
+    private final CapsuleRepository capsuleRepository;
+    private final CapsuleRecipientRepository capsuleRecipientRepository;
+
 
     @Override
     @Transactional
@@ -39,6 +50,7 @@ public class BaseInitData implements CommandLineRunner {
 
         createTestMembers();
         createTestPhoneVerifications();
+        createDummyCapsules();
     }
 
     private void createTestMembers() {
@@ -142,6 +154,7 @@ public class BaseInitData implements CommandLineRunner {
 
         memberRepository.save(member);
     }
+
     private void createPhoneVerification(String phoneNumber, String code, PhoneVerificationPurpose purpose,
                                          PhoneVerificationStatus status, int attemptCount, LocalDateTime createdAt,
                                          LocalDateTime expiredAt, LocalDateTime verifiedAt) {
@@ -161,5 +174,95 @@ public class BaseInitData implements CommandLineRunner {
         );
 
         phoneVerificationRepository.save(phoneVerification);
+
+    private void createPhoneVerification(String phoneNumber, String code, String purpose,
+                                         String status, int attemptCount) {}
+
+    private void createDummyCapsules() {
+        List<Member> members = memberRepository.findAll();
+        Random random = new Random();
+
+        String[] visibilityOptions = {"PUBLIC", "PRIVATE"};
+        String[] unlockTypes = {"TIME", "LOCATION", "TIME_AND_LOCATION"};
+
+        for (int i = 1; i <= 20; i++) {
+
+            Member owner = members.get(random.nextInt(members.size()));
+
+            String visibility = visibilityOptions[random.nextInt(visibilityOptions.length)];
+            String unlockType = unlockTypes[random.nextInt(unlockTypes.length)];
+
+            boolean protectedCapsule = random.nextBoolean(); // true = isProtected=1
+
+            Capsule capsule = Capsule.builder()
+                    .memberId(owner)
+                    .uuid(UUID.randomUUID().toString())
+                    .nickname(owner.getNickname())
+                    .title("더미 캡슐 제목 " + i)
+                    .content("더미 캡슐 내용 " + i)
+                    .capsuleColor(randomColor())
+                    .capsulePackingColor(randomColor())
+                    .visibility(visibility)
+                    .unlockType(unlockType)
+                    .unlockAt(unlockType.contains("TIME") ? LocalDateTime.now().plusDays(i) : null)
+                    .locationName(unlockType.contains("LOCATION") ? "장소-" + i : null)
+                    .locationLat(unlockType.contains("LOCATION") ? randomLat() : null)
+                    .locationLng(unlockType.contains("LOCATION") ? randomLng() : null)
+                    .locationRadiusM(unlockType.contains("LOCATION") ? 100 : 0)
+                    .maxViewCount(0)
+                    .currentViewCount(0)
+                    .isDeleted(0)
+                    .isProtected(protectedCapsule ? 1 : 0)
+                    .build();
+
+            // 보호 캡슐이면 비번 부여
+            if (protectedCapsule) {
+                String password = generateCapsulePassword();
+                capsule.setCapPassword(password);
+            }
+
+            Capsule saved = capsuleRepository.save(capsule);
+
+
+            // 보호 캡슐이면 수신자 생성
+            if (protectedCapsule) {
+                createRecipient(saved, i);
+            }
+        }
+    }
+
+    private String randomColor() {
+        String[] colors = {"RED", "BLUE", "GREEN", "YELLOW", "PINK", "PURPLE"};
+        return colors[new Random().nextInt(colors.length)];
+    }
+
+    private double randomLat() {
+        return 37.5 + (Math.random() * 0.1); // 서울 근처 위도
+    }
+
+    private double randomLng() {
+        return 127.0 + (Math.random() * 0.1); // 서울 근처 경도
+    }
+
+    private String generateCapsulePassword() {
+        Random random = new Random();
+        return String.valueOf(1000 + random.nextInt(9000)); // 4자리 숫자
+    }
+
+    private void createRecipient(Capsule capsule, int index) {
+        String phone = "010-55" + (100 + index) + "-" + (1000 + index);
+
+        String encrypted = phoneCrypto.encrypt(phone);
+        String hash = phoneCrypto.hash(phone);
+
+        CapsuleRecipient recipient = CapsuleRecipient.builder()
+                .capsuleId(capsule)
+                .recipientName("수신자 " + index)
+                .recipientPhone(encrypted)
+                .recipientPhoneHash(hash)
+                .isSenderSelf(false)
+                .build();
+
+        capsuleRecipientRepository.save(recipient);
     }
 }

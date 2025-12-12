@@ -1,21 +1,19 @@
 package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.service.CapsuleCreateService;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/capsule")
 public class CapsuleCreateController {
@@ -50,6 +48,13 @@ public class CapsuleCreateController {
     }
 
     // 캡슐 수정
+    @PutMapping("/update")
+    public ResponseEntity<CapsuleUpdateResponseDTO> updateCapsule(
+            @RequestParam Long capsuleId,
+            @RequestBody CapsuleUpdateRequestDTO requestDTO
+    ){
+        return ResponseEntity.ok(capsuleCreateService.updateCapsule(capsuleId, requestDTO));
+    }
 
     // 캡슐 삭제
 

@@ -79,4 +79,12 @@ public class Capsule extends BaseEntity {
     public void setProtected(int protectedValue){
         this.isProtected = protectedValue;
     }
+
+    public void setTitle(String title){
+        this.title = title;
+    }
+
+    public void setContent(String content){
+        this.content = content;
+    }
 }
