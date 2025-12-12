@@ -98,8 +98,61 @@ public class Member extends BaseEntity {
         return member;
     }
 
+    public void changeStatus(MemberStatus newStatus) {
+        if (newStatus == null) {
+            return;
+        }
+        // TODO: 필요하다면 여기서 상태 전이 규칙 추가
+        // 예) EXIT -> ACTIVE 복구 금지 등
+
+        this.status = newStatus;
+    }
+
     public boolean isActive() {
         return this.status == MemberStatus.ACTIVE && this.getDeletedAt() == null;
+    }
+
+    public void updateNickname(String newNickname) {
+        if (newNickname == null || newNickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 null이거나 빈 값일 수 없습니다.");
+        }
+
+        this.nickname = newNickname;
+        this.nicknameChangedAt = LocalDateTime.now();
+    }
+
+    public void updatePassword(String newPasswordHash) {
+        if (newPasswordHash == null || newPasswordHash.isBlank()) {
+            throw new IllegalArgumentException("비밀번호 해시는 null이거나 빈 값일 수 없습니다.");
+        }
+
+        this.passwordHash = newPasswordHash;
+    }
+
+    public void updatePhoneNumber(String encryptedPhone, String phoneHash) {
+        if (encryptedPhone == null || encryptedPhone.isBlank()) {
+            throw new IllegalArgumentException("암호화된 전화번호는 null이거나 빈 값일 수 없습니다.");
+        }
+        if (phoneHash == null || phoneHash.isBlank()) {
+            throw new IllegalArgumentException("전화번호 해시는 null이거나 빈 값일 수 없습니다.");
+        }
+
+        this.phoneNumber = encryptedPhone;
+        this.phoneHash = phoneHash;
+    }
+
+    public void anonymize() {
+        this.userId = "deleted_user_" + this.memberId;
+        this.name = "탈퇴회원";
+        this.phoneNumber = "DELETED_" + this.memberId;
+        this.phoneHash = "DELETED_" + this.memberId;
+    }
+
+    public void updateStatus(MemberStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("회원 상태는 null일 수 없습니다.");
+        }
+        this.status = newStatus;
     }
 
     // 테스트를 위해서 작성한 팩토리 메소드
