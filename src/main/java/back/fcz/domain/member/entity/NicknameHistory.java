@@ -37,4 +37,13 @@ public class NicknameHistory {
         this.olderNickname = olderNickname;
         this.newNickname = newNickname;
     }
+
+    public static NicknameHistory create(Long memberId, String olderNickname, String newNickname) {
+        return NicknameHistory.builder()
+                .memberId(memberId)
+                .changedAt(LocalDateTime.now())
+                .olderNickname(olderNickname)
+                .newNickname(newNickname)
+                .build();
+    }
 }

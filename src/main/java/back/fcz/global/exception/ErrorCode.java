@@ -21,21 +21,23 @@ public enum ErrorCode {
 
     //=========== SMS 에러 ==========
     SMS_SEND_FAILED("SMS001", HttpStatus.INTERNAL_SERVER_ERROR, "문자 발송에 실패했습니다."),
+
     SMS_RESEND_COOLDOWN("SMS002", HttpStatus.BAD_REQUEST, "인증문자 재전송 쿨타임이 지나지 않았습니다."),
     VERIFICATION_NOT_FOUND("SMS003", HttpStatus.NOT_FOUND, "해당 전화번호에 대한 인증 내역을 찾을 수 없습니다."),
     VERIFICATION_EXPIRED("SMS004", HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다."),
     VERIFICATION_ATTEMPT_EXCEEDED("SMS005", HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다."),
     VERIFICATION_CODE_MISMATCH("SMS006", HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
     // ========== JWT 인증 에러 ==========
-    TOKEN_EXPIRED("AUTH001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
-    TOKEN_INVALID("AUTH002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
-    TOKEN_SIGNATURE_INVALID("AUTH003", HttpStatus.UNAUTHORIZED, "토큰 서명이 유효하지 않습니다."),
-    TOKEN_MALFORMED("AUTH004", HttpStatus.UNAUTHORIZED, "토큰 형식이 올바르지 않습니다."),
-    TOKEN_UNSUPPORTED("AUTH005", HttpStatus.UNAUTHORIZED, "지원되지 않는 토큰입니다."),
-    TOKEN_EMPTY("AUTH006", HttpStatus.UNAUTHORIZED, "토큰이 비어있습니다."),
-    TOKEN_BLACKLISTED("AUTH007", HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
-    TOKEN_USER_TYPE_MISMATCH("AUTH008", HttpStatus.FORBIDDEN, "토큰의 사용자 타입이 일치하지 않습니다."),
-    TOKEN_SUBJECT_INVALID("AUTH009", HttpStatus.UNAUTHORIZED, "토큰 SUBJECT 형식이 올바르지 않습니다."),
+    TOKEN_EXPIRED("JWT001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
+    TOKEN_INVALID("JWT002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    TOKEN_SIGNATURE_INVALID("JWT003", HttpStatus.UNAUTHORIZED, "토큰 서명이 유효하지 않습니다."),
+    TOKEN_MALFORMED("JWT004", HttpStatus.UNAUTHORIZED, "토큰 형식이 올바르지 않습니다."),
+    TOKEN_UNSUPPORTED("JWT005", HttpStatus.UNAUTHORIZED, "지원되지 않는 토큰입니다."),
+    TOKEN_EMPTY("JWT006", HttpStatus.UNAUTHORIZED, "토큰이 비어있습니다."),
+    TOKEN_BLACKLISTED("JWT007", HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
+    TOKEN_USER_TYPE_MISMATCH("JWT008", HttpStatus.FORBIDDEN, "토큰의 사용자 타입이 일치하지 않습니다."),
+    TOKEN_SUBJECT_INVALID("JWT009", HttpStatus.UNAUTHORIZED, "토큰 SUBJECT 형식이 올바르지 않습니다."),
+    TOKEN_NOT_FOUND("JWT010", HttpStatus.UNAUTHORIZED, "토큰을 찾을 수 없습니다."),
 
     // ========== 권한 에러 ==========
     ACCESS_DENIED("PERM001", HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
@@ -50,10 +52,15 @@ public enum ErrorCode {
     DUPLICATE_PHONENUM("AUTH003", HttpStatus.CONFLICT, "이미 존재하는 전화번호입니다."),
     INVALID_USER_ID("AUTH004", HttpStatus.CONFLICT, "아이디가 존재하지 않습니다."),
     INVALID_PASSWORD("AUTH005", HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
+    INVALID_PHONENUM("AUTH006", HttpStatus.BAD_REQUEST, "전화번호가 일치하지 않습니다."),
+    WITHDRAWN_USER_ID("AUTH007", HttpStatus.CONFLICT, "사용 불가능한 아이디입니다. 다른 아이디를 사용해 주세요."),
+    WITHDRAWN_PHONE_NUMBER("AUTH008", HttpStatus.CONFLICT, "사용 불가능한 전화번호입니다. 다른 전화번호를 사용해 주세요."),
 
     // ========== Member 도메인 에러 ==========
     MEMBER_NOT_FOUND("MEM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
     MEMBER_NOT_ACTIVE("MEM002", HttpStatus.FORBIDDEN, "비활성화된 계정입니다."),
+    INVALID_PHONE_FORMAT("MEM003", HttpStatus.BAD_REQUEST, "전화번호가 올바르지 않습니다."),
+    NICKNAME_CHANGE_TOO_SOON("MEM004", HttpStatus.BAD_REQUEST, "닉네임은 90일에 한 번만 변경할 수 있습니다."),
 
     // ========== 캡슐 에러 ==========
     CAPSULE_NOT_FOUND("CPS001", HttpStatus.NOT_FOUND, "해당 캡슐을 찾을 수 없습니다."),
