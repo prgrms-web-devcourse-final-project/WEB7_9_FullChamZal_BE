@@ -52,6 +52,7 @@ public enum ErrorCode {
 
     // ========== 캡슐 에러 ==========
     CAPSULE_NOT_FOUND("CPS001", HttpStatus.NOT_FOUND, "해당 캡슐을 찾을 수 없습니다."),
+    CAPSULE_NOT_CREATE("CPS002", HttpStatus.BAD_REQUEST, "캡슐을 생성할 수 없습니다."),
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),

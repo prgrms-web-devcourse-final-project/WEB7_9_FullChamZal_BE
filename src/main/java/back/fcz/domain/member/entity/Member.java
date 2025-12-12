@@ -101,4 +101,25 @@ public class Member extends BaseEntity {
     public boolean isActive() {
         return this.status == MemberStatus.ACTIVE && this.getDeletedAt() == null;
     }
+
+    // 테스트를 위해서 작성한 팩토리 메소드
+    public static Member testMember(Long id, String userId, String name) {
+        Member m = new Member(
+                userId,
+                "test-password",
+                name,
+                name,           // nickname
+                "encrypted-phone",
+                "hash-phone",
+                MemberStatus.ACTIVE,
+                MemberRole.USER,
+                null,
+                null
+        );
+
+        // ID 강제 주입 (테스트에서만)
+        m.memberId = id;
+
+        return m;
+    }
 }

@@ -30,6 +30,7 @@ spring:
 
 cors:
   allowed-origins: http://localhost:3000
+  capsule-domain: http://localhost:3000 # 프론트의 라우팅 방식, 도메인 생성 시 바뀔 부분
 
 logging:
   level:
