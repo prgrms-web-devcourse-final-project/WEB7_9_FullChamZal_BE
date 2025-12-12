@@ -174,9 +174,7 @@ public class BaseInitData implements CommandLineRunner {
         );
 
         phoneVerificationRepository.save(phoneVerification);
-
-    private void createPhoneVerification(String phoneNumber, String code, String purpose,
-                                         String status, int attemptCount) {}
+    }
 
     private void createDummyCapsules() {
         List<Member> members = memberRepository.findAll();
