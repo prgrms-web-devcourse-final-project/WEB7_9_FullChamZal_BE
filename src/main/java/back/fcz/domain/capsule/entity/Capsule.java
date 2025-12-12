@@ -41,6 +41,10 @@ public class Capsule extends BaseEntity {
     private String capsulePackingColor; // 편지지 봉투 색상
     @Column(name = "visibility", nullable = false)
     private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개)
+
+    @Column(name = "cap_password")
+    private String capPassword;
+
     @Column(name = "unlock_type", nullable = false)
     private String unlockType;       // 해제 조건 : TIME, LOCATION, TIME_AND_LOCATION
     @Column(name = "unlock_at")
@@ -59,7 +63,7 @@ public class Capsule extends BaseEntity {
     @Column(name = "current_view_count")
     private int currentViewCount = 0;     // 현재 조회 인원
     @Column(name = "is_deleted")
-    private Integer isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전0, 삭제후 1)
+    private Integer isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전 0, 삭제후 1, , 관리자 삭제 후 2)
     @Column(name = "is_protected")
     private Integer isProtected = 0;      // 보호 여부(보호 : 0, 미보호 : 1)
 
