@@ -21,6 +21,11 @@ public enum ErrorCode {
 
     //=========== SMS 에러 ==========
     SMS_SEND_FAILED("SMS001", HttpStatus.INTERNAL_SERVER_ERROR, "문자 발송에 실패했습니다."),
+    SMS_RESEND_COOLDOWN("SMS002", HttpStatus.BAD_REQUEST, "인증문자 재전송 쿨타임이 지나지 않았습니다."),
+    VERIFICATION_NOT_FOUND("SMS003", HttpStatus.NOT_FOUND, "해당 전화번호에 대한 인증 내역을 찾을 수 없습니다."),
+    VERIFICATION_EXPIRED("SMS004", HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다."),
+    VERIFICATION_ATTEMPT_EXCEEDED("SMS005", HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다."),
+    VERIFICATION_CODE_MISMATCH("SMS006", HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
     // ========== JWT 인증 에러 ==========
     TOKEN_EXPIRED("AUTH001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     TOKEN_INVALID("AUTH002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
@@ -52,6 +57,11 @@ public enum ErrorCode {
 
     // ========== 캡슐 에러 ==========
     CAPSULE_NOT_FOUND("CPS001", HttpStatus.NOT_FOUND, "해당 캡슐을 찾을 수 없습니다."),
+    NOT_OPENED_CAPSULE("CPS02", HttpStatus.BAD_REQUEST, "시간/위치 검증에 실패하였습니다."),
+    CAPSULE_NOT_RECEIVER("CPS03", HttpStatus.FORBIDDEN, "이 캡슐의 수신자가 아닙니다."),
+    CAPSULE_PASSWORD_NOT_MATCH("CPS04", HttpStatus.UNAUTHORIZED, "캡슐 비밀번호가 일치하지 않습니다."),
+    CAPSULE_CONDITION_ERROR("CPS05", HttpStatus.BAD_REQUEST, "캡슐 조건 로직 에러입니다."),
+    CAPSULE_NOT_CREATE("CPS006", HttpStatus.BAD_REQUEST, "캡슐을 생성할 수 없습니다."),
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),

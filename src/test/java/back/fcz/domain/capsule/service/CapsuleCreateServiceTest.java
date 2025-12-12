@@ -1,0 +1,237 @@
+package back.fcz.domain.capsule.service;
+
+import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
+import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
+import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.member.entity.Member;
+import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.global.crypto.PhoneCrypto;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class CapsuleCreateServiceTest {
+
+    @Mock
+    CapsuleRepository capsuleRepository;
+
+    @Mock
+    CapsuleRecipientRepository recipientRepository;
+
+    @Mock
+    MemberRepository memberRepository;
+
+    @Mock
+    PhoneCrypto phoneCrypto;
+
+    @InjectMocks
+    CapsuleCreateService capsuleCreateService;
+
+    // 공통 Member 객체
+    private Member member;
+
+    @BeforeEach
+    void setup() {
+        member = Member.testMember(1L, "testUser", "Test User");
+    }
+
+    // 공개 캡슐 생성 테스트
+    @Test
+    void testPublicCapsuleCreate() {
+        // given
+        CapsuleCreateRequestDTO dto = new CapsuleCreateRequestDTO(
+                1L, "nick", "title", "content", null,
+                "white", "blue", "PUBLIC", "TIME",
+                LocalDateTime.now(), "Seoul", 37.11, 127.22,
+                100, 10
+        );
+
+        Capsule capsule = dto.toEntity();
+        capsule.setMemberId(member);
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
+
+        // when
+        CapsuleCreateResponseDTO response = capsuleCreateService.publicCapsuleCreate(dto);
+
+        // then
+        assertNotNull(response);
+        assertEquals(member.getMemberId(), response.memberId());
+        assertEquals("title", response.title());
+    }
+
+
+    // 비공개 캡슐 생성 (url + 비밀번호 방식)
+    @Test
+    void testPrivateCapsulePassword() {
+        // given
+        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
+                1L, "nick", "title", "content", "PRIVATE",
+                "TIME", LocalDateTime.now(), "Seoul",
+                37.11, 127.22, 300, "red", "white", 10
+        );
+
+        String originalPassword = "1234";
+        String encryptedPassword = "encryptedPw";
+
+        Capsule capsule = dto.toEntity();
+        capsule.setMemberId(member);
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(phoneCrypto.encrypt(originalPassword)).thenReturn(encryptedPassword);
+        when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
+
+        // when
+        SecretCapsuleCreateResponseDTO response =
+                capsuleCreateService.privateCapsulePassword(dto, originalPassword);
+
+        // then
+        assertNotNull(response);
+        assertEquals("title", response.title());
+        assertEquals(originalPassword, response.capPW()); // 반환은 원본 PW
+    }
+
+    @Test
+    void testPrivateCapsulePhone_MemberRecipient() {
+        // given
+        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
+                1L, "nick", "title", "content", "PRIVATE",
+                "TIME", LocalDateTime.now(), "Seoul",
+                37.11, 127.22, 300, "red", "white", 10
+        );
+
+        Member recipient = Member.testMember(2L, "reciever", "recieverName");
+
+        when(memberRepository.findById(1L))
+                .thenReturn(Optional.of(member));
+
+        when(phoneCrypto.hash("01000000000"))
+                .thenReturn("hashedPhone");
+
+        when(memberRepository.findByPhoneHash("hashedPhone"))
+                .thenReturn(Optional.of(recipient));
+
+        when(memberRepository.existsByPhoneHash("hashedPhone"))
+                .thenReturn(true);
+
+        when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(recipientRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        SecretCapsuleCreateResponseDTO response =
+                capsuleCreateService.privateCapsulePhone(dto, "01000000000");
+
+        // then
+        assertNotNull(response);
+        assertNull(response.capPW());
+        assertEquals("title", response.title());
+    }
+
+
+
+
+
+    // 비공개 캡슐 생성 (전화번호 방식 - 비회원 수신자)
+    @Test
+    void testPrivateCapsulePhone_NonMemberRecipient() {
+        // given
+        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
+                1L, "nick", "title", "content", "PRIVATE",
+                "TIME", LocalDateTime.now(), "Seoul",
+                37.11, 127.22, 300, "red", "white", 10
+        );
+
+        when(memberRepository.findById(1L))
+                .thenReturn(Optional.of(member));
+
+        // 해시값 가짜로 생성
+        when(phoneCrypto.hash(anyString()))
+                .thenReturn("hashedPhone");
+
+        // hashedPhone 으로 찾으면 회원 없음 → 비회원 분기
+        when(memberRepository.findByPhoneHash("hashedPhone"))
+                .thenReturn(Optional.empty());
+
+        when(phoneCrypto.encrypt(anyString()))
+                .thenReturn("encryptedPw");
+
+        when(capsuleRepository.save(any(Capsule.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        SecretCapsuleCreateResponseDTO response =
+                capsuleCreateService.privateCapsulePhone(dto, "01000000000");
+
+        // then
+        assertNotNull(response);
+        assertNotNull(response.capPW()); // 비회원 → 비밀번호 존재
+    }
+
+
+
+    // memberId가 존재하지 않을 때 예외 테스트
+    @Test
+    void testPublicCapsuleCreate_MemberNotFound() {
+        // given
+        CapsuleCreateRequestDTO dto = new CapsuleCreateRequestDTO(
+                99L, "nick", "title", "content", null,
+                "white", "blue", "PUBLIC", "TIME",
+                LocalDateTime.now(), "Seoul", 37.11, 127.22,
+                100, 10
+        );
+
+        when(memberRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // when & then
+        BusinessException ex = assertThrows(
+                BusinessException.class,
+                () -> capsuleCreateService.publicCapsuleCreate(dto)
+        );
+
+        assertEquals(ErrorCode.MEMBER_NOT_FOUND, ex.getErrorCode());
+    }
+
+    @Test
+    void testPrivateCapsulePhone_MemberNotFound() {
+        // given
+        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
+                99L, "nick", "title", "content", "PRIVATE",
+                "TIME", LocalDateTime.now(), "Seoul",
+                37.11, 127.22, 300, "red", "white", 10
+        );
+
+        when(memberRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // when & then
+        BusinessException ex = assertThrows(
+                BusinessException.class,
+                () -> capsuleCreateService.privateCapsulePhone(dto, "01012341234")
+        );
+
+        assertEquals(ErrorCode.MEMBER_NOT_FOUND, ex.getErrorCode());
+    }
+
+
+}

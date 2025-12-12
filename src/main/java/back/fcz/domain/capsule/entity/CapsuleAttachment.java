@@ -1,11 +1,13 @@
 package back.fcz.domain.capsule.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @Table(name = "capsule_attachment")
 public class CapsuleAttachment {
     @Id

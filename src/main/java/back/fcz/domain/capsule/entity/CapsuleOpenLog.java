@@ -1,12 +1,15 @@
 package back.fcz.domain.capsule.entity;
 
+import back.fcz.domain.member.entity.Member;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @Table(name = "capsule_openLog")
-class CapsuleOpenLog {
+public class CapsuleOpenLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,12 +25,10 @@ class CapsuleOpenLog {
     @JoinColumn(name = "capsule_id", nullable = false)
     private Capsule capsuleId;
 
-/*
     //회원 엔티티의 이름이 정해저야 합니다. 임시로 Member로 했습니다.
     @ManyToOne
     @JoinColumn(name = "member_id")
     private Member memberId;
-*/
 
     @Column(name = "viewer_type", nullable = false)
     private String viewerType;
