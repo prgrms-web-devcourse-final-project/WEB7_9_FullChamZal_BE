@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -29,7 +30,7 @@ public class AdminMemberController {
      */
     @GetMapping
     @Operation(summary = "회원 목록 조회", description = "관리자가 회원 리스트를 페이지네이션으로 조회합니다.")
-    public ApiResponse<PageResponse<AdminMemberSummaryResponse>> getMembers(
+    public ResponseEntity<ApiResponse<PageResponse<AdminMemberSummaryResponse>>> getMembers(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) MemberStatus status,
@@ -50,17 +51,17 @@ public class AdminMemberController {
 
         PageResponse<AdminMemberSummaryResponse> result = adminMemberService.searchMembers(cond);
 
-        return ApiResponse.success(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     // 1-2 회원 상세 조회
     @GetMapping("/{memberId}")
     @Operation(summary = "회원 상세 조회", description = "관리자가 특정 회원의 상세 정보를 조회합니다.")
-    public ApiResponse<AdminMemberDetailResponse> getMemberDetail(
+    public ResponseEntity<ApiResponse<AdminMemberDetailResponse>> getMemberDetail(
             @PathVariable Long memberId
     ) {
         AdminMemberDetailResponse detail = adminMemberService.getMemberDetail(memberId);
-        return ApiResponse.success(detail);
+        return ResponseEntity.ok(ApiResponse.success(detail));
     }
 
     /**
@@ -68,11 +69,11 @@ public class AdminMemberController {
      */
     @PatchMapping("/{memberId}/status")
     @Operation(summary = "회원 상태 변경", description = "관리자가 회원의 상태를 변경합니다. (ACTIVE / STOP / EXIT)")
-    public ApiResponse<AdminMemberStatusUpdateResponse> updateMemberStatus(
+    public ResponseEntity<ApiResponse<AdminMemberStatusUpdateResponse>> updateMemberStatus(
             @PathVariable Long memberId,
             @RequestBody @Valid AdminMemberStatusUpdateRequest request
     ) {
         AdminMemberStatusUpdateResponse response = adminMemberService.updateMemberStatus(memberId, request);
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
