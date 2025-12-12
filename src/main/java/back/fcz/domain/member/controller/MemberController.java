@@ -120,7 +120,8 @@ public class MemberController {
     @Operation(
             summary = "회원 탈퇴",
             description = "현재 로그인한 회원을 탈퇴 처리합니다. " +
-                    "탈퇴 시 모든 토큰이 무효화되며, 30일 후 개인정보가 익명화됩니다."
+                    "탈퇴 시 모든 토큰이 무효화되며, 30일 후 개인정보가 익명화됩니다. " +
+                    "탈퇴 일자부터 30일 동안은 동일한 아이디, 전화번호로 회원가입이 불가합니다."
     )
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
