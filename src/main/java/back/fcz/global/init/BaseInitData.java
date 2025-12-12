@@ -4,6 +4,10 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sms.entity.PhoneVerification;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
+import back.fcz.domain.sms.entity.PhoneVerificationStatus;
+import back.fcz.domain.sms.repository.PhoneVerificationRepository;
 import back.fcz.global.crypto.PhoneCrypto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 @Component
 @Profile({"local","dev"})
@@ -22,6 +28,7 @@ public class BaseInitData implements CommandLineRunner {
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final PhoneVerificationRepository phoneVerificationRepository;
 
     @Override
     @Transactional
@@ -31,6 +38,7 @@ public class BaseInitData implements CommandLineRunner {
         }
 
         createTestMembers();
+        createTestPhoneVerifications();
     }
 
     private void createTestMembers() {
@@ -64,6 +72,57 @@ public class BaseInitData implements CommandLineRunner {
                 "ADMIN"
         );
     }
+    private void createTestPhoneVerifications() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 성공적으로 인증된 번호
+        createPhoneVerification(
+                "010-1234-5678",
+                "123456",
+                PhoneVerificationPurpose.SIGNUP,
+                PhoneVerificationStatus.VERIFIED,
+                1,
+                now.minusMinutes(10),
+                now.minusMinutes(7),
+                now.minusMinutes(7)
+        );
+        // 인증하고 있는 중간 상태
+        createPhoneVerification(
+                "010-1234-5678",
+                "222333",
+                PhoneVerificationPurpose.SIGNUP,
+                PhoneVerificationStatus.PENDING,
+                0,
+                now.minusMinutes(2),
+                now.plusMinutes(1),
+                null
+        );
+
+
+        // 만료된 인증 코드
+        createPhoneVerification(
+                "010-2345-6789",
+                "654321",
+                PhoneVerificationPurpose.SIGNUP,
+                PhoneVerificationStatus.EXPIRED,
+                3,
+                now.minusMinutes(10),
+                now.minusMinutes(7),
+                null
+        );
+
+        // 시도 횟수 초과로 실패한 인증
+        createPhoneVerification(
+                "010-3456-7890",
+                "111222",
+                PhoneVerificationPurpose.SIGNUP,
+                PhoneVerificationStatus.EXPIRED,
+                6,
+                now.minusMinutes(10),
+                now.minusMinutes(7),
+                null
+        );
+    }
 
     private void createMember(String userId, String password, String name,
                               String nickname, String phone, String role) {
@@ -83,6 +142,24 @@ public class BaseInitData implements CommandLineRunner {
 
         memberRepository.save(member);
     }
-    private void createPhoneVerification(String phoneNumber, String code, String purpose,
-                                         String status, int attemptCount) {}
+    private void createPhoneVerification(String phoneNumber, String code, PhoneVerificationPurpose purpose,
+                                         PhoneVerificationStatus status, int attemptCount, LocalDateTime createdAt,
+                                         LocalDateTime expiredAt, LocalDateTime verifiedAt) {
+        String phoneNumberHash = phoneCrypto.hash(phoneNumber);
+        String codeHash = phoneCrypto.hash(code);
+        LocalDateTime now = LocalDateTime.now();
+
+        PhoneVerification phoneVerification = PhoneVerification.initForTest(
+                phoneNumberHash,
+                codeHash,
+                purpose,
+                status,
+                attemptCount,
+                createdAt,
+                expiredAt,
+                verifiedAt
+        );
+
+        phoneVerificationRepository.save(phoneVerification);
+    }
 }
