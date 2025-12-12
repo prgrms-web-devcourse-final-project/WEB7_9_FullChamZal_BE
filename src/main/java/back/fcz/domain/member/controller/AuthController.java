@@ -6,12 +6,18 @@ import back.fcz.domain.member.dto.response.LoginTokensResponse;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.service.AuthService;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
+import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import back.fcz.global.security.jwt.CookieProperties;
 import back.fcz.global.security.jwt.JwtProperties;
+import back.fcz.global.security.jwt.JwtProvider;
+import back.fcz.global.security.jwt.service.RefreshTokenService;
+import back.fcz.global.security.jwt.service.TokenBlacklistService;
+import back.fcz.global.security.jwt.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +42,10 @@ public class AuthController {
     private final AuthService authService;
     private final JwtProperties jwtProperties;
     private final CookieProperties cookieProperties;
+    private final CookieUtil cookieUtil;
+    private final TokenBlacklistService tokenBlacklistService;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtProvider jwtProvider;
 
     @Operation(summary = "회원가입", description = "회원가입 API입니다.")
     @ApiErrorCodeExample({
@@ -84,6 +94,74 @@ public class AuthController {
         response.addHeader("Set-Cookie", accessCookie.toString());
 
         return ResponseEntity.ok(ApiResponse.success());
+    }
 
+    @Operation(summary = "로그아웃", description = "로그아웃 API로, 호출 시 모든 쿠키를 삭제합니다." + " 토큰이 없거나 유효하지 않은 경우에도 쿠키 삭제 후 성공 응답을 반환합니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            String accessToken = CookieUtil.getCookieValue(request, CookieUtil.ACCESS_TOKEN_COOKIE)
+                    .orElse(null);
+
+            if (accessToken != null) {
+                tokenBlacklistService.addToBlacklist(accessToken);
+
+                Long memberId = jwtProvider.extractMemberId(accessToken);
+                refreshTokenService.deleteMemberRefreshToken(memberId);
+
+                log.info("로그아웃 성공 - memberId: {}", memberId);
+            } else {
+                log.info("로그아웃 시도했으나 토큰 없음 (이미 로그아웃 상태)");
+            }
+
+        } catch (BusinessException e) {
+            log.warn("로그아웃 처리 중 토큰 검증 실패: errorCode={}, message={}",
+                    e.getErrorCode(), e.getMessage());
+        }
+
+        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite());
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(
+            summary = "토큰 재발급",
+            description = "Refresh Token을 이용하여 새로운 Access Token을 발급합니다. " +
+                    " Refresh Token은 쿠키에서 자동으로 추출됩니다."
+    )
+    @ApiErrorCodeExample({
+            ErrorCode.TOKEN_NOT_FOUND,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.TOKEN_EXPIRED
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<Void>> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            String refreshToken = CookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_NOT_FOUND));
+
+            String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
+
+            ResponseCookie accessCookie = ResponseCookie.from(CookieUtil.ACCESS_TOKEN_COOKIE, newAccessToken)
+                    .httpOnly(true)
+                    .secure(cookieProperties.isSecure())
+                    .sameSite(cookieProperties.getSameSite())
+                    .path("/")
+                    .maxAge(jwtProperties.getAccessToken().getExpiration() / 1000)
+                    .build();
+
+            response.addHeader("Set-Cookie", accessCookie.toString());
+
+            log.info("Access Token 재발급 성공");
+            return ResponseEntity.ok(ApiResponse.success());
+        } catch (BusinessException e) {
+            log.warn("토큰 재발급 실패: errorCode={}, message={}", e.getErrorCode(), e.getMessage());
+            throw e;
+        }
     }
 }

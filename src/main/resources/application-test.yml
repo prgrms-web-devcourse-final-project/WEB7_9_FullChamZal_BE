@@ -38,7 +38,8 @@ jwt:
     expiration: 2592000000 # 30일
 
 cors:
-  allowed-origins: "http://localhost:3000"
+  allowed-origins: http://localhost:3000
+  capsule-domain: http://localhost:3000
 
 coolsms:
   api-key: dummy-api-key

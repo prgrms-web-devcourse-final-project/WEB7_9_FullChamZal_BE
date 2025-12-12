@@ -6,6 +6,8 @@ import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +19,10 @@ public class CurrentUserContext {
 
     private final MemberRepository memberRepository;
 
-    public InServerMemberResponse getCurrentUser(Long memberId) {
+    // 자동으로 현재 사용자 정보를 추출하여 반환
+    public InServerMemberResponse getCurrentUser() {
+        Long memberId = extractMemberIdFromSecurityContext();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
@@ -26,5 +31,26 @@ public class CurrentUserContext {
         }
 
         return InServerMemberResponse.from(member);
+    }
+
+    // SecurityContext에서 memberId 추출
+    public Long getCurrentMemberId() {
+        return extractMemberIdFromSecurityContext();
+    }
+
+    private Long extractMemberIdFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof Long)) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        }
+
+        return (Long) principal;
     }
 }
