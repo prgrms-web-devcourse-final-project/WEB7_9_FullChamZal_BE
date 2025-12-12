@@ -2,57 +2,77 @@ package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
-@Slf4j
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
 public class UnlockServiceTest {
-
-    @Autowired
+    @Mock
     private CapsuleRepository capsuleRepository;
-    @Autowired
+
+    @Spy
+    @InjectMocks
     private UnlockService unlockService;
 
     // 테스트 캡슐 데이터
+    private final long CAPSULE_ID = 1L;
     private final LocalDateTime CAPSULE_TIME = LocalDateTime.of(2025, 1, 1, 10, 0);
-    private final double CAPSULE_LAT = 37.5665;  // 서울 위도
-    private final double CAPSULE_LNG = 126.9780; // 서울 경도
+    private final double CAPSULE_LAT = 37.5665;  // 서울 시청 위도
+    private final double CAPSULE_LNG = 126.9780; // 서울 시청 경도
     private final int RADIUS_M = 50;
+
+    // --- 테스트용 엔티티 생성 메소드 ---
+    private Capsule createTimeCapsule() {
+        return Capsule.builder()
+                .capsuleId(CAPSULE_ID)
+                .uuid("test")
+                .nickname("test")
+                .content("test")
+                .capsuleColor("RED")
+                .capsulePackingColor("RED")
+                .visibility("PRIVATE")
+                .unlockType("TIME")
+                .unlockAt(CAPSULE_TIME)
+                .build();
+    }
+
+    private Capsule createLocationCapsule() {
+        return Capsule.builder()
+                .capsuleId(CAPSULE_ID)
+                .uuid("test")
+                .nickname("test")
+                .content("test")
+                .capsuleColor("RED")
+                .capsulePackingColor("RED")
+                .visibility("PRIVATE")
+                .unlockType("LOCATION")
+                .locationLat(CAPSULE_LAT)
+                .locationLng(CAPSULE_LNG)
+                .locationRadiusM(RADIUS_M)
+                .build();
+    }
 
     @Test
     @DisplayName("캡슐의 시간 해제 조건 <= 사용자의 현재 시간 이면 true를 반환해야 한다")
     void is_time_condition_met_true() {
         // given
-        // TODO: 캡슐 MVP 코드 개발 후, 수정이 필요할 수도 있음. capsuleColor, capsulePackingColor, visibility가 enum이 될 경우 에러 발생
-        Capsule capsule = Capsule.builder()
-                .uuid("test")
-                .nickname("test")
-                .content("test")
-                .capsuleColor("test")
-                .capsulePackingColor("test")
-                .visibility("PRIVATE")
-                .unlockType("TIME")
-                .unlockAt(CAPSULE_TIME)
-                .build();
-        capsuleRepository.save(capsule);
-        long capsuleId = capsule.getCapsuleId();
-
-        LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 10, 5);
+        Capsule capsule = createTimeCapsule();
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 10, 5); // 캡슐 해제 시간 이후
 
         // when
-        boolean result = unlockService.isTimeConditionMet(capsuleId, currentTime);
+        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
 
         //then
         assertThat(result).isTrue();
@@ -62,24 +82,12 @@ public class UnlockServiceTest {
     @DisplayName("캡슐의 시간 해제 조건 > 사용자의 현재 시간 이면 false를 반환해야 한다")
     void is_time_condition_met_false() {
         // given
-        // TODO: 캡슐 MVP 코드 개발 후, 수정이 필요할 수도 있음. capsuleColor, capsulePackingColor, visibility가 enum이 될 경우 에러 발생
-        Capsule capsule = Capsule.builder()
-                .uuid("test")
-                .nickname("test")
-                .content("test")
-                .capsuleColor("test")
-                .capsulePackingColor("test")
-                .visibility("PRIVATE")
-                .unlockType("TIME")
-                .unlockAt(CAPSULE_TIME)
-                .build();
-        capsuleRepository.save(capsule);
-        long capsuleId = capsule.getCapsuleId();
-
-        LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 9, 55);
+        Capsule capsule = createTimeCapsule();
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 9, 55); // 캡슐 해제 시간 이전
 
         // when
-        boolean result = unlockService.isTimeConditionMet(capsuleId, currentTime);
+        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
 
         //then
         assertThat(result).isFalse();
@@ -89,27 +97,14 @@ public class UnlockServiceTest {
     @DisplayName("캡슐과 사용자 위치간 거리 ≤ 반경 이면 true를 반환해야 한다")
     void is_location_condition_met_true() {
         // given
-        // TODO: 캡슐 MVP 코드 개발 후, 수정이 필요할 수도 있음. capsuleColor, capsulePackingColor, visibility가 enum이 될 경우 에러 발생
-        Capsule capsule = Capsule.builder()
-                .uuid("test")
-                .nickname("test")
-                .content("test")
-                .capsuleColor("test")
-                .capsulePackingColor("test")
-                .visibility("PRIVATE")
-                .unlockType("LOCATION")
-                .locationLat(CAPSULE_LAT)
-                .locationLng(CAPSULE_LNG)
-                .locationRadiusM(RADIUS_M)
-                .build();
-        capsuleRepository.save(capsule);
-        long capsuleId = capsule.getCapsuleId();
+        Capsule capsule = createLocationCapsule();
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
 
-        double currentLat = CAPSULE_LAT + 0.00003;
-        double currentLng = CAPSULE_LNG + 0.00003;
+        double currentLat = CAPSULE_LAT;
+        double currentLng = CAPSULE_LNG;
 
         // when
-        boolean result = unlockService.isLocationConditionMet(capsuleId, currentLat, currentLng);
+        boolean result = unlockService.isLocationConditionMet(CAPSULE_ID, currentLat, currentLng);
 
         //then
         assertThat(result).isTrue();
@@ -119,28 +114,15 @@ public class UnlockServiceTest {
     @DisplayName("캡슐과 사용자 위치간 거리 > 반경 이면 false를 반환해야 한다")
     void is_location_condition_met_false() {
         // given
-        // TODO: 캡슐 MVP 코드 개발 후, 수정이 필요할 수도 있음. capsuleColor, capsulePackingColor, visibility가 enum이 될 경우 에러 발생
-        Capsule capsule = Capsule.builder()
-                .uuid("test")
-                .nickname("test")
-                .content("test")
-                .capsuleColor("test")
-                .capsulePackingColor("test")
-                .visibility("PRIVATE")
-                .unlockType("LOCATION")
-                .locationLat(CAPSULE_LAT)
-                .locationLng(CAPSULE_LNG)
-                .locationRadiusM(RADIUS_M)
-                .build();
-        capsuleRepository.save(capsule);
-        long capsuleId = capsule.getCapsuleId();
+        Capsule capsule = createLocationCapsule();
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
 
         // 인천 공항 위도, 경도
         double currentLat = 37.4692;
         double currentLng = 126.451;
 
         // when
-        boolean result = unlockService.isLocationConditionMet(capsuleId, currentLat, currentLng);
+        boolean result = unlockService.isLocationConditionMet(CAPSULE_ID, currentLat, currentLng);
 
         //then
         assertThat(result).isFalse();
