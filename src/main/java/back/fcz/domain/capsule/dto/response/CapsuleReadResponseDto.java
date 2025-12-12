@@ -2,7 +2,7 @@ package back.fcz.domain.capsule.DTO.response;
 
 import java.time.LocalDateTime;
 
-public record CapsuleReadResponseDto(
+public record CapsuleReadResponseDTO(
         Long capsuleId,            // 캡슐 id
         String capsuleColor,         // 편지지 색상
         String capsulePackingColor,  // 편지지 봉투 색상

@@ -1,9 +1,9 @@
 package back.fcz.domain.capsule.controller;
 
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDto;
-import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDto;
-import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDto;
-import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDto;
+import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
@@ -28,9 +28,10 @@ public class CapsuleReadController {
     private final CapsuleDashBoardService  capsuleDashBoardService;
 
     //캡슐 조건 검증 -> 조건 만족 후 읽기
+    //컨트롤러에 있는 비지니스 로직을 서비스로 옮기기
     @GetMapping("/{capsuleId}")
-    public ResponseEntity<CapsuleReadResponseDto> conditionAndReadCapsule(
-            @RequestBody CapsuleReadRequestDto capsuleReadRequestDto
+    public ResponseEntity<CapsuleReadResponseDTO> conditionAndReadCapsule(
+            @RequestBody CapsuleReadRequestDTO capsuleReadRequestDto
     ) {
         Capsule resultCapsule = capsuleReadService.getCapsule(capsuleReadRequestDto.capsuleId());
         //isProtected확인(0이면 수신자가 비회원  /  1이면 수신자가 회원)
@@ -43,7 +44,7 @@ public class CapsuleReadController {
                         .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
                 //응답 Dto생성
-                CapsuleReadResponseDto capsuleReadResponseDto = new CapsuleReadResponseDto(
+                CapsuleReadResponseDTO capsuleReadResponseDto = new CapsuleReadResponseDTO(
                         resultCapsule.getCapsuleId(),
                         resultCapsule.getCapsuleColor(),
                         resultCapsule.getCapsulePackingColor(),
@@ -70,7 +71,7 @@ public class CapsuleReadController {
                         .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
                 //응답 Dto생성
-                CapsuleReadResponseDto capsuleReadResponseDto = new CapsuleReadResponseDto(
+                CapsuleReadResponseDTO capsuleReadResponseDto = new CapsuleReadResponseDTO(
                         resultCapsule.getCapsuleId(),
                         resultCapsule.getCapsuleColor(),
                         resultCapsule.getCapsulePackingColor(),
@@ -95,19 +96,20 @@ public class CapsuleReadController {
 
 
     //회원이 전송한 캡슐의 대시보드 api
+    //컨트롤러에 있는 비지니스 로직을 서비스로 옮기기
     @GetMapping("/send/dashboard")
-    public ResponseEntity<CapsuleSendDashBoardResponseDto> readCapsule(
-            @RequestBody CapsuleSendDashBoardRequestDto capsuleSendDashBoardRequestDto
+    public ResponseEntity<CapsuleSendDashBoardResponseDTO> readCapsule(
+            @RequestBody CapsuleSendDashBoardRequestDTO capsuleSendDashBoardRequestDto
             ) {
         List<Capsule> capsules = capsuleDashBoardService.readSendCapsuleList(capsuleSendDashBoardRequestDto.memberId());
-        List<CapsuleReadResponseDto> capsuleDtoList = new ArrayList<>();
+        List<CapsuleReadResponseDTO> capsuleDtoList = new ArrayList<>();
 
         for(Capsule capsule : capsules){
             //응답 Dto생성
             CapsuleRecipient capsuleRecipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-            CapsuleReadResponseDto capsuleReadResponseDto = new CapsuleReadResponseDto(
+            CapsuleReadResponseDTO capsuleReadResponseDto = new CapsuleReadResponseDTO(
                     capsule.getCapsuleId(),
                     capsule.getCapsuleColor(),
                     capsule.getCapsulePackingColor(),
@@ -126,7 +128,7 @@ public class CapsuleReadController {
             capsuleDtoList.add(capsuleReadResponseDto);
         }
 
-        return  ResponseEntity.ok(new CapsuleSendDashBoardResponseDto(capsuleDtoList));
+        return  ResponseEntity.ok(new CapsuleSendDashBoardResponseDTO(capsuleDtoList));
     }
 
     //회원이 받은 캡슐의 대시보드 api

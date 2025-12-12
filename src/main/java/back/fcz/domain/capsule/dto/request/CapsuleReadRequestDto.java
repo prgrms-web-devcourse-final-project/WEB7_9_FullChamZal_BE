@@ -2,7 +2,7 @@ package back.fcz.domain.capsule.DTO.request;
 
 import java.time.LocalDateTime;
 
-public record CapsuleReadRequestDto (
+public record CapsuleReadRequestDTO (
         Long capsuleId,
         String phoneNumber,
         LocalDateTime unlockAt,

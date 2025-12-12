@@ -1,6 +1,6 @@
 package back.fcz.domain.capsule.DTO.request;
 
-public record CapsuleSendDashBoardRequestDto(
+public record CapsuleSendDashBoardRequestDTO(
         Long memberId
 ) {
 }
