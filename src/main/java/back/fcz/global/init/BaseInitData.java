@@ -63,6 +63,16 @@ public class BaseInitData implements CommandLineRunner {
                 "010-9999-9999",
                 "ADMIN"
         );
+
+        // 정지 회원
+        createMember(
+                "stoppedUser",
+                "test1234",
+                "정지유저",
+                "STOP_USER",
+                "010-1111-2222",
+                "USER"
+        );
     }
 
     private void createMember(String userId, String password, String name,
