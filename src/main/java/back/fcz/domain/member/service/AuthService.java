@@ -6,6 +6,9 @@ import back.fcz.domain.member.dto.response.LoginTokensResponse;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sms.entity.PhoneVerification;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
+import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -16,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -28,6 +32,9 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final JwtProperties jwtProperties;
+    private final PhoneVerificationService phoneVerificationService;
+
+    private static final int VERIFIED_VALID_MINUTES = 10;
 
     public MemberSignupResponse signup(MemberSignupRequest request) {
         // 활성 회원만 체크
@@ -66,6 +73,19 @@ public class AuthService {
         }
 
         // TODO: 번호 인증 메서드 추가
+        PhoneVerification verification =
+                phoneVerificationService.isPhoneVerified(
+                        normalizedPhone,
+                        PhoneVerificationPurpose.SIGNUP
+                );
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (verification.getVerifiedAt()
+                .isBefore(now.minusMinutes(VERIFIED_VALID_MINUTES))) {
+            verification.markExpired();
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String phoneEncrypted = phoneCrypto.encrypt(request.normalizedPhoneNumber());
         String encryptedPassword = passwordEncoder.encode(request.password());
@@ -80,6 +100,7 @@ public class AuthService {
         );
 
         Member saved = memberRepository.save(member);
+        verification.markExpired();
 
         return MemberSignupResponse.of(saved.getMemberId(), saved.getUserId());
     }

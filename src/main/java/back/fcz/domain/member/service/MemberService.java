@@ -11,6 +11,9 @@ import back.fcz.domain.member.entity.NicknameHistory;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.repository.NicknameHistoryRepository;
 import back.fcz.domain.member.util.PhoneMaskingUtil;
+import back.fcz.domain.sms.entity.PhoneVerification;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
+import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
@@ -35,8 +38,10 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
     private final NicknameHistoryRepository nicknameHistoryRepository;
+    private final PhoneVerificationService phoneVerificationService;
 
     private static final int NICKNAME_CHANGE_COOLDOWN_DAYS = 90;
+    private static final int VERIFIED_VALID_MINUTES = 10;
 
     public void verifyPassword(InServerMemberResponse user, PasswordVerifyRequest request) {
         Member member = memberRepository.findById(user.memberId())
@@ -166,6 +171,19 @@ public class MemberService {
 
     private void updatePhoneNumber(Member member, String newPhoneNumber) {
         // TODO: 번호 인증 확인
+        PhoneVerification verification =
+                phoneVerificationService.isPhoneVerified(
+                        newPhoneNumber,
+                        PhoneVerificationPurpose.CHANGE_PHONE
+                );
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (verification.getVerifiedAt()
+                .isBefore(now.minusMinutes(VERIFIED_VALID_MINUTES))) {
+            verification.markExpired();
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String newPhoneHash = phoneCrypto.hash(newPhoneNumber);
         if (memberRepository.existsByPhoneHash(newPhoneHash)) {
@@ -175,5 +193,6 @@ public class MemberService {
         String encryptedPhone = phoneCrypto.encrypt(newPhoneNumber);
 
         member.updatePhoneNumber(encryptedPhone, newPhoneHash);
+        verification.markExpired();
     }
 }

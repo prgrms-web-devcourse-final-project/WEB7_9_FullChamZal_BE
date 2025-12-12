@@ -136,14 +136,15 @@ public class PhoneVerificationService {
     // ------- 헬퍼 메서드 ------- //
 
     // 인증 확인 여부
-    public boolean isPhoneVerified(String PhoneNumber, PhoneVerificationPurpose purpose){
+    @Transactional(readOnly = true)
+    public PhoneVerification isPhoneVerified(String PhoneNumber, PhoneVerificationPurpose purpose){
         String nomalizedPhoneNumber = nomalizePhoneNumber(PhoneNumber);
         String phoneNumberHash = phoneCrypto.hash(nomalizedPhoneNumber);
 
         return phoneVerificationRepository
                 .findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(phoneNumberHash, purpose)
                 .filter(pv -> pv.getStatus() == PhoneVerificationStatus.VERIFIED)
-                .isPresent();
+                .orElseThrow(() -> new BusinessException(ErrorCode.PHONE_NOT_VERIFIED));
     }
 
     // 전화번호 정규화

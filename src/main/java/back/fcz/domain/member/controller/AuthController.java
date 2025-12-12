@@ -51,7 +51,8 @@ public class AuthController {
     @ApiErrorCodeExample({
             ErrorCode.DUPLICATE_USER_ID,
             ErrorCode.DUPLICATE_NICKNAME,
-            ErrorCode.DUPLICATE_PHONENUM
+            ErrorCode.DUPLICATE_PHONENUM,
+            ErrorCode.PHONE_NOT_VERIFIED
     })
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<MemberSignupResponse>> signup(

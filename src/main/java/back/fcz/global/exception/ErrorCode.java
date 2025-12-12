@@ -21,12 +21,12 @@ public enum ErrorCode {
 
     //=========== SMS 에러 ==========
     SMS_SEND_FAILED("SMS001", HttpStatus.INTERNAL_SERVER_ERROR, "문자 발송에 실패했습니다."),
-
     SMS_RESEND_COOLDOWN("SMS002", HttpStatus.BAD_REQUEST, "인증문자 재전송 쿨타임이 지나지 않았습니다."),
     VERIFICATION_NOT_FOUND("SMS003", HttpStatus.NOT_FOUND, "해당 전화번호에 대한 인증 내역을 찾을 수 없습니다."),
     VERIFICATION_EXPIRED("SMS004", HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다."),
     VERIFICATION_ATTEMPT_EXCEEDED("SMS005", HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다."),
     VERIFICATION_CODE_MISMATCH("SMS006", HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
+
     // ========== JWT 인증 에러 ==========
     TOKEN_EXPIRED("JWT001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     TOKEN_INVALID("JWT002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
@@ -55,6 +55,7 @@ public enum ErrorCode {
     INVALID_PHONENUM("AUTH006", HttpStatus.BAD_REQUEST, "전화번호가 일치하지 않습니다."),
     WITHDRAWN_USER_ID("AUTH007", HttpStatus.CONFLICT, "사용 불가능한 아이디입니다. 다른 아이디를 사용해 주세요."),
     WITHDRAWN_PHONE_NUMBER("AUTH008", HttpStatus.CONFLICT, "사용 불가능한 전화번호입니다. 다른 전화번호를 사용해 주세요."),
+    PHONE_NOT_VERIFIED("AUTH009", HttpStatus.UNAUTHORIZED, "인증되지 않은 전화번호입니다."),
 
     // ========== 사용자 도메인 에러 ==========
     MEMBER_NOT_FOUND("MEM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),

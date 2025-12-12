@@ -106,7 +106,8 @@ public class MemberController {
             ErrorCode.INVALID_INPUT_VALUE,
             ErrorCode.TOKEN_EXPIRED,
             ErrorCode.TOKEN_INVALID,
-            ErrorCode.UNAUTHORIZED
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.PHONE_NOT_VERIFIED
     })
     public ResponseEntity<ApiResponse<MemberUpdateResponse>> updateMe(
             @Valid @RequestBody MemberUpdateRequest request
