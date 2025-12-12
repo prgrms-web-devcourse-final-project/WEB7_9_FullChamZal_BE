@@ -83,4 +83,6 @@ public class BaseInitData implements CommandLineRunner {
 
         memberRepository.save(member);
     }
+    private void createPhoneVerification(String phoneNumber, String code, String purpose,
+                                         String status, int attemptCount) {}
 }

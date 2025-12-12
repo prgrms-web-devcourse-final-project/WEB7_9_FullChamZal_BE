@@ -43,3 +43,4 @@ coolsms:
   api-key: ${COOLSMS_API_KEY}
   api-secret: ${COOLSMS_API_SECRET}
   from-number: ${COOLSMS_FROM_NUMBER}
+
