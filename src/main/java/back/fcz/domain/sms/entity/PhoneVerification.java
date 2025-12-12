@@ -85,4 +85,33 @@ public class PhoneVerification {
         this.status = PhoneVerificationStatus.PENDING;
         this.attemptCount = 0;
     }
+
+
+
+
+
+    /* init용 */
+    public static PhoneVerification initForTest(
+            String phoneNumberHash,
+            String code,
+            PhoneVerificationPurpose purpose,
+            PhoneVerificationStatus status,
+            int attemptCount,
+            LocalDateTime createdAt,
+            LocalDateTime verifiedAt,
+            LocalDateTime expiredAt
+    ) {
+        PhoneVerification pv = new PhoneVerification(
+                phoneNumberHash,
+                code,
+                purpose
+        );
+        pv.status = status;
+        pv.attemptCount = attemptCount;
+        pv.createdAt = createdAt;
+        pv.verifiedAt = verifiedAt;
+        pv.expiredAt = expiredAt;
+        return pv;
+    }
+
 }
