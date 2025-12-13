@@ -3,6 +3,7 @@ package back.fcz.domain.capsule.controller;
 import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDto;
 import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDto;
 import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDto;
+import back.fcz.domain.capsule.DTO.response.CapsuleReceiveDashBoardResponseDto;
 import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDto;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
@@ -11,9 +12,11 @@ import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -130,6 +133,14 @@ public class CapsuleReadController {
     }
 
     //회원이 받은 캡슐의 대시보드 api
+    @GetMapping("/receiveRecord/{memberId}")
+    public ResponseEntity<ApiResponse<List<CapsuleReceiveDashBoardResponseDto>>> receivedCapsuleDash(
+            @PathVariable Long memberId
+    ) {
+        List<CapsuleReceiveDashBoardResponseDto> response = capsuleDashBoardService.readReceiveCapsuleList(memberId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
 
     //캡슐 저장버튼을 눌렀을때 호출할 api
