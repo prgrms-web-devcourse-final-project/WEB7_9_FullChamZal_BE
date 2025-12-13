@@ -5,7 +5,8 @@ import back.fcz.domain.capsule.entity.CapsuleRecipient;
 
 import java.time.LocalDateTime;
 
-public record CapsuleReceiveDashBoardResponseDto (
+// TODO: CapsuleReadResponseDto와 동일 -> 해당 레코드 삭제 필요 (캡슐 조회 MVP 개발 후, 리팩토링 필요)
+public record CapsuleDashBoardResponse(
         Long capsuleId,
         String capsuleColor,
         String capsulePackingColor,
@@ -20,8 +21,8 @@ public record CapsuleReceiveDashBoardResponseDto (
         String locationName,
         Double locationLat,
         Double locationLng
-){
-    public CapsuleReceiveDashBoardResponseDto(Capsule capsule, CapsuleRecipient capsuleRecipient) {
+) {
+    public CapsuleDashBoardResponse (Capsule capsule, CapsuleRecipient capsuleRecipient) {
         this(
                 capsule.getCapsuleId(),
                 capsule.getCapsuleColor(),
