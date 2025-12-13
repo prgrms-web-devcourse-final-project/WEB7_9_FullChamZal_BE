@@ -87,4 +87,8 @@ public class Capsule extends BaseEntity {
     public void setContent(String content){
         this.content = content;
     }
+
+    public void setIsDeleted(int i) {
+        this.isDeleted = i;
+    }
 }

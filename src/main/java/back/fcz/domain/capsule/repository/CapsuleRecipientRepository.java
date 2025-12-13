@@ -27,4 +27,6 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
         WHERE pcr.recipientPhoneHash = :phoneHash
     """)
     void anonymizeByRecipientPhoneHash(@Param("phoneHash") String phoneHash);
+
+    Optional<CapsuleRecipient> findByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String phoneHash);
 }

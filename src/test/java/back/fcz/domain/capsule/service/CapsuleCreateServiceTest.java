@@ -4,10 +4,12 @@ import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleOpenLog;
+import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
@@ -28,10 +30,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CapsuleCreateServiceTest {
@@ -136,8 +141,8 @@ class CapsuleCreateServiceTest {
         when(phoneCrypto.hash("01000000000"))
                 .thenReturn("hashedPhone");
 
-        when(memberRepository.findByPhoneHash("hashedPhone"))
-                .thenReturn(Optional.of(recipient));
+        when(memberRepository.existsByPhoneHash("hashedPhone"))
+                .thenReturn(false);
 
         when(memberRepository.existsByPhoneHash("hashedPhone"))
                 .thenReturn(true);
@@ -176,9 +181,9 @@ class CapsuleCreateServiceTest {
         when(phoneCrypto.hash(anyString()))
                 .thenReturn("hashedPhone");
 
-        // hashedPhone 으로 찾으면 회원 없음 → 비회원 분기
-        when(memberRepository.findByPhoneHash("hashedPhone"))
-                .thenReturn(Optional.empty());
+        // hashedPhone으로 찾기
+        when(memberRepository.existsByPhoneHash("hashedPhone"))
+                .thenReturn(false); // 없으면 비회원
 
         when(phoneCrypto.encrypt(anyString()))
                 .thenReturn("encryptedPw");
@@ -400,5 +405,98 @@ class CapsuleCreateServiceTest {
         // then
         assertEquals("old title", response.updatedTitle());
         assertEquals("new content", response.updatedContent());
+    }
+
+    // =========================
+    // 캡슐 삭제 테스트
+    // ==========================
+
+    @Test
+    @DisplayName("수신자 캡슐 삭제 성공")
+    void receiverDelete_success() {
+        // given
+        Long capsuleId = 1L;
+        String phoneHash = "hashed-phone";
+
+        CapsuleRecipient recipient = mock(CapsuleRecipient.class);
+
+        given(recipientRepository
+                .findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash))
+                .willReturn(Optional.of(recipient));
+
+        // when
+        CapsuleDeleteResponseDTO response =
+                capsuleCreateService.receiverDelete(capsuleId, phoneHash);
+
+        // then
+        verify(recipient).markDeleted();
+        verify(recipientRepository).save(recipient);
+
+        assertThat(response.capsuleId()).isEqualTo(capsuleId);
+        assertThat(response.message()).contains("삭제");
+    }
+
+    @Test
+    @DisplayName("수신자 캡슐이 없으면 예외 발생")
+    void receiverDelete_notFound() {
+        // given
+        Long capsuleId = 1L;
+        String phoneHash = "hashed-phone";
+
+        given(recipientRepository
+                .findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() ->
+                capsuleCreateService.receiverDelete(capsuleId, phoneHash)
+        )
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.CAPSULE_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("발신자 캡슐 삭제 성공")
+    void senderDelete_success() {
+        // given
+        Long memberId = 10L;
+        Long capsuleId = 1L;
+
+        Capsule capsule = mock(Capsule.class);
+
+        given(capsuleRepository
+                .findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId))
+                .willReturn(Optional.of(capsule));
+
+        // when
+        CapsuleDeleteResponseDTO response =
+                capsuleCreateService.senderDelete(memberId, capsuleId);
+
+        // then
+        verify(capsule).markDeleted();
+        verify(capsule).setIsDeleted(1);
+        verify(capsuleRepository).save(capsule);
+
+        assertThat(response.capsuleId()).isEqualTo(capsuleId);
+        assertThat(response.message()).contains("삭제");
+    }
+
+    @Test
+    @DisplayName("발신자 캡슐이 없으면 예외 발생")
+    void senderDelete_notFound() {
+        // given
+        Long memberId = 10L;
+        Long capsuleId = 1L;
+
+        given(capsuleRepository
+                .findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() ->
+                capsuleCreateService.senderDelete(memberId, capsuleId)
+        )
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.CAPSULE_NOT_FOUND.getMessage());
     }
 }

@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -93,7 +92,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Optional<Member> recipient = memberRepository.findByPhoneHash(phoneCrypto.hash(receiveTel));
+        // Optional<Member> recipient = memberRepository.findByPhoneHash(phoneCrypto.hash(receiveTel));
 
         if(memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel))){ // 회원
             capsule.setMemberId(member);
@@ -105,7 +104,7 @@ public class CapsuleCreateService {
                     .recipientName(capsuleCreate.nickName())
                     .recipientPhone(receiveTel)
                     .recipientPhoneHash(phoneCrypto.hash(receiveTel))
-                    .isSenderSelf(false)
+                    .isSenderSelf(0)
                     .build();
 
             recipientRepository.save(recipientRecord);
@@ -132,7 +131,7 @@ public class CapsuleCreateService {
             Long capsuleId,
             CapsuleUpdateRequestDTO updateDTO
     ){
-        // 수정 가능한 상태인지 확인
+        // TODO : 수정 가능한 상태인지 확인 -> 조회하는 테이블 수정
         capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId)
                 .ifPresent(open -> { throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE); });
 
@@ -155,14 +154,16 @@ public class CapsuleCreateService {
     // 캡슐 삭제
     // 수신자 삭제
     public CapsuleDeleteResponseDTO receiverDelete(
-            Long capsuleId
+            Long capsuleId,
+            String phoneHash
     ){
         // 수신자 캡슐 존재 확인
-        CapsuleRecipient capsule = recipientRepository.findByCapsuleId_CapsuleId(capsuleId)
+        CapsuleRecipient capsule = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-
         // deletedAt 갱신
         capsule.markDeleted();
+
+        recipientRepository.save(capsule);
 
         return new CapsuleDeleteResponseDTO(
             capsuleId,
@@ -172,14 +173,19 @@ public class CapsuleCreateService {
 
     // 발신자 삭제
      public CapsuleDeleteResponseDTO senderDelete(
+             Long memberId,
              Long capsuleId
      ){
+
         // 발신자 캡슐 존재 확인
-         Capsule capsule = capsuleRepository.findById(capsuleId)
+         Capsule capsule = capsuleRepository.findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId)
                  .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-         // deletedAt 갱신
+         // 삭제 내용 갱신
          capsule.markDeleted();
+         capsule.setIsDeleted(1);
+
+         capsuleRepository.save(capsule);
 
          return new CapsuleDeleteResponseDTO(
                  capsuleId,

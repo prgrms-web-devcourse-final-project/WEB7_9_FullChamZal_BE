@@ -180,7 +180,7 @@ public class BaseInitData implements CommandLineRunner {
                 .recipientName("수신자 " + index)
                 .recipientPhone(encrypted)
                 .recipientPhoneHash(hash)
-                .isSenderSelf(false)
+                .isSenderSelf(0)
                 .build();
 
         capsuleRecipientRepository.save(recipient);
