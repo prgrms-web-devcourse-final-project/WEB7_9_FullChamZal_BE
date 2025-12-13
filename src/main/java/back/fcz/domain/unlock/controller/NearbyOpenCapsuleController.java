@@ -27,7 +27,7 @@ public class NearbyOpenCapsuleController {
 
     private final NearbyOpenCapsuleService nearbyOpenCapsuleService;
 
-    @Operation(summary = "근처 공개 캡슐 리스트 조회", description = "사용자 근처의 공개 캡슐 리스트를 조회합니다")
+    @Operation(summary = "근처 공개 캡슐 리스트 조회", description = "사용자 근처의 공개 캡슐 리스트를 조회합니다. 기본 반경 값은 1km입니다.")
     @ApiErrorCodeExample({
             ErrorCode.INVALID_RADIUS
     })
