@@ -38,11 +38,4 @@ public record MemberSignupRequest(
         @Size(min = 11, max = 11, message = "전화번호는 정확히 11자리여야 합니다.")
         String phoneNumber
 ) {
-    /**
-     * 전화번호 정규화 (하이픈 제거)
-     * 예: 010-1234-5678 -> 01012345678
-     */
-    public String normalizedPhoneNumber() {
-        return phoneNumber.replaceAll("-", "");
-    }
 }

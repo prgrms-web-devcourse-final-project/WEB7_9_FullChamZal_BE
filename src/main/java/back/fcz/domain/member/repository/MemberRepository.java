@@ -23,6 +23,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // userId 관련
     boolean existsByUserIdAndDeletedAtIsNull(String userId);
     Optional<Member> findByUserIdAndDeletedAtIsNotNull(String userId);
+    boolean existsByPhoneHashAndMemberIdNot(String phoneHash, Long memberId);
 
     // phoneHash 관련 (추가)
     boolean existsByPhoneHashAndDeletedAtIsNull(String phoneHash);

@@ -11,7 +11,6 @@ import back.fcz.domain.member.entity.NicknameHistory;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.repository.NicknameHistoryRepository;
 import back.fcz.domain.member.util.PhoneMaskingUtil;
-import back.fcz.domain.sms.entity.PhoneVerification;
 import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -170,29 +169,32 @@ public class MemberService {
     }
 
     private void updatePhoneNumber(Member member, String newPhoneNumber) {
+        if (newPhoneNumber == null || newPhoneNumber.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_PHONENUM);
+        }
+
         // TODO: 번호 인증 확인
-        PhoneVerification verification =
-                phoneVerificationService.isPhoneVerified(
-                        newPhoneNumber,
-                        PhoneVerificationPurpose.CHANGE_PHONE
-                );
+        boolean verified = phoneVerificationService.isPhoneVerified(
+                newPhoneNumber,
+                PhoneVerificationPurpose.CHANGE_PHONE
+        );
 
-        LocalDateTime now = LocalDateTime.now();
-
-        if (verification.getVerifiedAt()
-                .isBefore(now.minusMinutes(VERIFIED_VALID_MINUTES))) {
-            verification.markExpired();
+        if (!verified) {
             throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
         }
 
         String newPhoneHash = phoneCrypto.hash(newPhoneNumber);
-        if (memberRepository.existsByPhoneHash(newPhoneHash)) {
+
+        if (newPhoneHash.equals(member.getPhoneHash())) {
+            return;
+        }
+
+        if (memberRepository.existsByPhoneHashAndMemberIdNot(newPhoneHash, member.getMemberId())) {
             throw new BusinessException(ErrorCode.DUPLICATE_PHONENUM);
         }
 
         String encryptedPhone = phoneCrypto.encrypt(newPhoneNumber);
 
         member.updatePhoneNumber(encryptedPhone, newPhoneHash);
-        verification.markExpired();
     }
 }

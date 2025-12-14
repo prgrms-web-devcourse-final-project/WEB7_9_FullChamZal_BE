@@ -7,7 +7,6 @@ import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.repository.MemberRepository;
-import back.fcz.domain.sms.entity.PhoneVerification;
 import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,15 +77,12 @@ class AuthServiceTest {
         when(memberRepository.findByPhoneHashAndDeletedAtIsNotNull("HASHED"))
                 .thenReturn(Optional.empty());
 
-        // 번호 인증 mock
-        PhoneVerification verification = mock(PhoneVerification.class);
+        // 번호 인증
         when(phoneVerificationService.isPhoneVerified(
                 "01012345678",
                 PhoneVerificationPurpose.SIGNUP
-        )).thenReturn(verification);
+        )).thenReturn(true);
 
-        when(verification.getVerifiedAt())
-                .thenReturn(LocalDateTime.now());
 
         // 암호화
         when(phoneCrypto.encrypt("01012345678"))
@@ -107,9 +102,6 @@ class AuthServiceTest {
 
         assertEquals(1L, res.memberId());
         assertEquals("uid", res.userId());
-
-        // 인증 소모 확인
-        verify(verification).markExpired();
     }
 
 

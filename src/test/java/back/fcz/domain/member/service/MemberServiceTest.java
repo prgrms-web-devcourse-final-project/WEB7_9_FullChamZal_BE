@@ -7,7 +7,6 @@ import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.repository.NicknameHistoryRepository;
-import back.fcz.domain.sms.entity.PhoneVerification;
 import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -179,23 +178,18 @@ class MemberServiceTest {
         MemberUpdateRequest req =
                 new MemberUpdateRequest(null, null, null, "01099998888");
 
-        PhoneVerification verification = mock(PhoneVerification.class);
-
         when(memberRepository.findById(1L))
                 .thenReturn(Optional.of(member));
 
-        // 번호 인증 mock
+        // 번호 인증
         when(phoneVerificationService.isPhoneVerified(
                 "01099998888",
                 PhoneVerificationPurpose.CHANGE_PHONE
-        )).thenReturn(verification);
-
-        when(verification.getVerifiedAt())
-                .thenReturn(LocalDateTime.now());
+        )).thenReturn(true);
 
         when(phoneCrypto.hash("01099998888"))
                 .thenReturn("NEW_HASH");
-        when(memberRepository.existsByPhoneHash("NEW_HASH"))
+        when(memberRepository.existsByPhoneHashAndMemberIdNot("NEW_HASH", 1L))
                 .thenReturn(false);
         when(phoneCrypto.encrypt("01099998888"))
                 .thenReturn("ENC_NEW_PHONE");
@@ -203,9 +197,6 @@ class MemberServiceTest {
         memberService.updateMember(mockUser(member), req);
 
         assertEquals("NEW_HASH", member.getPhoneHash());
-
-        // 인증 소모 확인
-        verify(verification).markExpired();
     }
 
 
