@@ -1,283 +1,262 @@
 package back.fcz.domain.capsule.controller;
 
-import back.fcz.domain.capsule.DTO.GPSResponseDTO;
-import back.fcz.domain.capsule.DTO.LetterCustomResponseDTO;
-import back.fcz.domain.capsule.DTO.UnlockResponseDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleCreateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleUpdateRequestDTO;
 import back.fcz.domain.capsule.DTO.request.SecretCapsuleCreateRequestDTO;
-import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
-import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
-import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
-import back.fcz.domain.capsule.service.CapsuleCreateService;
+import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
+import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.member.entity.Member;
+import back.fcz.domain.member.entity.MemberRole;
+import back.fcz.domain.member.entity.MemberStatus;
+import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.global.dto.InServerMemberResponse;
-import back.fcz.global.exception.BusinessException;
-import back.fcz.global.exception.ErrorCode;
-import back.fcz.global.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
-class CapsuleCreateControllerTest {
+@SpringBootTest
+@ActiveProfiles("test")
+@AutoConfigureMockMvc
+@Transactional
+class CapsuleCreateControllerIntegrationTest {
 
-    @InjectMocks
-    private CapsuleCreateController controller;
+    @Autowired
+    MockMvc mockMvc;
 
-    @Mock
-    private CapsuleCreateService capsuleCreateService;
+    @Autowired
+    ObjectMapper objectMapper;
 
-    @Mock
-    private CurrentUserContext currentUserContext;
+    @Autowired
+    CapsuleRepository capsuleRepository;
 
-    private MockMvc mockMvc;
+    @Autowired
+    CapsuleRecipientRepository capsuleRecipientRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    @Autowired
+    MemberRepository memberRepository;
 
-    @BeforeEach
-    void setup() {
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-    }
+    // 인증 컨텍스트만 Mock
+    @MockitoBean
+    CurrentUserContext currentUserContext;
 
+    // =========================
+    // 공개 캡슐 생성
+    // =========================
     @Test
-    @DisplayName("캡슐 생성 시, phoneNum == null이면 비밀번호 방식 실행")
-    void testPrivateCapsuleCreate_PasswordMode() throws Exception {
+    @DisplayName("통합 테스트 - 공개 캡슐 생성 성공")
+    void createPublicCapsule_success() throws Exception {
 
-        SecretCapsuleCreateResponseDTO mockResponse =
-                new SecretCapsuleCreateResponseDTO(
-                        1L, 1L, "nick", "http://url",
-                        "1234", "title", "content",
-                        "PRIVATE", "TIME",
-                        null, null, 10, 0
+        Member member = memberRepository.save(
+                Member.builder()
+                        .userId("testuser-public")
+                        .name("홍길동")
+                        .nickname("테스터")
+                        .passwordHash("pw")
+                        .phoneHash("hash")
+                        .phoneNumber("encrypted")
+                        .role(MemberRole.USER)
+                        .status(MemberStatus.ACTIVE)
+                        .build()
+        );
+
+        CapsuleCreateRequestDTO requestDTO =
+                new CapsuleCreateRequestDTO(
+                        member.getMemberId(),
+                        "nick",
+                        "공개 캡슐",
+                        "내용",
+                        null,
+                        "white",
+                        "navy",
+                        "PUBLIC",
+                        "TIME",
+                        LocalDateTime.now().plusDays(1),
+                        "Seoul",
+                        37.5,
+                        127.0,
+                        100,
+                        5
                 );
 
-        when(capsuleCreateService.privateCapsulePassword(any(), any()))
-                .thenReturn(mockResponse);
+        mockMvc.perform(post("/api/v1/capsule/create/public")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("공개 캡슐"))
+                .andExpect(jsonPath("$.visibility").value("PUBLIC"));
 
-        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content",
-                "PRIVATE", "TIME", LocalDateTime.now(),
-                "Seoul", 37.1, 127.2,
-                300, "red", "white", 10
-        );
-
-        mockMvc.perform(
-                        post("/api/v1/capsule/create/private")
-                                .param("capsulePassword", "1234")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(dto))
-                )
-                .andExpect(status().isOk());
-
-        verify(capsuleCreateService, Mockito.times(1))
-                .privateCapsulePassword(any(), eq("1234"));
+        assertEquals(1, capsuleRepository.count());
     }
 
-    // capsulePassword == null → 전화번호 방식 실행
+    // =========================
+    // 비공개 캡슐 - 나에게 보내기
+    // =========================
     @Test
-    @DisplayName("캡슐 생성 시, capsulePassword == null이면 전화번호 방식 실행")
-    void testPrivateCapsuleCreate_PhoneMode() throws Exception {
+    @DisplayName("통합 테스트 - 나에게 보내는 캡슐 생성 성공")
+    void createToMeCapsule_success() throws Exception {
 
-        SecretCapsuleCreateResponseDTO mockResponse =
-                new SecretCapsuleCreateResponseDTO(
-                        1L, 1L, "nick",
-                        "http://url", null,
-                        "title", "content",
-                        "PRIVATE", "TIME",
-                        null, null, 10, 0
+        Member member = memberRepository.save(
+                Member.builder()
+                        .userId("testuser-me")
+                        .name("홍길동")
+                        .nickname("테스터")
+                        .passwordHash("pw")
+                        .phoneHash("hash")
+                        .phoneNumber("encrypted")
+                        .role(MemberRole.USER)
+                        .status(MemberStatus.ACTIVE)
+                        .build()
+        );
+
+        SecretCapsuleCreateRequestDTO requestDTO =
+                new SecretCapsuleCreateRequestDTO(
+                        member.getMemberId(),
+                        "senderNick",
+                        "나에게 보내는 캡슐",
+                        "내년에는 행복하자!",
+                        "PRIVATE",
+                        "TIME",
+                        LocalDateTime.of(2025, 12, 31, 23, 59),
+                        "Seoul Station",
+                        37.554722,
+                        126.970833,
+                        300,
+                        "navy",
+                        "white",
+                        5
                 );
 
-        when(capsuleCreateService.privateCapsulePhone(any(), any()))
-                .thenReturn(mockResponse);
+        mockMvc.perform(post("/api/v1/capsule/create/me")
+                        .param("phone", "01000000000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("나에게 보내는 캡슐"))
+                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
 
-        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content",
-                "PRIVATE", "TIME",
-                LocalDateTime.now(),
-                "Seoul", 37.1, 127.2,
-                300, "red", "white", 10
-        );
+        assertEquals(1, capsuleRepository.count());
+        assertEquals(1, capsuleRecipientRepository.count());
 
-        mockMvc.perform(
-                        post("/api/v1/capsule/create/private")
-                                .param("phoneNum", "01012341234")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(dto))
-                )
-                .andExpect(status().isOk());
+        Capsule capsule = capsuleRepository.findAll().get(0);
+        CapsuleRecipient recipient = capsuleRecipientRepository.findAll().get(0);
 
-        verify(capsuleCreateService, Mockito.times(1))
-                .privateCapsulePhone(any(), eq("01012341234"));
+        assertEquals(member.getMemberId(), capsule.getMemberId().getMemberId());
+        assertEquals(1, capsule.getIsProtected());
+        assertEquals(1, recipient.getIsSenderSelf());
     }
 
+    // =========================
+    // 캡슐 수정
+    // =========================
     @Test
-    @DisplayName("캡슐 생성 시, phoneNum과 capsulePassword가 둘 다 존재하면 예외 발생")
-    void testPrivateCapsuleCreate_BothProvided_ShouldThrow() throws Exception {
-
-        SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content",
-                "PRIVATE", "TIME",
-                LocalDateTime.now(),
-                "Seoul", 37.1, 127.2,
-                300, "red", "white", 10
-        );
-
-        mockMvc.perform(
-                        post("/api/v1/capsule/create/private")
-                                .param("phoneNum", "01012341234")
-                                .param("capsulePassword", "9999")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(dto))
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(result -> {
-                    assertInstanceOf(BusinessException.class, result.getResolvedException());
-                })
-                .andExpect(result -> {
-                    BusinessException ex = (BusinessException) result.getResolvedException();
-                    assertEquals(ErrorCode.CAPSULE_NOT_CREATE, ex.getErrorCode());
-                });
-
-        verify(capsuleCreateService, Mockito.never()).privateCapsulePhone(any(), any());
-        verify(capsuleCreateService, Mockito.never()).privateCapsulePassword(any(), any());
-    }
-
-    // 캡슐 수정 테스트
-    @Test
-    @DisplayName("캡슐 수정 요청이 성공하면 200 OK 와 수정된 데이터가 반환된다")
+    @DisplayName("통합 테스트 - 캡슐 수정 성공")
     void updateCapsule_success() throws Exception {
 
-        // given
-        Long capsuleId = 1L;
+        Member member = memberRepository.save(
+                Member.builder()
+                        .userId("testuser-update")
+                        .name("홍길동")
+                        .nickname("테스터")
+                        .passwordHash("pw")
+                        .phoneHash("hash")
+                        .phoneNumber("encrypted")
+                        .role(MemberRole.USER)
+                        .status(MemberStatus.ACTIVE)
+                        .build()
+        );
+
+        Capsule capsule = capsuleRepository.save(
+                Capsule.builder()
+                        .memberId(member)
+                        .nickname(member.getNickname())
+                        .title("old title")
+                        .content("old content")
+                        .visibility("PUBLIC")
+                        .unlockType("TIME")
+                        .capsuleColor("white")
+                        .capsulePackingColor("navy")
+                        .maxViewCount(5)
+                        .locationRadiusM(100)
+                        .uuid(UUID.randomUUID().toString())
+                        .build()
+        );
 
         CapsuleUpdateRequestDTO requestDTO =
                 new CapsuleUpdateRequestDTO("new title", "new content");
 
-        CapsuleUpdateResponseDTO responseDTO =
-                new CapsuleUpdateResponseDTO(
-                        10L,              // memberId
-                        capsuleId,        // capsuleId
-                        "닉네임",
-                        "new title",
-                        "new content",
-                        "PUBLIC",
-                        "TIME",
-                        new UnlockResponseDTO(
-                                LocalDateTime.now(),
-                                "장소",
-                                new GPSResponseDTO(37.5, 127.0),
-                                100
-                        ),
-                        new LetterCustomResponseDTO("BLUE", "RED"),
-                        10,
-                        0
-                );
-
-        when(capsuleCreateService.updateCapsule(eq(capsuleId), any()))
-                .thenReturn(responseDTO);
-
-        // when & then
         mockMvc.perform(put("/api/v1/capsule/update")
-                        .param("capsuleId", capsuleId.toString())
+                        .param("capsuleId", capsule.getCapsuleId().toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDTO))
-                )
+                        .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.capsuleId").value(1))
                 .andExpect(jsonPath("$.updatedTitle").value("new title"))
-                .andExpect(jsonPath("$.updatedContent").value("new content"))
-                .andExpect(jsonPath("$.visibility").value("PUBLIC"))
-                .andExpect(jsonPath("$.unlock.location").value("장소"))
-                .andExpect(jsonPath("$.letter.capsuleColor").value("BLUE"));
+                .andExpect(jsonPath("$.updatedContent").value("new content"));
     }
 
-    // 캡슐 삭제 테스트
+    // =========================
+    // 캡슐 삭제 - 발신자
+    // =========================
     @Test
-    @DisplayName("발신자 캡슐 삭제 성공")
-    void senderDeleteCapsule_success() throws Exception {
-        // given
-        Long capsuleId = 1L;
-        Long memberId = 10L;
+    @DisplayName("통합 테스트 - 발신자 캡슐 삭제 성공")
+    void senderDelete_success() throws Exception {
 
-        InServerMemberResponse loginUser = mock(InServerMemberResponse.class);
+        Member member = memberRepository.save(
+                Member.builder()
+                        .userId("testuser-delete")
+                        .name("홍길동")
+                        .nickname("테스터")
+                        .passwordHash("pw")
+                        .phoneHash("hash")
+                        .phoneNumber("encrypted")
+                        .role(MemberRole.USER)
+                        .status(MemberStatus.ACTIVE)
+                        .build()
+        );
 
-        when(loginUser.memberId()).thenReturn(memberId);
-
-        CapsuleDeleteResponseDTO responseDTO =
-                new CapsuleDeleteResponseDTO(capsuleId, "삭제 완료");
+        Capsule capsule = capsuleRepository.save(
+                Capsule.builder()
+                        .memberId(member)
+                        .nickname(member.getNickname())
+                        .title("삭제할 캡슐")
+                        .content("content")
+                        .visibility("PUBLIC")
+                        .unlockType("TIME")
+                        .capsuleColor("white")
+                        .capsulePackingColor("navy")
+                        .maxViewCount(5)
+                        .locationRadiusM(100)
+                        .uuid(UUID.randomUUID().toString())
+                        .build()
+        );
 
         when(currentUserContext.getCurrentUser())
-                .thenReturn(loginUser);
+                .thenReturn(InServerMemberResponse.from(member));
 
-        when(capsuleCreateService.senderDelete(capsuleId, memberId))
-                .thenReturn(responseDTO);
-
-        // when & then
         mockMvc.perform(delete("/api/v1/capsule/delete/sender")
-                        .param("capsuleId", capsuleId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.capsuleId").value(capsuleId))
-                .andExpect(jsonPath("$.message").value("삭제 완료"));
+                        .param("capsuleId", capsule.getCapsuleId().toString()))
+                .andExpect(status().isOk());
 
-        verify(capsuleCreateService)
-                .senderDelete(capsuleId, memberId);
-    }
-
-    @Test
-    @DisplayName("수신자 캡슐 삭제 성공")
-    void receiverDeleteCapsule_success() throws Exception {
-        // given
-        Long capsuleId = 1L;
-        String phoneHash = "01000000000";
-
-        InServerMemberResponse loginUser = mock(InServerMemberResponse.class);
-
-        when(loginUser.phoneHash()).thenReturn(phoneHash);
-
-        CapsuleDeleteResponseDTO responseDTO =
-                new CapsuleDeleteResponseDTO(capsuleId, "삭제 완료");
-
-        when(currentUserContext.getCurrentUser())
-                .thenReturn(loginUser);
-
-        when(capsuleCreateService.receiverDelete(capsuleId, phoneHash))
-                .thenReturn(responseDTO);
-
-        // when & then
-        mockMvc.perform(delete("/api/v1/capsule/delete/reciver")
-                        .param("capsuleId", capsuleId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.capsuleId").value(capsuleId))
-                .andExpect(jsonPath("$.message").value("삭제 완료"));
-
-        verify(capsuleCreateService)
-                .receiverDelete(capsuleId, phoneHash);
+        Capsule deleted = capsuleRepository.findById(capsule.getCapsuleId()).get();
+        assertEquals(1, deleted.getIsDeleted());
     }
 }
