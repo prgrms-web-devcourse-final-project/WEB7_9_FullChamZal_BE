@@ -9,9 +9,11 @@ import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -44,6 +46,8 @@ class CapsuleCreateServiceTest {
     CapsuleRepository capsuleRepository;
     @Mock
     CapsuleRecipientRepository recipientRepository;
+    @Mock
+    PublicCapsuleRecipientRepository publicRecipientRepository;
     @Mock
     MemberRepository memberRepository;
     @Mock
@@ -446,32 +450,68 @@ class CapsuleCreateServiceTest {
     // ==========================
 
     @Test
-    @DisplayName("수신자 캡슐 삭제 성공")
-    void receiverDelete_success() {
+    @DisplayName("수신자 캡슐 삭제 성공 - PRIVATE")
+    void receiverDelete_private_success() {
         // given
         Long capsuleId = 1L;
         String phoneHash = "hashed-phone";
 
-        CapsuleRecipient recipient = mock(CapsuleRecipient.class);
+        CapsuleRecipient privateRecipient = mock(CapsuleRecipient.class);
 
         given(recipientRepository
                 .findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash))
-                .willReturn(Optional.of(recipient));
+                .willReturn(Optional.of(privateRecipient));
 
         // when
         CapsuleDeleteResponseDTO response =
                 capsuleCreateService.receiverDelete(capsuleId, phoneHash);
 
         // then
-        verify(recipient).markDeleted();
-        verify(recipientRepository).save(recipient);
+        verify(privateRecipient).markDeleted();
+        verify(recipientRepository).save(privateRecipient);
+
+        // PUBLIC 조회는 타지 않아야 함
+        verify(publicRecipientRepository, never())
+                .findByCapsuleIdAndPhoneHash(any(), any());
 
         assertThat(response.capsuleId()).isEqualTo(capsuleId);
         assertThat(response.message()).contains("삭제");
     }
 
+
     @Test
-    @DisplayName("수신자 캡슐이 없으면 예외 발생")
+    @DisplayName("수신자 캡슐 삭제 성공 - PUBLIC")
+    void receiverDelete_public_success() {
+        // given
+        Long capsuleId = 1L;
+        String phoneHash = "hashed-phone";
+
+        // PRIVATE 없음
+        given(recipientRepository
+                .findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash))
+                .willReturn(Optional.empty());
+
+        PublicCapsuleRecipient publicRecipient = mock(PublicCapsuleRecipient.class);
+
+        given(publicRecipientRepository
+                .findByCapsuleIdAndPhoneHash(capsuleId, phoneHash))
+                .willReturn(Optional.of(publicRecipient));
+
+        // when
+        CapsuleDeleteResponseDTO response =
+                capsuleCreateService.receiverDelete(capsuleId, phoneHash);
+
+        // then
+        verify(publicRecipient).markDeleted();
+        verify(publicRecipientRepository).save(publicRecipient);
+
+        assertThat(response.capsuleId()).isEqualTo(capsuleId);
+        assertThat(response.message()).contains("삭제");
+    }
+
+
+    @Test
+    @DisplayName("수신자 캡슐이 PRIVATE / PUBLIC 모두 없으면 예외 발생")
     void receiverDelete_notFound() {
         // given
         Long capsuleId = 1L;
@@ -481,13 +521,19 @@ class CapsuleCreateServiceTest {
                 .findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash))
                 .willReturn(Optional.empty());
 
+        given(publicRecipientRepository
+                .findByCapsuleIdAndPhoneHash(capsuleId, phoneHash))
+                .willReturn(Optional.empty());
+
         // when & then
         assertThatThrownBy(() ->
                 capsuleCreateService.receiverDelete(capsuleId, phoneHash)
         )
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining(ErrorCode.CAPSULE_NOT_FOUND.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CAPSULE_NOT_FOUND);
     }
+
+
 
     @Test
     @DisplayName("발신자 캡슐 삭제 성공")

@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface PublicCapsuleRecipientRepository extends JpaRepository<PublicCapsuleRecipient, Long> {
     @Query("""
     select p
@@ -14,7 +16,7 @@ public interface PublicCapsuleRecipientRepository extends JpaRepository<PublicCa
     where c.capsuleId = :capsuleId
       and m.phoneHash = :phoneHash
 """)
-    PublicCapsuleRecipient findByCapsuleIdAndPhoneHash(
+    Optional<PublicCapsuleRecipient> findByCapsuleIdAndPhoneHash(
             @Param("capsuleId") Long capsuleId,
             @Param("phoneHash") String phoneHash
     );

@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -186,11 +187,26 @@ public class CapsuleCreateService {
             String phoneHash
     ){
         // 수신자 캡슐 존재 확인
-        CapsuleRecipient privateCapsule = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        Optional<CapsuleRecipient> privateOpt = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash);
 
-        if(privateCapsule == null){
-            PublicCapsuleRecipient publicCapsule = publicRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash);
+        if(privateOpt.isPresent()){
+            CapsuleRecipient privateCapsule = privateOpt.get();
+
+            // deletedAt 갱신
+            privateCapsule.markDeleted();
+
+            recipientRepository.save(privateCapsule);
+
+            return new CapsuleDeleteResponseDTO(
+                    capsuleId,
+                    capsuleId + "번 캡슐이 삭제 되었습니다."
+            );
+        }
+
+        Optional<PublicCapsuleRecipient> publicOps = publicRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash);
+
+        if(publicOps.isPresent()){
+            PublicCapsuleRecipient publicCapsule = publicOps.get();
 
             // deletedAt 갱신
             publicCapsule.markDeleted();
@@ -202,15 +218,7 @@ public class CapsuleCreateService {
                     capsuleId + "번 캡슐이 삭제 되었습니다."
             );
         }else{
-            // deletedAt 갱신
-            privateCapsule.markDeleted();
-
-            recipientRepository.save(privateCapsule);
-
-            return new CapsuleDeleteResponseDTO(
-                    capsuleId,
-                    capsuleId + "번 캡슐이 삭제 되었습니다."
-            );
+            throw new BusinessException(ErrorCode.CAPSULE_NOT_FOUND);
         }
     }
 
