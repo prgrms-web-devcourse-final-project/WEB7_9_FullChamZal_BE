@@ -131,9 +131,8 @@ public class CapsuleCreateService {
             Long capsuleId,
             CapsuleUpdateRequestDTO updateDTO
     ){
-        // TODO : 수정 가능한 상태인지 확인 -> 조회하는 테이블 수정
-        capsuleOpenLogRepository.findByCapsuleId_CapsuleId(capsuleId)
-                .ifPresent(open -> { throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE); });
+        // 캡슐 조회수 확인
+        if(capsuleRepository.findCurrentViewCountByCapsuleId(capsuleId) > 0) throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE);
 
         // 수정 진행
         Capsule targetCapsule = capsuleRepository.findById(capsuleId)

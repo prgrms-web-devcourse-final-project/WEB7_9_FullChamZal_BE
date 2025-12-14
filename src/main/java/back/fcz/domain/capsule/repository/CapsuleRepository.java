@@ -24,4 +24,11 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     List<Capsule> findActiveCapsulesByMemberId(@Param("memberId") Long memberId);
 
     Optional<Capsule> findByCapsuleIdAndMemberId_MemberId(Long capsuleId, Long memberId);
+
+    @Query("""
+    select v.currentViewCount
+    from Capsule v
+    where v.capsuleId = :capsuleId
+""")
+    int findCurrentViewCountByCapsuleId(@Param("capsuleId") Long capsuleId);
 }
