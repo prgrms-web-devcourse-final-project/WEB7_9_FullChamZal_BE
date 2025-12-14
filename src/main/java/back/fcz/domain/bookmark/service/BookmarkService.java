@@ -25,8 +25,8 @@ public class BookmarkService {
     private final CapsuleRepository capsuleRepository;
     private final BookmarkRepository bookmarkRepository;
 
+    @Transactional
     public void createOrRestoreBookmark(Long memberId, Long capsuleId) {
-
         capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
@@ -57,6 +57,7 @@ public class BookmarkService {
     }
 
 
+    @Transactional
     public void deleteBookmark(Long memberId, Long capsuleId) {
         Bookmark bookmark = bookmarkRepository.findByMemberIdAndCapsuleIdAndDeletedAtIsNull(memberId, capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));

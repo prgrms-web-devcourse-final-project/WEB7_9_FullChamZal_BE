@@ -14,6 +14,7 @@ import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.security.jwt.JwtProperties;
 import back.fcz.global.security.jwt.JwtProvider;
 import back.fcz.global.security.jwt.service.RefreshTokenService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class AuthService {
 
     private static final int VERIFIED_VALID_MINUTES = 10;
 
+    @Transactional
     public MemberSignupResponse signup(MemberSignupRequest request) {
         // 활성 회원만 체크
         if (memberRepository.existsByUserIdAndDeletedAtIsNull(request.userId())) {
@@ -89,6 +91,7 @@ public class AuthService {
         return MemberSignupResponse.of(saved.getMemberId(), saved.getUserId());
     }
 
+    @Transactional
     public LoginTokensResponse login(MemberLoginRequest request) {
         Member member = memberRepository.findByUserId(request.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_USER_ID));
