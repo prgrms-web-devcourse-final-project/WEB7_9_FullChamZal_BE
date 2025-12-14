@@ -9,9 +9,11 @@ import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -33,6 +35,7 @@ public class CapsuleCreateService {
     private final CapsuleRecipientRepository recipientRepository;
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
+    private final PublicCapsuleRecipientRepository publicRecipientRepository;
 
     // url 도메인
     @Value("${cors.capsule-domain}")
@@ -183,17 +186,32 @@ public class CapsuleCreateService {
             String phoneHash
     ){
         // 수신자 캡슐 존재 확인
-        CapsuleRecipient capsule = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash)
+        CapsuleRecipient privateCapsule = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-        // deletedAt 갱신
-        capsule.markDeleted();
 
-        recipientRepository.save(capsule);
+        if(privateCapsule == null){
+            PublicCapsuleRecipient publicCapsule = publicRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash);
 
-        return new CapsuleDeleteResponseDTO(
-            capsuleId,
-            capsuleId + "번 캡슐이 삭제 되었습니다."
-        );
+            // deletedAt 갱신
+            publicCapsule.markDeleted();
+
+            publicRecipientRepository.save(publicCapsule);
+
+            return new CapsuleDeleteResponseDTO(
+                    capsuleId,
+                    capsuleId + "번 캡슐이 삭제 되었습니다."
+            );
+        }else{
+            // deletedAt 갱신
+            privateCapsule.markDeleted();
+
+            recipientRepository.save(privateCapsule);
+
+            return new CapsuleDeleteResponseDTO(
+                    capsuleId,
+                    capsuleId + "번 캡슐이 삭제 되었습니다."
+            );
+        }
     }
 
     // 발신자 삭제
