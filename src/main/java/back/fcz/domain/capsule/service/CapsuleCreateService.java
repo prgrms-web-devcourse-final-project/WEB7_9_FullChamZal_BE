@@ -126,6 +126,30 @@ public class CapsuleCreateService {
         }
     }
 
+    // 비공개 캡슐 - 나에게 보내는 캡슐
+    public SecretCapsuleCreateResponseDTO CapsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String receiveTel){
+        Capsule capsule = requestDTO.toEntity();
+
+        // 캡슐 설정
+        capsule.setProtected(1);
+        capsule.setUuid(setUUID());
+
+        Capsule saved = capsuleRepository.save(capsule);
+
+        // 수신자 테이블에 저장
+        CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
+                .capsuleId(saved)
+                .recipientName(requestDTO.nickName())
+                .recipientPhone(receiveTel)
+                .recipientPhoneHash(phoneCrypto.hash(receiveTel))
+                .isSenderSelf(1)
+                .build();
+
+        recipientRepository.save(recipientRecord);
+
+        return SecretCapsuleCreateResponseDTO.from(saved, null, null);
+    }
+
     // 캡슐 수정
     public CapsuleUpdateResponseDTO updateCapsule(
             Long capsuleId,
