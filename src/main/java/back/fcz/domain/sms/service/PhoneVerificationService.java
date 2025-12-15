@@ -32,6 +32,7 @@ public class PhoneVerificationService {
     private final PhoneVerificationRepository phoneVerificationRepository;
     private final CoolSmsClient coolSmsClient;
     private final PhoneCrypto phoneCrypto;
+    private final PhoneVerificationAttemptService phoneVerificationAttemptService;
 
     // 인증 코드 발송 로직
     @Transactional
@@ -103,7 +104,7 @@ public class PhoneVerificationService {
     public ConfirmSmsCodeResponse confirmCode(ConfirmSmsCodeRequest request){
         String phoneNumberHash = phoneCrypto.hash(nomalizePhoneNumber(request.phoneNumber()));
         PhoneVerificationPurpose purpose = request.purpose();
-        String codeHash = phoneCrypto.hash(request.verificationCode());
+
 
         LocalDateTime now = LocalDateTime.now();
         PhoneVerification verification = phoneVerificationRepository
@@ -115,15 +116,19 @@ public class PhoneVerificationService {
             verification.markExpired();
             throw new BusinessException(ErrorCode.VERIFICATION_EXPIRED);
         }
+        // 목적 체크
+        if(verification.getPurpose() != purpose){
+            throw new BusinessException(ErrorCode.VERIFICATION_PURPOSE_MISMATCH);
+        }
         // 시도 횟수 초과 체크
         if(verification.getAttemptCount() >= MAX_ATTEMPTS){
             verification.markExpired();
             throw new BusinessException(ErrorCode.VERIFICATION_ATTEMPT_EXCEEDED);
         }
         // 코드 검증
-        boolean matched = phoneCrypto.verifyHash(codeHash, verification.getCode());
+        boolean matched = phoneCrypto.verifyHash(request.verificationCode(), verification.getCode());
         if(!matched) {
-            verification.incrementAttemptCount();
+            phoneVerificationAttemptService.recordAttempt(verification.getId());
             throw new BusinessException(ErrorCode.VERIFICATION_CODE_MISMATCH);
         }
         // 검증 성공 처리

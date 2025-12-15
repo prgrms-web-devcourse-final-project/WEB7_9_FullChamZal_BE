@@ -27,6 +27,7 @@ public enum ErrorCode {
     VERIFICATION_EXPIRED("SMS004", HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다."),
     VERIFICATION_ATTEMPT_EXCEEDED("SMS005", HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다."),
     VERIFICATION_CODE_MISMATCH("SMS006", HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
+    VERIFICATION_PURPOSE_MISMATCH("SMS007", HttpStatus.BAD_REQUEST, "인증 목적이 일치하지 않습니다."),
     // ========== JWT 인증 에러 ==========
     TOKEN_EXPIRED("JWT001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     TOKEN_INVALID("JWT002", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
