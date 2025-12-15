@@ -93,8 +93,8 @@ public class CapsuleReadService {
 
         //2. 전화번호 기반인지 url+비번 기반인지
         if( !(requestDto.url() == null || requestDto.url().isBlank()) ){
-            //url+비번 기반 -> 수신자가 회원인지 비회원인지 판단(isProtected)
-            if(capsule.getIsProtected()==0){
+            //url+비번 기반 -> 수신자가 회원인지 비회원인지 판단
+            if(capsuleRecipientRepository.existsByCapsuleId_CapsuleId(capsule.getCapsuleId())){
                 //수신자 회원
                 //이제 기존에 조회 했던 것인지 검증
                 if(capsule.getCurrentViewCount() > 0){
