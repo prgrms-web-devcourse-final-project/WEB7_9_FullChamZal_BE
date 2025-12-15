@@ -2,11 +2,13 @@ package back.fcz.domain.admin.capsule.controller;
 
 import back.fcz.domain.admin.capsule.dto.AdminCapsuleDeleteRequest;
 import back.fcz.domain.admin.capsule.dto.AdminCapsuleDetailResponse;
+import back.fcz.domain.admin.capsule.dto.AdminCapsuleSummaryResponse;
 import back.fcz.domain.admin.capsule.service.AdminCapsuleService;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,14 +24,15 @@ public class AdminCapsuleController {
      * GET /api/v1/admin/capsules?page=0&size=20&visibility=PUBLIC
      */
     @GetMapping
-    public ApiResponse<PageResponse<?>> getCapsules(
+    public ResponseEntity<ApiResponse<PageResponse<AdminCapsuleSummaryResponse>>> getCapsules(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String visibility
     ) {
+        PageResponse<AdminCapsuleSummaryResponse> response =
+                adminCapsuleService.getCapsules(page, size, visibility);
 
-        PageResponse<?> response = adminCapsuleService.getCapsules(page, size, visibility);
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
@@ -38,11 +41,11 @@ public class AdminCapsuleController {
      * GET /api/v1/admin/capsules/{capsuleId}
      */
     @GetMapping("/{capsuleId}")
-    public ApiResponse<AdminCapsuleDetailResponse> getCapsuleDetail(
+    public ResponseEntity<ApiResponse<AdminCapsuleDetailResponse>> getCapsuleDetail(
             @PathVariable Long capsuleId
     ) {
         AdminCapsuleDetailResponse response = adminCapsuleService.getCapsuleDetail(capsuleId);
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
@@ -57,12 +60,13 @@ public class AdminCapsuleController {
      * }
      */
     @PatchMapping("/{capsuleId}/deleted")
-    public ApiResponse<AdminCapsuleDetailResponse> updateCapsuleDeleted(
+    public ResponseEntity<ApiResponse<AdminCapsuleDetailResponse>> updateCapsuleDeleted(
             @PathVariable Long capsuleId,
             @RequestBody @Valid AdminCapsuleDeleteRequest request
     ) {
         AdminCapsuleDetailResponse response =
                 adminCapsuleService.updateCapsuleDeleted(capsuleId, request);
-        return ApiResponse.success(response);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
