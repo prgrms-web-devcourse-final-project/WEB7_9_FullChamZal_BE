@@ -8,9 +8,12 @@ import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
+import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +24,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/capsule")
+@Tag(
+        name = "캡슐 API",
+        description = "캡슐 조회 관련 API"
+)
 public class CapsuleReadController {
     private final CapsuleReadService capsuleReadService;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
@@ -93,7 +100,10 @@ public class CapsuleReadController {
     }
 
 
-    //회원이 전송한 캡슐의 대시보드 api
+    @Operation(summary = "전송한 캡슐 조회", description = "사용자가 전송한 캡슐들을 조회합니다. 이때, 삭제되지 않은 캡슐만 조회가 가능합니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND
+    })
     @GetMapping("/send/dashboard")
     public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> sentCapsuleDash(
             @AuthenticationPrincipal Long memberId
@@ -103,7 +113,10 @@ public class CapsuleReadController {
         return  ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    //회원이 받은 캡슐의 대시보드 api
+    @Operation(summary = "수신받은 캡슐 조회", description = "사용자가 수신받은 캡슐들을 조회합니다. 이때, 삭제되지 않은 캡슐만 조회가 가능합니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND
+    })
     @GetMapping("/receive/dashboard")
     public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> receivedCapsuleDash(
             @AuthenticationPrincipal Long memberId
