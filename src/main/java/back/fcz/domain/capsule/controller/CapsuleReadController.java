@@ -30,6 +30,17 @@ public class CapsuleReadController {
 
 
     //캡슐 조건 검증 -> 조건 만족 후 읽기
+    @Operation(summary = "요청 캡슐 검증 및 조회",
+            description = "사용자가 받은 캡슐의 내용을 조건에 맞으면 보여줍니다. "
+                    +  "이미 조회한 캡슐이라면 조건 검증을 생략합니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.NOT_OPENED_CAPSULE,
+            ErrorCode.CAPSULE_NOT_RECEIVER,
+            ErrorCode.CAPSULE_NOT_FOUND,
+            ErrorCode.CAPSULE_PASSWORD_NOT_MATCH,
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.RECIPIENT_NOT_FOUND
+    })
     @PostMapping("/read")
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> conditionAndReadCapsule(
             @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto
