@@ -29,4 +29,9 @@ public abstract class BaseEntity {
     public void markDeleted() {
         this.deletedAt = LocalDateTime.now();
     }
+
+    // deletedAt을 null로 변경하기 위한 메서드 - soft delete 복구
+    public void clearDeletedAt() {
+        this.deletedAt = null;
+    }
 }

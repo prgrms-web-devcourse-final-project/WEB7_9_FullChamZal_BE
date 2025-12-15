@@ -2,7 +2,10 @@ package back.fcz.domain.sms.repository;
 
 import back.fcz.domain.sms.entity.PhoneVerification;
 import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
+import back.fcz.domain.sms.entity.PhoneVerificationStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
@@ -30,4 +33,14 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
     Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(
             String phoneNumberHash,
             PhoneVerificationPurpose purpose);
+
+    Page<PhoneVerification> findByPurpose(PhoneVerificationPurpose purpose, Pageable pageable);
+
+    Page<PhoneVerification> findByStatus(PhoneVerificationStatus status, Pageable pageable);
+
+    Page<PhoneVerification> findByPurposeAndStatus(
+            PhoneVerificationPurpose purpose,
+            PhoneVerificationStatus status,
+            Pageable pageable
+    );
 }

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(
     name = "phone_verifications",
         indexes = {
-            @Index(name = "idx_phone_purpose_created", columnList = "phone_number, purpose, created_at"),
+            @Index(name = "idx_phone_purpose_created", columnList = "phone_number_hash, purpose, created_at"),
         }
 )
 @Getter
@@ -59,10 +59,12 @@ public class PhoneVerification {
 
     @PrePersist
     protected void onCreate(){
-        this.createdAt = LocalDateTime.now();
-        this.expiredAt = LocalDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES);  // 인증 번호 요청 후 3분 후 만료
-        this.status = PhoneVerificationStatus.PENDING;
-        this.attemptCount = 0;
+        if(this.createdAt == null){     // baseinit이나 test init이 아닌 경우에만 설정
+            this.createdAt = LocalDateTime.now();
+            this.expiredAt = LocalDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES);  // 인증 번호 요청 후 3분 후 만료
+            this.status = PhoneVerificationStatus.PENDING;
+            this.attemptCount = 0;
+        }
     }
 
     public boolean isExpired(LocalDateTime now){    // 현재 시간이 만료 시간 이후인지 확인
@@ -85,4 +87,33 @@ public class PhoneVerification {
         this.status = PhoneVerificationStatus.PENDING;
         this.attemptCount = 0;
     }
+
+
+
+
+
+    /* init용 */
+    public static PhoneVerification initForTest(
+            String phoneNumberHash,
+            String code,
+            PhoneVerificationPurpose purpose,
+            PhoneVerificationStatus status,
+            int attemptCount,
+            LocalDateTime createdAt,
+            LocalDateTime verifiedAt,
+            LocalDateTime expiredAt
+    ) {
+        PhoneVerification pv = new PhoneVerification(
+                phoneNumberHash,
+                code,
+                purpose
+        );
+        pv.status = status;
+        pv.attemptCount = attemptCount;
+        pv.createdAt = createdAt;
+        pv.verifiedAt = verifiedAt;
+        pv.expiredAt = expiredAt;
+        return pv;
+    }
+
 }

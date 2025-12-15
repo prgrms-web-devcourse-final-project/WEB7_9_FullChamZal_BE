@@ -7,6 +7,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor
@@ -31,12 +33,18 @@ public class CapsuleRecipient extends BaseEntity {
     @Column(name = "recipient_phone_hash", nullable = false)
     private String recipientPhoneHash;
 
-    @Column(name = "is_sender_self", nullable = false)
-    private Integer isSenderSelf;   // 타인에게 보내는 경우 0, 본인에게 보내는 경우 1
-
-    @Setter
-    @Column(name = "unlocked_at")
+    @Column(name = "opend_at")
     private LocalDateTime unlockedAt;
+
+    @Column(name = "is_sender_self", nullable = false)
+
+    private int isSenderSelf;
+
+    public void anonymize(Long uniqueId) {
+        this.recipientName = "탈퇴한 수신자";
+        this.recipientPhone = "DELETED_" + uniqueId;
+        this.recipientPhoneHash = "DELETED_" + uniqueId;
+    }
 
 }
 

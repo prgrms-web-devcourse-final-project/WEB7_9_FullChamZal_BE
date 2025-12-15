@@ -88,7 +88,11 @@ public class Capsule extends BaseEntity {
         this.content = content;
     }
 
-    public void increasedViewCount(){
+    public void increasedViewCount() {
         this.currentViewCount++;
+    }
+
+    public void setIsDeleted(int i) {
+        this.isDeleted = i;
     }
 }

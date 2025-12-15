@@ -1,9 +1,15 @@
 package back.fcz.domain.capsule.controller;
 
+<<<<<<< HEAD
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDTO;
+=======
+import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDto;
+import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
+import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDto;
+>>>>>>> dev
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
@@ -11,11 +17,18 @@ import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+<<<<<<< HEAD
 import org.springframework.web.bind.annotation.*;
+=======
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+>>>>>>> dev
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -36,57 +49,22 @@ public class CapsuleReadController {
 
 
     //회원이 전송한 캡슐의 대시보드 api
-    //컨트롤러에 있는 비지니스 로직을 서비스로 옮기기
-    @GetMapping("/send/dashboard")
-    public ResponseEntity<CapsuleSendDashBoardResponseDTO> readSendCapsule(
-            @RequestBody CapsuleSendDashBoardRequestDTO capsuleSendDashBoardRequestDto
-            ) {
-        List<Capsule> capsules = capsuleDashBoardService.readSendCapsuleList(capsuleSendDashBoardRequestDto.memberId());
-        List<CapsuleConditionResponseDTO> capsuleDtoList = new ArrayList<>();
+    @GetMapping("/send/dashboard/{memberId}")
+    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> sentCapsuleDash(
+            @PathVariable Long memberId
+    ) {
+        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readSendCapsuleList(memberId);
 
-        for(Capsule capsule : capsules){
-            //응답 Dto생성
-            CapsuleRecipient capsuleRecipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-
-            CapsuleConditionResponseDTO capsuleConditionResponseDto = new CapsuleConditionResponseDTO(
-                    capsule.getCapsuleId(),
-                    capsule.getCapsuleColor(),
-                    capsule.getCapsulePackingColor(),
-                    capsuleRecipient.getRecipientName(),
-                    capsule.getNickname(),
-                    capsule.getTitle(),
-                    capsule.getContent(),
-                    capsule.getCreatedAt(),
-                    capsule.getCurrentViewCount() > 0,
-                    capsule.getUnlockType(),
-                    capsule.getUpdatedAt(),
-                    capsule.getLocationName(),
-                    capsule.getLocationLat(),
-                    capsule.getLocationLng()
-            );
-            capsuleDtoList.add(capsuleConditionResponseDto);
-        }
-
-        return  ResponseEntity.ok(new CapsuleSendDashBoardResponseDTO(capsuleDtoList));
+        return  ResponseEntity.ok(ApiResponse.success(response));
     }
 
     //회원이 받은 캡슐의 대시보드 api
+    @GetMapping("/receive/dashboard/{memberId}")
+    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> receivedCapsuleDash(
+            @PathVariable Long memberId
+    ) {
+        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readReceiveCapsuleList(memberId);
 
-
-    //캡슐 저장버튼을 눌렀을때 호출할 api
-    //수신자 테이블에 저장하는게 맞음
-
-/*
-
-    //사용자가 열람한 적이 있는 캡슐이라면 조건없이 읽기(시간, 공간 조건을 통과해서 조회한 적이 있는 경우에만 호출)
-    @PostMapping("")
-    public ResponseEntity<CapsuleReadResponseDTO> readCapsule(
-            @RequestBody CapsuleReadRequestDTO capsuleReadRequestDto
-    ){
-        return ResponseEntity.ok(capsuleReadService.readCapsule(capsuleReadRequestDto.memberId(), capsuleReadRequestDto.capsuleId()));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
-*/
-
-
 }
