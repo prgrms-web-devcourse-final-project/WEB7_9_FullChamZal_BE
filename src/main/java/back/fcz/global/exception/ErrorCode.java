@@ -78,6 +78,8 @@ public enum ErrorCode {
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
     BOOKMARK_NOT_FOUND("BMK002", HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
     CAPSULE_NOT_UNLOCKED("BMK003", HttpStatus.BAD_REQUEST, "해제되지 않은 캡슐은 북마크할 수 없습니다."),
+    NOT_CAPSULE_RECIPIENT("BMK004", HttpStatus.FORBIDDEN, "해당 캡슐의 수신자가 아닙니다."),
+    INVALID_CAPSULE_VISIBILITY("BMK005", HttpStatus.BAD_REQUEST, "잘못된 캡슐 공개 범위입니다."),
 
 
     // ========== 해제조건 에러 ==========
