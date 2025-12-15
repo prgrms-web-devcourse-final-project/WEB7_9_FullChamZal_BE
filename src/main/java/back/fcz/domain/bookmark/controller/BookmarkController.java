@@ -4,8 +4,11 @@ import back.fcz.domain.bookmark.dto.request.BookmarkCreateRequest;
 import back.fcz.domain.bookmark.dto.response.BookmarkListItemResponse;
 import back.fcz.domain.bookmark.service.BookmarkService;
 import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.dto.PageResponse;
+import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +31,21 @@ public class BookmarkController {
     private final BookmarkService bookmarkService;
     private final CurrentUserContext currentUserContext;
 
-    // 북마크 생성
     @PostMapping
+    @Operation(summary = "북마크 생성/복구", description = "열람한 캡슐을 북마크에 추가하거나 삭제된 북마크를 복구하는 API입니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.CAPSULE_NOT_FOUND,
+            ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND,
+            ErrorCode.NOT_CAPSULE_RECIPIENT,
+            ErrorCode.CAPSULE_NOT_UNLOCKED,
+            ErrorCode.INVALID_CAPSULE_VISIBILITY,
+            ErrorCode.BOOKMARK_ALREADY_EXISTS,
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_EXPIRED,
+            ErrorCode.TOKEN_INVALID
+    })
     public ResponseEntity<ApiResponse<Void>> bookmark(
             @Valid @RequestBody BookmarkCreateRequest bookmarkCreateRequest
             ) {
@@ -39,8 +55,16 @@ public class BookmarkController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    // 북마크 해제
     @DeleteMapping("/{capsuleId}")
+    @Operation(summary = "북마크 해제", description = "북마크된 캡슐을 북마크 목록에서 제거하는 API입니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.BOOKMARK_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_EXPIRED,
+            ErrorCode.TOKEN_INVALID
+    })
     public ResponseEntity<ApiResponse<Void>> deleteBookmark(
             @PathVariable Long capsuleId
     ) {
@@ -50,8 +74,15 @@ public class BookmarkController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    // 북마크 조회
     @GetMapping
+    @Operation(summary = "북마크 목록 조회", description = "북마크된 캡슐 목록을 페이징하여 조회하는 API입니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_EXPIRED,
+            ErrorCode.TOKEN_INVALID
+    })
     public ResponseEntity<PageResponse<BookmarkListItemResponse>> getBookmarks(
             @PageableDefault(
                     size = 20,

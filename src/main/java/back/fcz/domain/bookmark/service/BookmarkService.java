@@ -4,7 +4,13 @@ import back.fcz.domain.bookmark.dto.BookmarkWithCapsule;
 import back.fcz.domain.bookmark.dto.response.BookmarkListItemResponse;
 import back.fcz.domain.bookmark.entity.Bookmark;
 import back.fcz.domain.bookmark.repository.BookmarkRepository;
+import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +30,19 @@ public class BookmarkService {
 
     private final CapsuleRepository capsuleRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final CapsuleRecipientRepository capsuleRecipientRepository;
+    private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
+    private final CurrentUserContext currentUserContext;
 
     @Transactional
     public void createOrRestoreBookmark(Long memberId, Long capsuleId) {
-        capsuleRepository.findById(capsuleId)
+        Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        // TODO: 캡슐이 해제 조건을 만족했는지 검증
+        InServerMemberResponse currentUser = currentUserContext.getCurrentUser();
+        String currentUserPhoneHash = currentUser.phoneHash();
+
+        validateCapsuleUnlocked(capsule, currentUserPhoneHash);
 
         Optional<Bookmark> existingBookmark = bookmarkRepository.findByMemberIdAndCapsuleId(memberId, capsuleId);
 
@@ -70,8 +82,6 @@ public class BookmarkService {
     public Page<BookmarkListItemResponse> getBookmarks(Long memberId, Pageable pageable) {
         Page<BookmarkWithCapsule> bookmarkWithCapsulePage = bookmarkRepository.findBookmarksWithCapsuleInfo(memberId, pageable);
 
-        // TODO: 열람 여부 확인 로직
-
         return bookmarkWithCapsulePage.map(dto ->
                 BookmarkListItemResponse.builder()
                         .bookmarkId(dto.bookmarkId())
@@ -80,9 +90,34 @@ public class BookmarkService {
                         .sender(dto.sender())
                         .title(dto.title())
                         .contentPreview(BookmarkListItemResponse.createPreview(dto.content()))
-                        .isViewed(false) // TODO: 구현 후 false를 isViewed로 수정
+                        .isViewed(true) // 북마크 생성 시점에 이미 열람 완료 검증됨
                         .bookmarkedAt(dto.bookmarkedAt())
                         .build()
         );
+    }
+
+    // 캡슐이 열람 가능한 상태인지 검증
+    private void validateCapsuleUnlocked(Capsule capsule, String currentUserPhoneHash) {
+        String visibility = capsule.getVisibility();
+
+        if("PRIVATE".equals(visibility)) {
+            CapsuleRecipient recipient = capsuleRecipientRepository
+                    .findByCapsuleId_CapsuleId(capsule.getCapsuleId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND));
+
+            if(!recipient.getRecipientPhoneHash().equals(currentUserPhoneHash)) {
+                throw new BusinessException(ErrorCode.NOT_CAPSULE_RECIPIENT);
+            }
+
+            if(recipient.getUnlockedAt() == null) {
+                throw new BusinessException(ErrorCode.CAPSULE_NOT_UNLOCKED);
+            }
+        } else if ("PUBLIC".equals(visibility)) {
+            publicCapsuleRecipientRepository
+                    .findByCapsuleIdAndPhoneHash(capsule.getCapsuleId(), currentUserPhoneHash)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_UNLOCKED));
+        } else {
+            throw new BusinessException(ErrorCode.INVALID_CAPSULE_VISIBILITY);
+        }
     }
 }
