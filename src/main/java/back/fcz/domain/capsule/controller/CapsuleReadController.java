@@ -1,33 +1,15 @@
 package back.fcz.domain.capsule.controller;
 
-<<<<<<< HEAD
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
-import back.fcz.domain.capsule.DTO.request.CapsuleSendDashBoardRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
-import back.fcz.domain.capsule.DTO.response.CapsuleSendDashBoardResponseDTO;
-=======
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequestDto;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleReadResponseDto;
->>>>>>> dev
-import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
-import back.fcz.global.exception.BusinessException;
-import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-<<<<<<< HEAD
 import org.springframework.web.bind.annotation.*;
-=======
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
->>>>>>> dev
 
 import java.util.List;
 
