@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(
     name = "phone_verifications",
         indexes = {
-            @Index(name = "idx_phone_purpose_created", columnList = "phone_number, purpose, created_at"),
+            @Index(name = "idx_phone_purpose_created", columnList = "phone_number_hash, purpose, created_at"),
         }
 )
 @Getter

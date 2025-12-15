@@ -54,6 +54,10 @@ public class BaseInitData implements CommandLineRunner {
             createTestMembers();
         }
 
+        if (phoneVerificationRepository.count() == 0) {
+            createTestPhoneVerifications();
+        }
+
         if (capsuleRepository.count() == 0) {
             createDummyCapsules();
         }
@@ -61,9 +65,6 @@ public class BaseInitData implements CommandLineRunner {
         if (reportRepository.count() == 0) {
             createDummyReports();
         }
-        createTestMembers();
-        createTestPhoneVerifications();
-        createDummyCapsules();
     }
 
     private void createTestMembers() {
@@ -74,7 +75,8 @@ public class BaseInitData implements CommandLineRunner {
                 "홍길동",
                 "테스터",
                 "010-1234-5678",
-                "USER"
+                MemberStatus.ACTIVE,
+                MemberRole.USER
         );
 
         // 일반 회원 2 (캡슐 테스트용)
@@ -84,7 +86,8 @@ public class BaseInitData implements CommandLineRunner {
                 "김철수",
                 "캡슐러버",
                 "010-2345-6789",
-                "USER"
+                MemberStatus.ACTIVE,
+                MemberRole.USER
         );
 
         // 관리자
@@ -94,7 +97,8 @@ public class BaseInitData implements CommandLineRunner {
                 "관리자",
                 "어드민",
                 "010-9999-9999",
-                "ADMIN"
+                MemberStatus.ACTIVE,
+                MemberRole.ADMIN
         );
 
         // 정지 회원
@@ -104,7 +108,8 @@ public class BaseInitData implements CommandLineRunner {
                 "정지유저",
                 "STOP_USER",
                 "010-1111-2222",
-                "USER"
+                MemberStatus.STOP,
+                MemberRole.USER
         );
     }
     private void createTestPhoneVerifications() {
@@ -123,7 +128,7 @@ public class BaseInitData implements CommandLineRunner {
         );
         // 인증하고 있는 중간 상태
         createPhoneVerification(
-                "010-1234-5678",
+                "010-0012-3456",
                 "222333",
                 PhoneVerificationPurpose.SIGNUP,
                 PhoneVerificationStatus.PENDING,
@@ -136,7 +141,7 @@ public class BaseInitData implements CommandLineRunner {
 
         // 만료된 인증 코드
         createPhoneVerification(
-                "010-2345-6789",
+                "010-0001-2345",
                 "654321",
                 PhoneVerificationPurpose.SIGNUP,
                 PhoneVerificationStatus.EXPIRED,
@@ -148,7 +153,7 @@ public class BaseInitData implements CommandLineRunner {
 
         // 시도 횟수 초과로 실패한 인증
         createPhoneVerification(
-                "010-3456-7890",
+                "010-0000-1234",
                 "111222",
                 PhoneVerificationPurpose.CHANGE_PHONE,
                 PhoneVerificationStatus.EXPIRED,
@@ -160,7 +165,7 @@ public class BaseInitData implements CommandLineRunner {
     }
 
     private void createMember(String userId, String password, String name,
-                              String nickname, String phone, String role) {
+                              String nickname, String phone, MemberStatus status, MemberRole role) {
         String encrypted = phoneCrypto.encrypt(phone);
         String hash = phoneCrypto.hash(phone);
 
@@ -171,8 +176,8 @@ public class BaseInitData implements CommandLineRunner {
                 .nickname(nickname)
                 .phoneNumber(encrypted)
                 .phoneHash(hash)
-                .status(MemberStatus.ACTIVE)
-                .role(MemberRole.valueOf(role))
+                .status(status)
+                .role(role)
                 .build();
 
         memberRepository.save(member);

@@ -78,7 +78,7 @@ public class CapsuleDashBoardServiceTest {
                 .recipientName("recipient1")
                 .recipientPhone("test")
                 .recipientPhoneHash(PHONE_HASH)
-                .isSenderSelf(false)
+                .isSenderSelf(1)
                 .build();
 
         recipient2 = CapsuleRecipient.builder()
@@ -87,7 +87,7 @@ public class CapsuleDashBoardServiceTest {
                 .recipientName("recipient2")
                 .recipientPhone("test")
                 .recipientPhoneHash(PHONE_HASH)
-                .isSenderSelf(false)
+                .isSenderSelf(1)
                 .build();
     }
 
