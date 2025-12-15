@@ -3,10 +3,9 @@ package back.fcz.domain.capsule.entity;
 
 import back.fcz.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -33,6 +32,11 @@ public class CapsuleRecipient extends BaseEntity {
     private String recipientPhoneHash;
 
     @Column(name = "is_sender_self", nullable = false)
-    private boolean isSenderSelf;
+    private Integer isSenderSelf;   // 타인에게 보내는 경우 0, 본인에게 보내는 경우 1
+
+    @Setter
+    @Column(name = "unlocked_at")
+    private LocalDateTime unlockedAt;
+
 }
 

@@ -4,11 +4,12 @@ import back.fcz.domain.capsule.entity.Capsule;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
 import java.util.Optional;
 
+@Repository
 public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
 
     // 공개 캡슐이고 삭제되지 않았으며, 위치 정보가 유효한 캡슐 조회

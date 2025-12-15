@@ -104,7 +104,7 @@ public class CapsuleCreateService {
                     .recipientName(capsuleCreate.nickName())
                     .recipientPhone(receiveTel)
                     .recipientPhoneHash(phoneCrypto.hash(receiveTel))
-                    .isSenderSelf(false)
+                    .isSenderSelf(0)
                     .build();
 
             recipientRepository.save(recipientRecord);

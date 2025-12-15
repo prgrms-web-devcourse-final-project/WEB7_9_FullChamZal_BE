@@ -60,9 +60,9 @@ public class Capsule extends BaseEntity {
     @Column(name = "current_view_count")
     private int currentViewCount = 0;     // 현재 조회 인원
     @Column(name = "is_deleted")
-    private Integer isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전 0, 삭제후 1, , 관리자 삭제 후 2)
+    private int isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전 0, 삭제후 1, , 관리자 삭제 후 2)
     @Column(name = "is_protected")
-    private Integer isProtected = 0;      // 보호 여부(보호 : 0, 미보호 : 1)
+    private int isProtected = 0;      // 보호 여부(보호 : 0, 미보호 : 1)
 
     public void setMemberId(Member member){
         this.memberId = member;
@@ -86,5 +86,9 @@ public class Capsule extends BaseEntity {
 
     public void setContent(String content){
         this.content = content;
+    }
+
+    public void increasedViewCount(){
+        this.currentViewCount++;
     }
 }

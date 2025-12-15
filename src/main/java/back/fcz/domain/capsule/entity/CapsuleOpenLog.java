@@ -2,24 +2,23 @@ package back.fcz.domain.capsule.entity;
 
 import back.fcz.domain.member.entity.Member;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "capsule_openLog")
 public class CapsuleOpenLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-/*
-    //비회원 엔티티의 이름이 정해저야 합니다. 임시로 Guest로 했습니다.
-    @ManyToOne
-    @JoinColumn(name = "guest_id")
-    private Guest guest_id;
-*/
 
     @ManyToOne
     @JoinColumn(name = "capsule_id", nullable = false)
@@ -39,8 +38,8 @@ public class CapsuleOpenLog {
     @Column(name = "current_lat")
     private Double currentLat;
 
-    @Column(name = "current_ing")
-    private Double currentIng;
+    @Column(name = "current_lng")
+    private Double currentLng;
 
     @Column(name = "user_agent")
     private String userAgent;
