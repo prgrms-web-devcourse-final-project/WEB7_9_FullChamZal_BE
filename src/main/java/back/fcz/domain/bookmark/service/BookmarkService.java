@@ -41,8 +41,9 @@ public class BookmarkService {
 
         InServerMemberResponse currentUser = currentUserContext.getCurrentUser();
         String currentUserPhoneHash = currentUser.phoneHash();
+        Long currentMemberId = currentUser.memberId();
 
-        validateCapsuleUnlocked(capsule, currentUserPhoneHash);
+        validateCapsuleUnlocked(capsule, currentUserPhoneHash, currentMemberId);
 
         Optional<Bookmark> existingBookmark = bookmarkRepository.findByMemberIdAndCapsuleId(memberId, capsuleId);
 
@@ -97,7 +98,7 @@ public class BookmarkService {
     }
 
     // 캡슐이 열람 가능한 상태인지 검증
-    private void validateCapsuleUnlocked(Capsule capsule, String currentUserPhoneHash) {
+    private void validateCapsuleUnlocked(Capsule capsule, String currentUserPhoneHash, Long currentMemberId) {
         String visibility = capsule.getVisibility();
 
         if("PRIVATE".equals(visibility)) {
@@ -112,9 +113,10 @@ public class BookmarkService {
             if(recipient.getUnlockedAt() == null) {
                 throw new BusinessException(ErrorCode.CAPSULE_NOT_UNLOCKED);
             }
+
         } else if ("PUBLIC".equals(visibility)) {
             publicCapsuleRecipientRepository
-                    .findByCapsuleIdAndPhoneHash(capsule.getCapsuleId(), currentUserPhoneHash)
+                    .findByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_UNLOCKED));
         } else {
             throw new BusinessException(ErrorCode.INVALID_CAPSULE_VISIBILITY);
