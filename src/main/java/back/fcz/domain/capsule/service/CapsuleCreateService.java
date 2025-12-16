@@ -82,7 +82,7 @@ public class CapsuleCreateService {
 
         Capsule saved = capsuleRepository.save(secretCapsule);
 
-        String url  = domain + saved.getUuid();
+        String url  = domain + "/" +saved.getUuid();
 
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
     }
@@ -111,7 +111,7 @@ public class CapsuleCreateService {
 
             recipientRepository.save(recipientRecord);
 
-            String url = domain + saved.getUuid();
+            String url = domain + "/" +saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
@@ -122,7 +122,7 @@ public class CapsuleCreateService {
 
             Capsule saved = capsuleRepository.save(capsule);
 
-            String url = domain + saved.getUuid();
+            String url = domain + "/" +saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
