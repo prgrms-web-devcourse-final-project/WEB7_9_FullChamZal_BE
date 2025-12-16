@@ -15,7 +15,15 @@ public class UnlockService {
     private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
     private final CapsuleRepository capsuleRepository;
 
-    // 시간 해제 조건 검증
+    /*
+    시간 해제 조건 검증
+
+    시간 해제 조건을 사용하는 캡슐은 다음 두 가지 유형으로 나뉜다.
+    1. unlockAt만 설정된 경우
+       - 지정된 시점(unlockAt)이 되면 캡슐이 해제된다.
+    2. unlockAt과 unlockUntil이 모두 설정된 경우
+       - unlockAt부터 unlockUntil 사이의 기간 동안만 캡슐 해제가 가능하다.
+     */
     public boolean isTimeConditionMet(long capsuleId, LocalDateTime currentTime) {
         if(currentTime == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
 
@@ -23,6 +31,12 @@ public class UnlockService {
                 () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
         LocalDateTime capsuleUnlockAt = capsule.getUnlockAt();
         LocalDateTime capsuleUnlockUntil = capsule.getUnlockUntil();
+
+        if(capsuleUnlockAt == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
+        // unlockUntil <= unlockAt 이면 error
+        if (capsuleUnlockAt != null && capsuleUnlockUntil != null) {
+            if (!capsuleUnlockUntil.isAfter(capsuleUnlockAt)) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME_RANGE);}
+        }
 
         // 캡슐의 시간 해제 조건 <= 사용자의 현재 시간 이면 true
         boolean isAfterOrEqualToUnlockAt = !capsuleUnlockAt.isAfter(currentTime);

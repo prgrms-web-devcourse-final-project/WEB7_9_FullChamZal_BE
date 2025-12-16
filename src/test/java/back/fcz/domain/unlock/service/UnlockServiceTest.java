@@ -2,6 +2,8 @@ package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,6 +125,54 @@ public class UnlockServiceTest {
 
         //then
         assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("현재 시간이 unlockAt과 정확히 같으면 true를 반환해야 한다 (경계 조건)")
+    void isTimeConditionMet_boundary_at_equal() {
+        // given
+        Capsule capsule = createTimeCapsule(null);
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = CAPSULE_UNLOCK_AT;
+
+        // when
+        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("현재 시간이 unlockUntil과 정확히 같으면 true를 반환해야 한다 (경계 조건)")
+    void isTimeConditionMet_boundary_until_equal() {
+        // given
+        LocalDateTime unlockUntil = LocalDateTime.of(2025, 1, 1, 11, 0);
+        Capsule capsule = createTimeCapsule(unlockUntil);
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = unlockUntil;
+
+        // when
+        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("unlockUntil <= unlockAt 이면, INVALID_UNLOCK_TIME_RANGE 예외 발생")
+    void isTimeConditionMet_throws_exception_when_unlockUntil_before_or_equal_unlockAt() {
+        // given
+        Capsule capsule = createTimeCapsule(CAPSULE_UNLOCK_AT);
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        // when
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                unlockService.isTimeConditionMet(CAPSULE_ID, currentTime)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_UNLOCK_TIME_RANGE);
     }
 
     @Test
