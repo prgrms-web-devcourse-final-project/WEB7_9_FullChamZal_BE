@@ -14,6 +14,43 @@ import java.time.LocalDateTime;
 public class UnlockService {
     private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
     private final CapsuleRepository capsuleRepository;
+    private final FirstComeService firstComeService;
+
+    public boolean validateUnlockConditions(
+            Capsule capsule,
+            LocalDateTime currentTime,
+            Double currentLat,
+            Double currentLng,
+            boolean isFirstTimeViewing
+    ) {
+
+        // 선착순 조건 검증이면
+        if (isFirstTimeViewing && "PUBLIC".equals(capsule.getVisibility())) {
+            if (firstComeService.hasFirstComeLimit(capsule)) {
+                // 비관 락을 통한 조회수 증가 시도
+                // 실패 시 BusinessException(FIRST_COME_CLOSED) 발생
+                firstComeService.tryIncrementViewCount(capsule.getCapsuleId());
+            }
+        }
+
+        return validateTimeAndLocationConditions(capsule, currentTime, currentLat, currentLng);
+    }
+
+    private boolean validateTimeAndLocationConditions(
+            Capsule capsule,
+            LocalDateTime currentTime,
+            Double currentLat,
+            Double currentLng
+    ) {
+        String unlockType = capsule.getUnlockType();
+
+        return switch (unlockType) {
+            case "TIME" -> isTimeConditionMet(capsule.getCapsuleId(), currentTime);
+            case "LOCATION" -> isLocationConditionMet(capsule.getCapsuleId(), currentLat, currentLng);
+            case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule.getCapsuleId(), currentTime, currentLat, currentLng);
+            default ->  throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
+        };
+    }
 
     /*
     시간 해제 조건 검증

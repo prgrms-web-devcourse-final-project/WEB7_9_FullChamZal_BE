@@ -74,6 +74,7 @@ public enum ErrorCode {
     CAPSULE_NOT_UPDATE("CPS007", HttpStatus.BAD_REQUEST, "캡슐을 수정할 수 없습니다."),
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
+
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
     BOOKMARK_NOT_FOUND("BMK002", HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
@@ -81,6 +82,8 @@ public enum ErrorCode {
     NOT_CAPSULE_RECIPIENT("BMK004", HttpStatus.FORBIDDEN, "해당 캡슐의 수신자가 아닙니다."),
     INVALID_CAPSULE_VISIBILITY("BMK005", HttpStatus.BAD_REQUEST, "잘못된 캡슐 공개 범위입니다."),
 
+    // ========== 선착순 에러 ==========
+    FIRST_COME_CLOSED("FCM001", HttpStatus.CONFLICT, "선착순 마감되었습니다."),
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),

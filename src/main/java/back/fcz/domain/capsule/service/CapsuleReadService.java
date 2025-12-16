@@ -67,8 +67,12 @@ public class CapsuleReadService {
     //공개 캡슐
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         Long currentMemberId = currentUserContext.getCurrentMemberId();
+
+        boolean isFirstTimeViewing = !publicCapsuleRecipientRepository
+                .existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId);
+
         //2. 조회 횟수 검증
-        if(publicCapsuleRecipientRepository.existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId)){
+        if(!isFirstTimeViewing){
             System.out.println("기존에 조회 된 공개 캡슐");
             //기존에 조회했던 것이니 바로 조회가능
             boolean viewStatus = true;
@@ -78,7 +82,7 @@ public class CapsuleReadService {
             boolean viewStatus = false;
 
             //조회한 적 없으니 조건 검증이 필요 / 공개 캡슐은 시간, 위치만 검증하면됨
-            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
+            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng(), isFirstTimeViewing)){
                 PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
                         .capsuleId(capsule)
                         .memberId(currentMemberId)
@@ -96,7 +100,7 @@ public class CapsuleReadService {
     //개인 캡슐
     public CapsuleConditionResponseDTO privateCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         //전화번호 기반인지 url+비번 기반인지를 먼저 확인하고 조회 횟수를 검증할것
-        
+
 
         //2. 전화번호 기반인지 url+비번 기반인지
         if( !(requestDto.url() == null || requestDto.url().isBlank()) ){
@@ -170,7 +174,7 @@ public class CapsuleReadService {
 
         if(phoneCrypto.verifyHash(phoneNumber, capsuleRecipient.getRecipientPhoneHash())){
             //두 값이 같다면 해제 조건 확인
-            return capsuleCondition(capsule, unlockAt, locationLat, locationLng);
+            return capsuleCondition(capsule, unlockAt, locationLat, locationLng, false);
         }else{
             //같지 않다면 403 에러
             throw new BusinessException(ErrorCode.CAPSULE_NOT_RECEIVER);
@@ -190,31 +194,17 @@ public class CapsuleReadService {
         }
 
         //캡슐 해제 조건 검증
-        return capsuleCondition(capsule, unlockAt, locationLat, locationLng);
+        return capsuleCondition(capsule, unlockAt, locationLat, locationLng, false);
     }
 
     //캡슐 해제 조건 검증
-    private boolean capsuleCondition(Capsule capsule, LocalDateTime unlockAt, Double locationLat, Double locationLng) {
+    private boolean capsuleCondition(Capsule capsule, LocalDateTime unlockAt, Double locationLat, Double locationLng,
+                                     boolean isFirstTimeViewing) {
         System.out.println("검증 로직 진입");
-        if(capsule.getUnlockType().equals("TIME") && unlockService.isTimeConditionMet(capsule.getCapsuleId(), unlockAt)) {
-            System.out.println("시간 검증 통과");
-            return true;
-        }else if(capsule.getUnlockType().equals("LOCATION") && unlockService.isLocationConditionMet(capsule.getCapsuleId(), locationLat, locationLng)) {
-            System.out.println("공간 검증 통과");
-            return true;
-        }else if (capsule.getUnlockType().equals("TIME_AND_LOCATION") && unlockService.isTimeAndLocationConditionMet(capsule.getCapsuleId(), unlockAt, locationLat, locationLng)) {
-            System.out.println("시공간 검증 통과");
-            return true;
-        }else{
-            //   시간/위치 검증 실패
-            System.out.println("unlockAt : " + unlockAt);
-            System.out.println("capsuleUnlockAt : " +  capsule.getUnlockAt());
-            System.out.println("locationLat : " + locationLat);
-            System.out.println("capsuleLocationLat" +  capsule.getLocationLat());
-            System.out.println("locationLng : " + locationLng);
-            System.out.println("capsuleLocationLat" +  capsule.getLocationLng());
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
-        }
+
+        return unlockService.validateUnlockConditions(
+                capsule, unlockAt, locationLat, locationLng, isFirstTimeViewing
+        );
     }
 
     //공개 캡슐 읽기
