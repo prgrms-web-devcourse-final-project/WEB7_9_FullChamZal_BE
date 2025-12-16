@@ -176,6 +176,32 @@ public class UnlockServiceTest {
     }
 
     @Test
+    @DisplayName("unlockAt이 null일 경우, UNLOCK_TIME_NOT_FOUND 예외 발생")
+    void isTimeConditionMet_throws_exception_when_unlockAt_not_exist() {
+        // given
+        Capsule capsule = Capsule.builder()
+                .capsuleId(CAPSULE_ID)
+                .uuid("test")
+                .nickname("test")
+                .content("test")
+                .capsuleColor("RED")
+                .capsulePackingColor("RED")
+                .visibility("PRIVATE")
+                .unlockType("TIME")
+                .build();
+        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        // when
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                unlockService.isTimeConditionMet(CAPSULE_ID, currentTime)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNLOCK_TIME_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("캡슐과 사용자 위치간 거리 ≤ 반경 이면 true를 반환해야 한다")
     void is_location_condition_met_true() {
         // given

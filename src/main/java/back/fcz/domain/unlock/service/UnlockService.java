@@ -32,7 +32,7 @@ public class UnlockService {
         LocalDateTime capsuleUnlockAt = capsule.getUnlockAt();
         LocalDateTime capsuleUnlockUntil = capsule.getUnlockUntil();
 
-        if(capsuleUnlockAt == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
+        if(capsuleUnlockAt == null) {throw new BusinessException(ErrorCode.UNLOCK_TIME_NOT_FOUND);}
         // unlockUntil <= unlockAt 이면 error
         if (capsuleUnlockAt != null && capsuleUnlockUntil != null) {
             if (!capsuleUnlockUntil.isAfter(capsuleUnlockAt)) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME_RANGE);}
