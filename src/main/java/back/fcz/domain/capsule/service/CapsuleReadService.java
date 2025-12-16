@@ -41,6 +41,7 @@ public class CapsuleReadService {
     private final CapsuleOpenLogRepository capsuleOpenLogRepository;
     private final MemberService memberService;
     private final CurrentUserContext currentUserContext;
+    private final FirstComeService firstComeService;
 
     //조건확인하고 검증됐다면 읽기
     public CapsuleConditionResponseDTO conditionAndRead(CapsuleConditionRequestDTO requestDto) {
@@ -71,18 +72,29 @@ public class CapsuleReadService {
             System.out.println("기존에 조회 되지 않은 공개 캡슐");
             boolean viewStatus = false;
 
-            //조회한 적 없으니 조건 검증이 필요 / 공개 캡슐은 시간, 위치만 검증하면됨
-            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
-                PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
-                        .capsuleId(capsule)
-                        .memberId(currentMemberId)
-                        .unlockedAt(requestDto.unlockAt())
-                        .build();
-                publicCapsuleRecipientRepository.save(publicCapsuleLog);
-                System.out.println("publicCapsuleLog 저장 완료");
-                return readPublicCapsule(capsule, requestDto, viewStatus);
-            }else{// 검증 실패
-                throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+            // 2차 분기 - 선착순 제한이 있는지 확인
+            boolean hasFirstComeLimit = firstComeService.hasFirstComeLimit(capsule);
+
+            // TODO: 시간 제한이 있는 경우도 if문으로 추가해 주시면 됩니다!
+            if (hasFirstComeLimit){
+                // 선착순 제한이 있는 경우
+
+                return null;
+            } else {
+                // 시간 제한/선착순 제한이 없는 경우
+                //조회한 적 없으니 조건 검증이 필요 / 공개 캡슐은 시간, 위치만 검증하면됨
+                if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
+                    PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
+                            .capsuleId(capsule)
+                            .memberId(currentMemberId)
+                            .unlockedAt(requestDto.unlockAt())
+                            .build();
+                    publicCapsuleRecipientRepository.save(publicCapsuleLog);
+                    System.out.println("publicCapsuleLog 저장 완료");
+                    return readPublicCapsule(capsule, requestDto, viewStatus);
+                }else{// 검증 실패
+                    throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+                }
             }
         }
     }
