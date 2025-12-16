@@ -22,9 +22,16 @@ public class StorytrackService {
     // 생성자 : 스토리트랙 삭제
     public DeleteStorytrackResponse deleteStorytrack(Long memberId, Long storytrackId){
 
+        // 삭제할 대상 스토리트랙 조회
         Storytrack targetStorytrack = storytrackRepository.findById(storytrackId)
                 .orElseThrow(()-> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
+        // 요청한 사람과 스토리트랙 생성자가 동일한지 확인
+        if(targetStorytrack.getMember().getMemberId() != memberId){
+            throw new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER);
+        }
+
+        // 삭제 - 소프트딜리트
         targetStorytrack.markDeleted();
 
         storytrackRepository.save(targetStorytrack);
@@ -37,9 +44,11 @@ public class StorytrackService {
     // 참여자 : 참여자 삭제(참여 중지)
     public DeleteParticipantResponse deleteParticipant(Long memberId, Long storytrackId){
 
+        // 스토리트랙 참여자 조회
         StorytrackProgress targetMember = storytrackProgressRepository.findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
+        // 삭제 - 소프트딜리트
         targetMember.markDeleted();
 
         storytrackProgressRepository.save(targetMember);

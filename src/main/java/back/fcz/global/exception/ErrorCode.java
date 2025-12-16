@@ -101,7 +101,8 @@ public enum ErrorCode {
 
     // ============ 스토리트랙 에러 =============
     STORYTRACK_NOT_FOUND("ST001", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 입니다."),
-    PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다.");
+    PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다."),
+    NOT_STORYTRACK_CREATER("ST003", HttpStatus.FORBIDDEN, "로그인한 사용자는 스토리트랙 생성자가 아닙니다.");
 
 
 
