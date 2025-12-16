@@ -66,6 +66,11 @@ public class CapsuleReadService {
 
     //공개 캡슐
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
+        // 공개 캡슐은 회원만 조회 가능 - 로그인 체크
+        if (!isUserLoggedIn()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        
         Long currentMemberId = currentUserContext.getCurrentMemberId();
 
         boolean isFirstTimeViewing = !publicCapsuleRecipientRepository
@@ -270,4 +275,13 @@ public class CapsuleReadService {
         return CapsuleConditionResponseDTO.from(capsule);
     }
 
+    // 사용자 로그인 여부
+    private boolean isUserLoggedIn() {
+        try {
+            currentUserContext.getCurrentMemberId();
+            return true;
+        } catch (BusinessException e) {
+            return false;
+        }
+    }
 }
