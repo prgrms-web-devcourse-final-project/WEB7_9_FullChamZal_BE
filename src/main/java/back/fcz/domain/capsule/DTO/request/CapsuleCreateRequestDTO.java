@@ -16,6 +16,7 @@ public record CapsuleCreateRequestDTO(
         String visibility,
         String unlockType,
         LocalDateTime unlockAt,
+        LocalDateTime unlockUntil,
         String locationName,
         Double locationLat,
         Double locationLng,
@@ -35,6 +36,7 @@ public record CapsuleCreateRequestDTO(
                 .visibility(visibility)
                 .unlockType(unlockType)
                 .unlockAt(unlockAt)
+                .unlockUntil(unlockUntil)
                 .locationName(locationName)
                 .locationLat(locationLat)
                 .locationLng(locationLng)
