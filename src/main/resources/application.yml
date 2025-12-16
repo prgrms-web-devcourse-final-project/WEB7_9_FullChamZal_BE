@@ -52,4 +52,4 @@ jwt:
 
 cookie:
   secure: false
-  same-site: None
+  same-site: Lax
