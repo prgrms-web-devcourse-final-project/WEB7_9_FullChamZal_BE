@@ -35,7 +35,8 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
             "/api/v1/capsule/read",
-            "/api/v1/capsule/save"
+            "/api/v1/capsule/save",
+            "/api/v1/phone-verification/**"
     };
 
     @Bean
