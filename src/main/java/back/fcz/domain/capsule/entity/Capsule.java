@@ -27,6 +27,10 @@ public class Capsule extends BaseEntity {
 
     @Column(name = "nickname", nullable = false)
     private String nickname;          // 작성 당시 닉네임
+
+    @Column(name = "receiverNickname")
+    private String receiverNickname; // 수신자 닉네임(비공개 캡슐에 사용)
+
     @Column(name = "title")
     private String title;             // 캡슐 제목
     @Column(name = "content", nullable = false)
@@ -45,9 +49,15 @@ public class Capsule extends BaseEntity {
     @Column(name = "unlock_type", nullable = false)
     private String unlockType;       // 해제 조건 : TIME, LOCATION, TIME_AND_LOCATION
     @Column(name = "unlock_at")
-    private LocalDateTime unlockAt;  // 해제 세부 조건 : 시간 기반 해제 일시
+    private LocalDateTime unlockAt;    // 캡슐 열람 가능 시간
+    @Column(name = "unlock_until")
+    private LocalDateTime unlockUntil; // 캡슐 열람 마감 시간
     @Column(name = "location_name")
     private String locationName;      // 장소 이름(별명)
+
+    @Column(name = "address")
+    private String address;         // 장소의 주소
+
     @Column(name = "location_lat")
     private Double locationLat;       // 위도
     @Column(name = "location_lng")

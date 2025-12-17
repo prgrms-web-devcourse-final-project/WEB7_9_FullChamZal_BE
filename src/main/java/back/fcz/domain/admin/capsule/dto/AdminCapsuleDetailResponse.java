@@ -42,6 +42,10 @@ public class AdminCapsuleDetailResponse {
     private long bookmarkCount;
 
     public static AdminCapsuleDetailResponse from(Capsule capsule) {
+        return from(capsule, 0L, 0L);
+    }
+
+    public static AdminCapsuleDetailResponse from(Capsule capsule, long reportCount, long bookmarkCount) {
         return AdminCapsuleDetailResponse.builder()
                 .id(capsule.getCapsuleId())
                 .title(capsule.getTitle())
@@ -58,12 +62,22 @@ public class AdminCapsuleDetailResponse {
                 .locationRadiusM(capsule.getLocationRadiusM())
                 .currentViewCount(capsule.getCurrentViewCount())
                 .maxViewCount(capsule.getMaxViewCount())
-//                .deleted(capsule.isDeleted())
-//                .protectedCapsule(capsule.isProtected())
+                .deleted(isDeleted(capsule))
+                .protectedCapsule(isProtected(capsule))
                 .createdAt(capsule.getCreatedAt())
                 .updatedAt(capsule.getUpdatedAt())
-                .reportCount(0L)      // TODO: report 테이블 연동
-                .bookmarkCount(0L)    // TODO: bookmark 테이블 연동
+                .reportCount(reportCount)
+                .bookmarkCount(bookmarkCount)
                 .build();
+    }
+
+    private static boolean isDeleted(Capsule capsule) {
+        Integer v = capsule.getIsDeleted();
+        return v != null && v != 0;
+    }
+
+    private static boolean isProtected(Capsule capsule) {
+        Integer v = capsule.getIsProtected();
+        return v != null && v == 1;
     }
 }

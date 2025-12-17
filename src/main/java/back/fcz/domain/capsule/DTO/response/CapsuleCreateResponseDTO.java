@@ -8,7 +8,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 public record CapsuleCreateResponseDTO(
         Long memberId,
         Long capsuleId,
-        String nickName,
+        String nickname,
         String title,
         String content,
         String visibility,
@@ -24,8 +24,11 @@ public record CapsuleCreateResponseDTO(
 
         UnlockResponseDTO unlockDTO = new UnlockResponseDTO(
                 capsule.getUnlockAt(),             // LocalDateTime unlockAt
+                capsule.getUnlockUntil(),
                 capsule.getLocationName(),         // String location
-                new GPSResponseDTO(                        // GPSDTO gps
+                new GPSResponseDTO(
+                        // GPSDTO gps
+                        capsule.getAddress(),
                         capsule.getLocationLat(),
                         capsule.getLocationLng()
                 ),

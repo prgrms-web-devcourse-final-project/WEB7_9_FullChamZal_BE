@@ -6,15 +6,18 @@ import java.time.LocalDateTime;
 
 public record SecretCapsuleCreateRequestDTO(
         Long memberId,
-        String nickName,
+        String nickname,
+        String receiverNickname,
         String title,
         String content,
         String visibility,
         String unlockType,
         LocalDateTime unlockAt,
+        LocalDateTime unlockUntil,
         String locationName,
+        String address,
         double locationLat,
-        double locationIng,
+        double locationLng,
         int viewingRadius,
         String packingColor,
         String contentColor,
@@ -23,7 +26,8 @@ public record SecretCapsuleCreateRequestDTO(
     public Capsule toEntity() {
 
         return Capsule.builder()
-                .nickname(nickName)
+                .nickname(nickname)
+                .receiverNickname(receiverNickname)
                 .title(title)
                 .content(content)
                 .capsuleColor(contentColor)
@@ -31,9 +35,11 @@ public record SecretCapsuleCreateRequestDTO(
                 .visibility(visibility)
                 .unlockType(unlockType)
                 .unlockAt(unlockAt)
+                .unlockUntil(unlockUntil)
                 .locationName(locationName)
+                .address(address)
                 .locationLat(locationLat)
-                .locationLng(locationIng)
+                .locationLng(locationLng)
                 .locationRadiusM(viewingRadius)
                 .maxViewCount(maxViewCount)
                 .currentViewCount(0)

@@ -49,9 +49,9 @@ public class CapsuleDashBoardService {
         // 수신자 테이블에서 phoneHash를 가지는 수신자 목록 조회
         List<CapsuleRecipient> recipients = capsuleRecipientRepository.findAllByRecipientPhoneHashWithCapsule(phoneHash);
 
-        // 수신자가 받은 캡슐 중, 삭제되지 않은 캡슐만 조회
+        // 수신자가 받은 캡슐 중, 수신자가 삭제하지 않은 캡슐만 조회
         List<CapsuleDashBoardResponse> response = recipients.stream()
-                .filter(recipient -> recipient.getCapsuleId().getIsDeleted() == 0)
+                .filter(recipient -> recipient.getDeletedAt() == null)
                 .map(recipient -> {
                     Capsule capsule = recipient.getCapsuleId();
 

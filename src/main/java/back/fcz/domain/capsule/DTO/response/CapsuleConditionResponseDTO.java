@@ -14,14 +14,15 @@ public record CapsuleConditionResponseDTO(
         String title,                // 제목
         String content,              // 내용 // 내용은 일정 글자수 넘어가면 ...으로 처리
         LocalDateTime createAt,      // 보낸 날짜
-        boolean viewStatus,          // 조회 여부 // currentViewCount > 0 -> 1
+        boolean viewStatus,          // 조회 여부
 
         String unlockType,        // 해제 조건
 
-        LocalDateTime unlockAt,   // 해제 세부 조건(시간) : 시간 기반 해제 일시
-        String locationName,     // 장소 이름(별명)
-        Double locationLat,       // 해제 세부 조건(위도) : 위치 기반 해제 일시
-        Double locationLng       // 해제 세부 조건(경도) : 위치 기반 해제 일시
+        LocalDateTime unlockAt,    // 해제 세부 조건(열람 가능 시간) : 시간 기반 해제 일시
+        LocalDateTime unlockUntil, // 해제 세부 조건(열람 마감 시간) : 시간 기반 해제 일시
+        String locationName,       // 장소 이름(별명)
+        Double locationLat,        // 해제 세부 조건(위도) : 위치 기반 해제 일시
+        Double locationLng         // 해제 세부 조건(경도) : 위치 기반 해제 일시
 ) {
     //개인 캡슐이며 수신자가 회원인 경우
     public static CapsuleConditionResponseDTO from(Capsule capsule, CapsuleRecipient recipient) {
@@ -40,6 +41,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockType(),
 
                 capsule.getUnlockAt(),
+                capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng()
@@ -63,6 +65,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockType(),
 
                 capsule.getUnlockAt(),
+                capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng()
@@ -87,6 +90,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockType(),
 
                 capsule.getUnlockAt(),
+                capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng()

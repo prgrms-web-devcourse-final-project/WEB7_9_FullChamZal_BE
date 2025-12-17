@@ -86,6 +86,8 @@ public enum ErrorCode {
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
     INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다."),
     INVALID_RADIUS("UNL003", HttpStatus.BAD_REQUEST, "반경 값은 null, 500m, 1km, 1.5km 중 하나여야 합니다."),
+    INVALID_UNLOCK_TIME_RANGE("UNL004", HttpStatus.BAD_REQUEST, "캡슐 해제 시간(unlockAt)은 마감 시간(unlockUntil)보다 전이어야 합니다."),
+    UNLOCK_TIME_NOT_FOUND("UNL004", HttpStatus.BAD_REQUEST, "캡슐 해제 시간 조건이 존재하지 않습니다."),
 
     // ========== 관리자(Admin) 에러 ==========
     ADMIN_MEMBER_NOT_FOUND("ADM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),

@@ -133,8 +133,10 @@ class BookmarkServiceTest {
 
         given(capsuleRepository.findById(capsuleId)).willReturn(Optional.of(capsule));
         given(currentUserContext.getCurrentUser()).willReturn(mockUser(memberId, phoneHash));
-        given(publicCapsuleRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash))
+
+        given(publicCapsuleRecipientRepository.findByCapsuleId_CapsuleIdAndMemberId(capsuleId, memberId))
                 .willReturn(Optional.of(mock(PublicCapsuleRecipient.class)));
+
         given(bookmarkRepository.findByMemberIdAndCapsuleId(memberId, capsuleId))
                 .willReturn(Optional.empty());
 
