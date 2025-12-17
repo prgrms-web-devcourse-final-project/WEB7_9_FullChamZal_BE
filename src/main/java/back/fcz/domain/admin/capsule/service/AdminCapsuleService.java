@@ -5,6 +5,7 @@ import back.fcz.domain.admin.capsule.dto.AdminCapsuleDetailResponse;
 import back.fcz.domain.admin.capsule.dto.AdminCapsuleSummaryResponse;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.report.repository.ReportRepository;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -13,70 +14,93 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.*;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminCapsuleService {
 
     private final CapsuleRepository capsuleRepository;
+    private final ReportRepository reportRepository;
 
-    /**
-     * 캡슐 목록 조회 (getCapsules)
-     */
     public PageResponse<AdminCapsuleSummaryResponse> getCapsules(
-            int page,
-            int size,
-            String visibility   // PUBLIC / PRIVATE, null 이면 전체
+            Integer page,
+            Integer size,
+            String visibility,
+            Boolean deleted,
+            String keyword
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        int safePage = (page == null || page < 0) ? 0 : page;
+        int safeSize = (size == null || size <= 0) ? 20 : size;
 
-        Page<Capsule> capsulePage;
+        Pageable pageable = PageRequest.of(
+                safePage,
+                safeSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        if (visibility != null && !visibility.isBlank()) {
-            capsulePage = capsuleRepository.findByIsDeletedFalseAndVisibility(visibility, pageable);
-        } else {
-            capsulePage = capsuleRepository.findByIsDeletedFalse(pageable);
-        }
+        Page<Capsule> capsules = capsuleRepository.searchAdmin(visibility, deleted, keyword, pageable);
 
-        Page<AdminCapsuleSummaryResponse> dtoPage =
-                capsulePage.map(AdminCapsuleSummaryResponse::from);
+        // reportCount 배치 집계
+        List<Long> capsuleIds = capsules.getContent().stream().map(Capsule::getCapsuleId).toList();
+        Map<Long, Long> reportCountMap = toCountMap(reportRepository.countByCapsuleIds(capsuleIds));
+
+        Page<AdminCapsuleSummaryResponse> dtoPage = capsules.map(c ->
+                AdminCapsuleSummaryResponse.from(
+                        c,
+                        reportCountMap.getOrDefault(c.getCapsuleId(), 0L),
+                        0L // TODO: bookmark
+                )
+        );
 
         return new PageResponse<>(dtoPage);
     }
 
-    /**
-     * 캡슐 상세 조회 (getCapsuleDetail)
-     */
     public AdminCapsuleDetailResponse getCapsuleDetail(Long capsuleId) {
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_CAPSULE_NOT_FOUND));
 
-        return AdminCapsuleDetailResponse.from(capsule);
+        long reportCount = reportRepository.countByCapsule_CapsuleId(capsuleId);
+
+        return AdminCapsuleDetailResponse.from(capsule, reportCount, 0L);
     }
 
-    /**
-     * 캡슐 삭제/복구 (updateCapsuleDeleted)
-     */
     @Transactional
-    public AdminCapsuleDetailResponse updateCapsuleDeleted(Long capsuleId,
-                                                           AdminCapsuleDeleteRequest request) {
+    public AdminCapsuleDetailResponse updateCapsuleDeleted(Long capsuleId, AdminCapsuleDeleteRequest request) {
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_CAPSULE_NOT_FOUND));
 
-        boolean wantDelete = request.getDeleted();
+        boolean wantDeleted = Boolean.TRUE.equals(request.getDeleted());
+        boolean currentlyDeleted = capsule.getIsDeleted() != 0;
 
-        // 이미 상태가 같은 경우 예외를 던질지 말지는 팀 규칙에 맞게
-//        if (capsule.isDeleted() == wantDelete) {
-//            // 굳이 에러로 보고 싶으면 ErrorCode 하나 더 추가해서 던지면 됨
-//            // throw new BusinessException(ErrorCode.ADMIN_CAPSULE_INVALID_STATUS_CHANGE);
-//            return AdminCapsuleDetailResponse.from(capsule);
-//        }
+        if (wantDeleted == currentlyDeleted) {
+            throw new BusinessException(ErrorCode.ADMIN_INVALID_CAPSULE_STATUS_CHANGE);
+        }
 
-        // TODO: Capsule 엔티티에 setter(or 도메인 메서드) 추가 필요
-        //capsule.setDeleted(wantDelete); //
+        if (wantDeleted) {
+            capsule.setIsDeleted(2); // 관리자 삭제(정책)
+            capsule.markDeleted();
+        } else {
+            capsule.setIsDeleted(0);
+            capsule.clearDeletedAt();
+        }
 
-        // TODO: request.getReason() 는 나중에 제재 로그 테이블이 생기면 같이 저장
+        long reportCount = reportRepository.countByCapsule_CapsuleId(capsuleId);
 
-        return AdminCapsuleDetailResponse.from(capsule);
+        return AdminCapsuleDetailResponse.from(capsule, reportCount, 0L);
+    }
+
+    private static Map<Long, Long> toCountMap(List<Object[]> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> map = new HashMap<>();
+        for (Object[] row : rows) {
+            Long id = (Long) row[0];
+            Long cnt = (Long) row[1];
+            map.put(id, cnt);
+        }
+        return map;
     }
 }
