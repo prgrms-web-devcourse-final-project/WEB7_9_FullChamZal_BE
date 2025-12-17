@@ -19,14 +19,17 @@ public class AdminCapsuleSummaryResponse {
     private LocalDateTime createdAt; // 생성 시각
 
     private int currentViewCount;    // 현재 조회 인원 (capsule.currentViewCount)
-    private int maxViewCount;        // 최대 조회 인원 (선착순, null이면 무제한 → 0 으로 내려줄 수 있음)
-    private boolean deleted;         // isDeleted
+    private int maxViewCount;        // 최대 조회 인원
+    private boolean deleted;         // isDeleted != 0
 
-    // 통계성 데이터 (지금은 0으로 두고, 나중에 report/bookmark 테이블 붙이기)
     private long reportCount;
-    private long bookmarkCount;
+    private long bookmarkCount;      // TODO
 
     public static AdminCapsuleSummaryResponse from(Capsule capsule) {
+        return from(capsule, 0L, 0L);
+    }
+
+    public static AdminCapsuleSummaryResponse from(Capsule capsule, long reportCount, long bookmarkCount) {
         return AdminCapsuleSummaryResponse.builder()
                 .id(capsule.getCapsuleId())
                 .title(capsule.getTitle())
@@ -36,10 +39,15 @@ public class AdminCapsuleSummaryResponse {
                 .unlockAt(capsule.getUnlockAt())
                 .createdAt(capsule.getCreatedAt())
                 .currentViewCount(capsule.getCurrentViewCount())
-                .maxViewCount(capsule.getMaxViewCount()) // null 가능하면 0 처리하는 헬퍼 하나 둬도 됨
-//                .deleted(capsule.isDeleted())
-                .reportCount(0L)      // TODO: report 테이블 연동
-                .bookmarkCount(0L)    // TODO: bookmark 테이블 연동
+                .maxViewCount(capsule.getMaxViewCount())
+                .deleted(isDeleted(capsule))
+                .reportCount(reportCount)
+                .bookmarkCount(bookmarkCount)
                 .build();
+    }
+
+    private static boolean isDeleted(Capsule capsule) {
+        Integer v = capsule.getIsDeleted();
+        return v != null && v != 0;
     }
 }
