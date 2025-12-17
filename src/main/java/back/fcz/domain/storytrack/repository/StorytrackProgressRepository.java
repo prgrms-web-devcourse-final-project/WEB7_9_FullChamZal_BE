@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface StorytrackProgressRepository extends JpaRepository<StorytrackProgress, Long> {
     Optional<StorytrackProgress> findByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
+
+    Long countMemberIdByStorytrack_StorytrackId(Long storytrackId);
 }

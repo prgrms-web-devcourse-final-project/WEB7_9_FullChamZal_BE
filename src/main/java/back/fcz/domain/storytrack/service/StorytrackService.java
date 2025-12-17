@@ -17,6 +17,8 @@ import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class StorytrackService {
@@ -40,11 +42,19 @@ public class StorytrackService {
         }
 
         // 스토리트랙 참여자가 존재하면 미 삭제
+        if(storytrackProgressRepository.countMemberIdByStorytrack_StorytrackId(storytrackId) > 0){
+            throw new BusinessException(ErrorCode.PARTICIPANT_EXISTS);
+        }
 
         // 삭제 - 소프트딜리트
         targetStorytrack.markDeleted();
 
         // 스토리트랙 단계 삭제
+        List<StorytrackStep> targetSteps = storytrackStepRepository.findAllByStorytrack_StorytrackId(storytrackId);
+
+        for(StorytrackStep step : targetSteps){
+            step.markDeleted();
+        }
 
         storytrackRepository.save(targetStorytrack);
         return new DeleteStorytrackResponse(

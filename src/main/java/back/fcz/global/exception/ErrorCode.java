@@ -105,7 +105,8 @@ public enum ErrorCode {
     STORYTRACK_NOT_FOUND("ST001", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 입니다."),
     PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다."),
     NOT_STORYTRACK_CREATER("ST003", HttpStatus.FORBIDDEN, "로그인한 사용자는 스토리트랙 생성자가 아닙니다."),
-    STORYTRACK_PAHT_NOT_FOUND("SY004", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 경로입니다.");
+    STORYTRACK_PAHT_NOT_FOUND("ST004", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 경로입니다."),
+    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다.");
 
 
 
