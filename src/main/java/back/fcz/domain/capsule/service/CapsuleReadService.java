@@ -10,7 +10,7 @@ import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
-import back.fcz.domain.member.dto.response.MemberInfoResponse;
+import back.fcz.domain.member.dto.response.MemberDetailResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
@@ -43,6 +43,14 @@ public class CapsuleReadService {
     //조건확인하고 검증됐다면 읽기
     public CapsuleConditionResponseDTO conditionAndRead(CapsuleConditionRequestDTO requestDto) {
         Capsule capsule = capsuleRepository.findById(requestDto.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+        //자신에게 보내는 캡슐인 경우(시공간 검증만)
+        if(requestDto.isSendSelf()==1){
+            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
+                return readMemberCapsule(capsule, requestDto);
+            }
+        }
+
         // 1. 공개인지 비공개인지
         if(capsule.getVisibility().equals("PUBLIC")){
             //공개 캡슐로직
@@ -135,14 +143,8 @@ public class CapsuleReadService {
                 //기존에 조회함 -> 바로 조회가능
                 return readMemberCapsule(capsule, requestDto);
             }else{
-                /*
-                Member member = memberRepository.findById(requestDto.memberId()).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-                InServerMemberResponse inServerMemberResponse = InServerMemberResponse.from(member);
-                MemberInfoResponse me = memberService.getMe(inServerMemberResponse);
-                String phoneNumber = me.phoneNumber();
-*/
                 InServerMemberResponse user = currentUserContext.getCurrentUser();
-                MemberInfoResponse response = memberService.getMe(user);
+                MemberDetailResponse response = memberService.getDetailMe(user);
                 String phoneNumber = response.phoneNumber();
                 System.out.println("response.phoneNumber() : "+response.phoneNumber());
 
@@ -165,7 +167,7 @@ public class CapsuleReadService {
         System.out.println("전화번호 검증 시작");
         CapsuleRecipient capsuleRecipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
-        System.out.println("CapsuleRecipient 확인 완료");
+
         if(phoneCrypto.verifyHash(phoneNumber, capsuleRecipient.getRecipientPhoneHash())){
             //두 값이 같다면 해제 조건 확인
             return capsuleCondition(capsule, unlockAt, locationLat, locationLng);
@@ -183,7 +185,7 @@ public class CapsuleReadService {
         //비밀번호 검증
         System.out.println("password : " + password);
         System.out.println("capsulePassword : " + capsulePassword);
-        if(!password.equals(capsulePassword)){
+        if(!phoneCrypto.verifyHash(password, capsulePassword)){
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH);
         }
 
@@ -205,6 +207,12 @@ public class CapsuleReadService {
             return true;
         }else{
             //   시간/위치 검증 실패
+            System.out.println("unlockAt : " + unlockAt);
+            System.out.println("capsuleUnlockAt : " +  capsule.getUnlockAt());
+            System.out.println("locationLat : " + locationLat);
+            System.out.println("capsuleLocationLat" +  capsule.getLocationLat());
+            System.out.println("locationLng : " + locationLng);
+            System.out.println("capsuleLocationLat" +  capsule.getLocationLng());
             throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
         }
     }

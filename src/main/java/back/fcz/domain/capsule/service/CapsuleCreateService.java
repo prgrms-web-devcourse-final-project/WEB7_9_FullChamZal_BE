@@ -77,7 +77,7 @@ public class CapsuleCreateService {
         Capsule secretCapsule = capsuleCreate.toEntity();
 
         secretCapsule.setUuid(setUUID());
-        secretCapsule.setCapPassword(phoneCrypto.encrypt(password)); // 사용자가 지정한 비밀번호 저장
+        secretCapsule.setCapPassword(phoneCrypto.hash(password)); // 사용자가 지정한 비밀번호 저장
         secretCapsule.setMemberId(member);
 
         Capsule saved = capsuleRepository.save(secretCapsule);
@@ -117,7 +117,7 @@ public class CapsuleCreateService {
 
         }else{ // 비회원
             String capsulePW = generatePassword(); // 생성한 비밀번호
-            capsule.setCapPassword(phoneCrypto.encrypt(capsulePW));
+            capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
 
             Capsule saved = capsuleRepository.save(capsule);

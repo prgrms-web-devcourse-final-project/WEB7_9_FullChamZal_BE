@@ -13,6 +13,7 @@ import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -56,7 +57,7 @@ public class CapsuleReadController {
         return ResponseEntity.ok(ApiResponse.success(capsuleReadService.conditionAndRead(capsuleConditionRequestDto)));
     }
 
-    //캡슐 저장 버튼
+    //캡슐 저장 버튼(비회원이 CapsuleRecipient기록을 남길때 호출됩니다.)
     @Operation(summary = "",
             description = "url+비밀번호 읽기를 성공했을때 호출되는 api입니다.")
     @ApiErrorCodeExample({
@@ -64,11 +65,14 @@ public class CapsuleReadController {
     })
     @PostMapping("/save")
     public ResponseEntity<ApiResponse<CapsuleSaveButtonResponse>> save(
-            @RequestBody CapsuleSaveButtonRequest  capsuleSaveButtonRequest
+            @RequestBody CapsuleSaveButtonRequest  capsuleSaveButtonRequest,
+            HttpServletRequest request
             ){
         //로그인 상태인지 확인
-        Long currentMemberId = capsuleSaveButtonService.loginCheck();
-        if(currentMemberId!=null){
+        boolean hasJwtToken = capsuleSaveButtonService.hasJwtTokenInRequest(request);
+
+        if(hasJwtToken){
+            Long currentMemberId = capsuleSaveButtonService.loginCheck();
             return ResponseEntity.ok(ApiResponse.success(capsuleSaveButtonService.saveRecipient(capsuleSaveButtonRequest, currentMemberId)));
         }else{
             //로그인이 안되어있다면 로그인 화면으로 리다이렉트
@@ -80,7 +84,6 @@ public class CapsuleReadController {
 
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
         }
-
     }
 
 

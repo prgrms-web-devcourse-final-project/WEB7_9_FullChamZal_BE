@@ -11,6 +11,8 @@ import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,8 @@ public class CapsuleSaveButtonService {
     private final MemberRepository memberRepository;
     private final CapsuleRepository  capsuleRepository;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
+
+    private static final String JWT_COOKIE_NAME = "ACCESS_TOKEN";
 
     public CapsuleSaveButtonResponse saveRecipient(CapsuleSaveButtonRequest request, Long currentMemberId) {
 
@@ -49,5 +53,16 @@ public class CapsuleSaveButtonService {
         }else{
             return null;
         }
+    }
+
+    public boolean hasJwtTokenInRequest(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (cookie.getName().equals(JWT_COOKIE_NAME) && !cookie.getValue().isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
