@@ -73,16 +73,21 @@ public enum ErrorCode {
     CAPSULE_NOT_CREATE("CPS006", HttpStatus.BAD_REQUEST, "캡슐을 생성할 수 없습니다."),
     CAPSULE_NOT_UPDATE("CPS007", HttpStatus.BAD_REQUEST, "캡슐을 수정할 수 없습니다."),
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
-
+    RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
     BOOKMARK_NOT_FOUND("BMK002", HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
     CAPSULE_NOT_UNLOCKED("BMK003", HttpStatus.BAD_REQUEST, "해제되지 않은 캡슐은 북마크할 수 없습니다."),
+    NOT_CAPSULE_RECIPIENT("BMK004", HttpStatus.FORBIDDEN, "해당 캡슐의 수신자가 아닙니다."),
+    INVALID_CAPSULE_VISIBILITY("BMK005", HttpStatus.BAD_REQUEST, "잘못된 캡슐 공개 범위입니다."),
+
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
     INVALID_LATITUDE_LONGITUDE("UNL002", HttpStatus.BAD_REQUEST, "유효하지 않은 위도 또는 경도 값입니다."),
     INVALID_RADIUS("UNL003", HttpStatus.BAD_REQUEST, "반경 값은 null, 500m, 1km, 1.5km 중 하나여야 합니다."),
+    INVALID_UNLOCK_TIME_RANGE("UNL004", HttpStatus.BAD_REQUEST, "캡슐 해제 시간(unlockAt)은 마감 시간(unlockUntil)보다 전이어야 합니다."),
+    UNLOCK_TIME_NOT_FOUND("UNL004", HttpStatus.BAD_REQUEST, "캡슐 해제 시간 조건이 존재하지 않습니다."),
 
     // ========== 관리자(Admin) 에러 ==========
     ADMIN_MEMBER_NOT_FOUND("ADM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),

@@ -45,5 +45,10 @@ public class CapsuleRecipient extends BaseEntity {
         this.recipientPhone = "DELETED_" + uniqueId;
         this.recipientPhoneHash = "DELETED_" + uniqueId;
     }
+
+    public void setUnlockedAt(LocalDateTime unlockedAt) {
+        this.unlockedAt = unlockedAt;
+    }
+
 }
 

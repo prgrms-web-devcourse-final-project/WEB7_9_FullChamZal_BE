@@ -58,6 +58,7 @@ public class CapsuleDashBoardServiceTest {
                 .capsulePackingColor("RED")
                 .visibility("PRIVATE")
                 .unlockType("TIME")
+                .isDeleted(0)
                 .build();
 
         capsule2 = Capsule.builder()
@@ -69,6 +70,7 @@ public class CapsuleDashBoardServiceTest {
                 .capsulePackingColor("RED")
                 .visibility("PUBLIC")
                 .unlockType("TIME")
+                .isDeleted(0)
                 .build();
 
         // 테스트 recipient 설정
