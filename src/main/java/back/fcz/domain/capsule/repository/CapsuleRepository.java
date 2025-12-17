@@ -41,4 +41,62 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     where v.capsuleId = :capsuleId
 """)
     int findCurrentViewCountByCapsuleId(@Param("capsuleId") Long capsuleId);
+
+    /**
+     * Admin 캡슐 목록 조회(검색)
+     * - visibility: PUBLIC/PRIVATE/null(전체)
+     * - deleted: true(삭제된 것만: isDeleted != 0), false(미삭제만: isDeleted=0), null(전체)
+     * - keyword: title/nickname/uuid 부분일치
+     */
+    @Query("""
+        select c
+        from Capsule c
+        where (:visibility is null or c.visibility = :visibility)
+          and (
+                :deleted is null
+                or (:deleted = true and c.isDeleted <> 0)
+                or (:deleted = false and c.isDeleted = 0)
+          )
+          and (
+                :keyword is null or :keyword = ''
+                or lower(coalesce(c.title, '')) like lower(concat('%', :keyword, '%'))
+                or lower(c.nickname) like lower(concat('%', :keyword, '%'))
+                or c.uuid like concat('%', :keyword, '%')
+          )
+        """)
+    Page<Capsule> searchAdmin(
+            @Param("visibility") String visibility,
+            @Param("deleted") Boolean deleted,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    // ===== Admin 통계/조회용 =====
+    long countByMemberId_MemberIdAndIsDeleted(Long memberId, Integer isDeleted);
+
+    long countByMemberId_MemberIdAndIsDeletedAndIsProtected(Long memberId, Integer isDeleted, Integer isProtected);
+
+    List<Capsule> findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(Long memberId, Integer isDeleted);
+
+    @Query("""
+        select c.memberId.memberId, count(c)
+        from Capsule c
+        where c.memberId.memberId in :memberIds
+          and c.isDeleted = 0
+        group by c.memberId.memberId
+        """)
+    List<Object[]> countActiveByMemberIds(@Param("memberIds") List<Long> memberIds);
+
+    @Query("""
+        select c.memberId.memberId, count(c)
+        from Capsule c
+        where c.memberId.memberId in :memberIds
+          and c.isDeleted = 0
+          and c.isProtected = :isProtected
+        group by c.memberId.memberId
+        """)
+    List<Object[]> countProtectedActiveByMemberIds(
+            @Param("memberIds") List<Long> memberIds,
+            @Param("isProtected") Integer isProtected
+    );
 }

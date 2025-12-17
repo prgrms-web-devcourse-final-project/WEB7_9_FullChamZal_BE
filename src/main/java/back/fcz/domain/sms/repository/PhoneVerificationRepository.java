@@ -4,11 +4,11 @@ import back.fcz.domain.sms.entity.PhoneVerification;
 import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.entity.PhoneVerificationStatus;
 import org.springframework.data.domain.Page;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PhoneVerificationRepository extends JpaRepository<PhoneVerification,Long> {
@@ -17,18 +17,7 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
             PhoneVerificationPurpose purpose,
             LocalDateTime cooldownThreshold);
 
-    @Query("""
-            select pv
-            from PhoneVerification pv
-            where pv.phoneNumberHash = :phoneNumberHash
-              and pv.purpose = :purpose
-              and pv.status = 'PENDING'
-            order by pv.createdAt desc
-            limit 1
-            """)
-    Optional<PhoneVerification> findLatestPending(
-            String phoneNumberHash,
-            PhoneVerificationPurpose purpose);
+
 
     Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(
             String phoneNumberHash,
@@ -43,4 +32,26 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
             PhoneVerificationStatus status,
             Pageable pageable
     );
+
+
+    long countByPhoneNumberHash(String phoneNumberHash);
+
+
+    Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeAndStatusOrderByCreatedAtDesc(
+            String phoneNumberHash,
+            PhoneVerificationPurpose purpose,
+            PhoneVerificationStatus status
+    );
+
+    // 기존에 "latest pending"이 필요하면 이렇게 써야 함 (JPQL limit 금지)
+    default Optional<PhoneVerification> findLatestPending(String phoneNumberHash, PhoneVerificationPurpose purpose) {
+        return findTop1ByPhoneNumberHashAndPurposeAndStatusOrderByCreatedAtDesc(
+                phoneNumberHash,
+                purpose,
+                PhoneVerificationStatus.PENDING
+        );
+    }
+
+    List<PhoneVerification> findTop5ByPhoneNumberHashOrderByCreatedAtDesc(String phoneNumberHash);
+
 }

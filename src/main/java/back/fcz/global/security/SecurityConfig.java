@@ -34,8 +34,9 @@ public class SecurityConfig {
     // 인증 없이 접근 가능한 공개 API 경로
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
+            "/api/v1/capsule/read",
+            "/api/v1/capsule/save",
             "/api/v1/phone-verification/**",
-            "/api/v1/capsule/**",
             "/api/v1/storytrack/**"
     };
 
