@@ -1,8 +1,10 @@
 package back.fcz.domain.storytrack.controller;
 
 import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
 import back.fcz.domain.storytrack.dto.response.DeleteParticipantResponse;
 import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
+import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
 import back.fcz.domain.storytrack.service.StorytrackService;
 import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
@@ -15,13 +17,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -133,5 +139,91 @@ public class StorytrackControllerTest {
     }
 
     // 수정 통합 테스트
+    @Test
+    @DisplayName("스토리트랙 경로 수정 성공")
+    void updatePath_success() throws Exception {
+        // given
+        Long stepId = 1L;
+        Long loginMemberId = 10L;
+
+        mockLoginUser(loginMemberId);
+
+        UpdatePathResponse response = mock(UpdatePathResponse.class);
+
+        given(storytrackService.updatePath(
+                any(UpdatePathRequest.class),
+                eq(stepId),
+                eq(loginMemberId)
+        )).willReturn(response);
+
+        // when & then
+        mockMvc.perform(put("/api/v1/storytrack/update")
+                        .param("storytrackStepId", stepId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "stepOrderId": 1,
+                          "updatedCapsuleId": 100
+                        }
+                    """))
+                .andExpect(status().isOk());
+
+        verify(storytrackService)
+                .updatePath(any(UpdatePathRequest.class), eq(stepId), eq(loginMemberId));
+    }
+
+
+    @Test
+    @DisplayName("스토리트랙 작성자가 아니면 경로 수정 실패")
+    void updatePath_notCreator() throws Exception {
+        // given
+        Long stepId = 1L;
+        Long loginMemberId = 99L;
+
+        mockLoginUser(loginMemberId);
+
+        UpdatePathRequest request =
+                new UpdatePathRequest(1, 100L);
+
+        given(storytrackService.updatePath(any(), eq(stepId), eq(loginMemberId)))
+                .willThrow(new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER));
+
+        // when & then
+        mockMvc.perform(put("/api/v1/storytrack/update")
+                        .param("storytrackStepId", stepId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "stepOrderId": 1,
+                          "updatedCapsuleId": 100
+                        }
+                    """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("storytrackStepId 파라미터 누락 시 400 에러")
+    void updatePath_missingParam() throws Exception {
+
+        mockMvc.perform(put("/api/v1/storytrack/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "stepOrderId": 1,
+                          "updatedCapsuleId": 100
+                        }
+                    """))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("요청 바디가 없으면 400 에러")
+    void updatePath_missingBody() throws Exception {
+
+        mockMvc.perform(put("/api/v1/storytrack/update")
+                        .param("storytrackStepId", "1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
 
 }
