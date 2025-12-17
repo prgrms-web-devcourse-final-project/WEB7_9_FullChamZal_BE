@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "캡슐 API", description = "캡슐 생성, 수정, 삭제 관련 API")
+@Tag(name = "캡슐 API", description = "캡슐 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/capsule")
