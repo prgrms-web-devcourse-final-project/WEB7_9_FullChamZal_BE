@@ -36,7 +36,8 @@ public class SecurityConfig {
             "/api/v1/auth/**",
             "/api/v1/capsule/read",
             "/api/v1/capsule/save",
-            "/api/v1/phone-verification/**"
+            "/api/v1/phone-verification/**",
+            "/api/v1/storytrack/**"
     };
 
     @Bean

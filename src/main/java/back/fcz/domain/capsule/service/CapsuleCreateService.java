@@ -76,6 +76,7 @@ public class CapsuleCreateService {
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
+
         secretCapsule.setUuid(setUUID());
         secretCapsule.setCapPassword(phoneCrypto.hash(password)); // 사용자가 지정한 비밀번호 저장
         secretCapsule.setMemberId(member);
@@ -103,7 +104,7 @@ public class CapsuleCreateService {
 
             CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                     .capsuleId(saved)
-                    .recipientName(capsuleCreate.nickName())
+                    .recipientName(capsuleCreate.nickname())
                     .recipientPhone(receiveTel)
                     .recipientPhoneHash(phoneCrypto.hash(receiveTel))
                     .isSenderSelf(0)
@@ -145,7 +146,7 @@ public class CapsuleCreateService {
         // 수신자 테이블에 저장
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
-                .recipientName(requestDTO.nickName())
+                .recipientName(requestDTO.nickname())
                 .recipientPhone(receiveTel)
                 .recipientPhoneHash(phoneCrypto.hash(receiveTel))
                 .isSenderSelf(1)
