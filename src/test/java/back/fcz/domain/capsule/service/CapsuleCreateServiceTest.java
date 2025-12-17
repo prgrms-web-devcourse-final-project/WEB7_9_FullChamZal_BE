@@ -77,7 +77,7 @@ class CapsuleCreateServiceTest {
         CapsuleCreateRequestDTO dto = new CapsuleCreateRequestDTO(
                 1L, "nick", "title", "content", null,
                 "white", "blue", "PUBLIC", "TIME",
-                LocalDateTime.now(), null, "Seoul", 37.11, 127.22,
+                LocalDateTime.now(), null, "Seoul","창원시 의창구", 37.11, 127.22,
                 100, 10
         );
 
@@ -103,7 +103,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -131,7 +131,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -168,7 +168,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -204,7 +204,7 @@ class CapsuleCreateServiceTest {
         CapsuleCreateRequestDTO dto = new CapsuleCreateRequestDTO(
                 99L, "nick", "title", "content", null,
                 "white", "blue", "PUBLIC", "TIME",
-                LocalDateTime.now(), null, "Seoul", 37.11, 127.22,
+                LocalDateTime.now(), null, "Seoul","창원시 의창구", 37.11, 127.22,
                 100, 10
         );
 
@@ -224,7 +224,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -245,7 +245,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -275,7 +275,7 @@ class CapsuleCreateServiceTest {
     void capsuleToMe_memberNotFound() {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
+                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
