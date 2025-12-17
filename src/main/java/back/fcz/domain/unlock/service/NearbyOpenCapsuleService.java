@@ -29,7 +29,7 @@ public class NearbyOpenCapsuleService {
         double currentLng = request.currentLongitude();
         int searchRadiusM = (request.radius() == null) ? DEFAULT_RADIUS_M : request.radius();
 
-        if(searchRadiusM != 50 && searchRadiusM != 1000 && searchRadiusM != 1500) {
+        if(searchRadiusM != 500 && searchRadiusM != 1000 && searchRadiusM != 1500) {
             throw new BusinessException(ErrorCode.INVALID_RADIUS);
         }
 

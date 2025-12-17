@@ -8,7 +8,8 @@ import back.fcz.domain.capsule.entity.Capsule;
 public record SecretCapsuleCreateResponseDTO (
         Long memberId,
         Long capsuleId,
-        String nickName,
+        String nickname,
+        String receiverNickname,
         String url,
         String capPW,
         String title,
@@ -28,7 +29,8 @@ public record SecretCapsuleCreateResponseDTO (
                 capsule.getUnlockAt(),             // LocalDateTime unlockAt
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),         // String location
-                new GPSResponseDTO(                        // GPSDTO gps
+                new GPSResponseDTO(
+                        capsule.getAddress(),
                         capsule.getLocationLat(),
                         capsule.getLocationLng()
                 ),
@@ -44,6 +46,7 @@ public record SecretCapsuleCreateResponseDTO (
                 capsule.getMemberId().getMemberId(),
                 capsule.getCapsuleId(),
                 capsule.getNickname(),
+                capsule.getReceiverNickname(),
                 url,
                 password,
                 capsule.getTitle(),
