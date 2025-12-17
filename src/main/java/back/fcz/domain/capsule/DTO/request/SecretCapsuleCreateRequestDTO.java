@@ -15,8 +15,9 @@ public record SecretCapsuleCreateRequestDTO(
         LocalDateTime unlockAt,
         LocalDateTime unlockUntil,
         String locationName,
+        String address,
         double locationLat,
-        double locationIng,
+        double locationLng,
         int viewingRadius,
         String packingColor,
         String contentColor,
@@ -36,8 +37,9 @@ public record SecretCapsuleCreateRequestDTO(
                 .unlockAt(unlockAt)
                 .unlockUntil(unlockUntil)
                 .locationName(locationName)
+                .address(address)
                 .locationLat(locationLat)
-                .locationLng(locationIng)
+                .locationLng(locationLng)
                 .locationRadiusM(viewingRadius)
                 .maxViewCount(maxViewCount)
                 .currentViewCount(0)
