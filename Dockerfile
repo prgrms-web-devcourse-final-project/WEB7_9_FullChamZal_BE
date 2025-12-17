@@ -1,8 +1,8 @@
 FROM gradle:8.10.2-jdk21 AS builder
 WORKDIR /app
 
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
+COPY build.gradle .
+COPY settings.gradle .
 RUN gradle wrapper
 RUN ./gradlew dependencies --no-daemon
 COPY src src
