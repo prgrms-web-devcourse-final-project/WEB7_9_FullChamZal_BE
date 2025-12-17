@@ -72,7 +72,7 @@ public class AdminCapsuleService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_CAPSULE_NOT_FOUND));
 
         boolean wantDeleted = Boolean.TRUE.equals(request.getDeleted());
-        boolean currentlyDeleted = capsule.getIsDeleted() != null && capsule.getIsDeleted() != 0;
+        boolean currentlyDeleted = capsule.getIsDeleted() != 0;
 
         if (wantDeleted == currentlyDeleted) {
             throw new BusinessException(ErrorCode.ADMIN_INVALID_CAPSULE_STATUS_CHANGE);
