@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +38,7 @@ public class StorytrackService {
                 .orElseThrow(()-> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
         // 요청한 사람과 스토리트랙 생성자가 동일한지 확인
-        if(targetStorytrack.getMember().getMemberId() != memberId){
+        if(!Objects.equals(targetStorytrack.getMember().getMemberId(), memberId)){
             throw new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER);
         }
 
@@ -88,7 +89,7 @@ public class StorytrackService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_PAHT_NOT_FOUND));
 
         // 요청한 사람과 스토리트랙 작성자가 같은지 확인
-        if(targetStep.getStorytrack().getMember().getMemberId() != loginMemberId){
+        if(!Objects.equals(targetStep.getStorytrack().getMember().getMemberId(), loginMemberId)){
             throw new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER);
         }
 

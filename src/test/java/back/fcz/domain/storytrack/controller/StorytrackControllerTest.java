@@ -54,6 +54,7 @@ public class StorytrackControllerTest {
         given(currentUserContext.getCurrentUser()).willReturn(user);
     }
 
+    // 삭제 통합 테스트
     @Test
     @DisplayName("스토리트랙 작성자 삭제 성공")
     void deleteStorytrack_success() throws Exception {
@@ -130,5 +131,7 @@ public class StorytrackControllerTest {
         mockMvc.perform(delete("/api/v1/storytrack/delete"))
                 .andExpect(status().isInternalServerError());
     }
+
+    // 수정 통합 테스트
 
 }

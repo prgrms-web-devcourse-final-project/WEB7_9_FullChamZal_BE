@@ -49,10 +49,7 @@ public class StorytrackController {
             @RequestParam Long storytrackStepId,
             @RequestBody UpdatePathRequest request
     ){
-         // Long loginMember = currentUserContext.getCurrentUser().memberId();
-
-        // 포스트맨 테스트용
-        Long loginMember = 1L;
+         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
         return ResponseEntity.ok(storytrackService.updatePath(request, storytrackStepId, loginMember));
     }
