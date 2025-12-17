@@ -24,7 +24,8 @@ public record CapsuleUpdateResponseDTO(
                 capsule.getUnlockAt(),             // LocalDateTime unlockAt
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),         // String location
-                new GPSResponseDTO(                        // GPSDTO gps
+                new GPSResponseDTO(
+                        capsule.getAddress(),
                         capsule.getLocationLat(),
                         capsule.getLocationLng()
                 ),

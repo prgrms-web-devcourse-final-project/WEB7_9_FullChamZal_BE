@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 @Transactional
-class CapsuleCreateControllerIntegrationTest {
+class CapsuleCreateControllerTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -93,6 +93,7 @@ class CapsuleCreateControllerIntegrationTest {
                         LocalDateTime.now().plusDays(1),
                         null,
                         "Seoul",
+                        "창원시 의창구",
                         37.5,
                         127.0,
                         100,
@@ -133,6 +134,7 @@ class CapsuleCreateControllerIntegrationTest {
                 new SecretCapsuleCreateRequestDTO(
                         member.getMemberId(),
                         "senderNick",
+                        "receiver",
                         "나에게 보내는 캡슐",
                         "내년에는 행복하자!",
                         "PRIVATE",
@@ -140,6 +142,7 @@ class CapsuleCreateControllerIntegrationTest {
                         LocalDateTime.of(2025, 12, 31, 23, 59),
                         null,
                         "Seoul Station",
+                        "창원시 의창구",
                         37.554722,
                         126.970833,
                         300,

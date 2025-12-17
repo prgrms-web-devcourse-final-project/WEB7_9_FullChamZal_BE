@@ -14,7 +14,7 @@ public record CapsuleConditionResponseDTO(
         String title,                // 제목
         String content,              // 내용 // 내용은 일정 글자수 넘어가면 ...으로 처리
         LocalDateTime createAt,      // 보낸 날짜
-        boolean viewStatus,          // 조회 여부 // currentViewCount > 0 -> 1
+        boolean viewStatus,          // 조회 여부
 
         String unlockType,        // 해제 조건
 
