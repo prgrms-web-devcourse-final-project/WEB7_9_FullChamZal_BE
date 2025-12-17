@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/capsule")
 @Tag(
         name = "캡슐 API",
-        description = "캡슐 조회 관련 API"
+        description = "캡슐 관련 API"
 )
 public class CapsuleReadController {
     private final CapsuleReadService capsuleReadService;

@@ -15,16 +15,43 @@ public class UnlockService {
     private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
     private final CapsuleRepository capsuleRepository;
 
-    // 시간 해제 조건 검증
+    /*
+    시간 해제 조건 검증
+
+    시간 해제 조건을 사용하는 캡슐은 다음 두 가지 유형으로 나뉜다.
+    1. unlockAt만 설정된 경우
+       - 지정된 시점(unlockAt)이 되면 캡슐이 해제된다.
+    2. unlockAt과 unlockUntil이 모두 설정된 경우
+       - unlockAt부터 unlockUntil 사이의 기간 동안만 캡슐 해제가 가능하다.
+     */
     public boolean isTimeConditionMet(long capsuleId, LocalDateTime currentTime) {
         if(currentTime == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
 
         Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(
                 () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-        LocalDateTime capsuleTime = capsule.getUnlockAt();
+        LocalDateTime capsuleUnlockAt = capsule.getUnlockAt();
+        LocalDateTime capsuleUnlockUntil = capsule.getUnlockUntil();
 
-        // 캡슐의 시간 해제 조건 <= 사용자의 현재 시간 이면 true (해제 가능)
-        return !capsuleTime.isAfter(currentTime);
+        if(capsuleUnlockAt == null) {throw new BusinessException(ErrorCode.UNLOCK_TIME_NOT_FOUND);}
+        // unlockUntil <= unlockAt 이면 error
+        if (capsuleUnlockAt != null && capsuleUnlockUntil != null) {
+            if (!capsuleUnlockUntil.isAfter(capsuleUnlockAt)) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME_RANGE);}
+        }
+
+        // 캡슐의 시간 해제 조건 <= 사용자의 현재 시간 이면 true
+        boolean isAfterOrEqualToUnlockAt = !capsuleUnlockAt.isAfter(currentTime);
+
+        boolean isBeforeOrEqualToUnlockUntil;
+        if (capsuleUnlockUntil == null) {
+            // null인 경우, 열람 마감 시간이 없는 캡슐이므로 항상 true
+            isBeforeOrEqualToUnlockUntil = true;
+        } else {
+            // 사용자의 현재 시간 <= 캡슐의 열람 마감 시간 이면 true
+            isBeforeOrEqualToUnlockUntil = !capsuleUnlockUntil.isBefore(currentTime);
+        }
+
+        // unlockAt <= 사용자의 현재 시간 <= unlockUntil 이면 true (해제 가능)
+        return isAfterOrEqualToUnlockAt && isBeforeOrEqualToUnlockUntil;
     }
 
     // 위치 해제 조건 검증
@@ -47,22 +74,10 @@ public class UnlockService {
 
     // 시간 + 위치 해제 조건 검증
     public boolean isTimeAndLocationConditionMet(long capsuleId, LocalDateTime currentTime, double currentLat, double currentLng) {
-        if(currentTime == null) {throw new BusinessException(ErrorCode.INVALID_UNLOCK_TIME);}
-        if(currentLat < -90 || currentLat > 90 || currentLng < -180 || currentLng > 180) {
-            throw new BusinessException(ErrorCode.INVALID_LATITUDE_LONGITUDE);
-        }
+        boolean isTimeConditionMet = isTimeConditionMet(capsuleId, currentTime);
+        boolean isLocationConditionMet = isLocationConditionMet(capsuleId, currentLat, currentLng);
 
-        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(
-                () -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-        LocalDateTime capsuleTime = capsule.getUnlockAt();
-        double capsuleLat = capsule.getLocationLat();
-        double capsuleLng = capsule.getLocationLng();
-        int radiusM = capsule.getLocationRadiusM();
-
-        double distance = calculateDistanceInMeters(capsuleLat, capsuleLng, currentLat, currentLng);
-        boolean condition = !capsuleTime.isAfter(currentTime) && distance <= radiusM;
-
-        return condition;
+        return isTimeConditionMet && isLocationConditionMet;
     }
 
     // 사용자 현재 위치와 캡슐 위치 조건 간 거리 계산 (Haversine Formula)
