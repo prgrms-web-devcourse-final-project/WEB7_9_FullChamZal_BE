@@ -102,7 +102,7 @@ class CapsuleCreateServiceTest {
     void testPrivateCapsulePassword() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content", "PRIVATE",
+                1L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );
@@ -131,7 +131,7 @@ class CapsuleCreateServiceTest {
     void testPrivateCapsulePhone_MemberRecipient() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content", "PRIVATE",
+                1L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );
@@ -168,7 +168,7 @@ class CapsuleCreateServiceTest {
     void testPrivateCapsulePhone_NonMemberRecipient() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content", "PRIVATE",
+                1L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );
@@ -226,7 +226,7 @@ class CapsuleCreateServiceTest {
     void testPrivateCapsulePhone_MemberNotFound() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                99L, "nick", "title", "content", "PRIVATE",
+                99L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );
@@ -247,7 +247,7 @@ class CapsuleCreateServiceTest {
     void capsuleToMe_success() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, "nick", "title", "content", "PRIVATE",
+                1L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );
@@ -277,7 +277,7 @@ class CapsuleCreateServiceTest {
     @DisplayName("나에게 보내는 캡슐 - member 없음")
     void capsuleToMe_memberNotFound() {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                99L, "nick", "title", "content", "PRIVATE",
+                99L, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul",
                 37.11, 127.22, 300, "red", "white", 10
         );

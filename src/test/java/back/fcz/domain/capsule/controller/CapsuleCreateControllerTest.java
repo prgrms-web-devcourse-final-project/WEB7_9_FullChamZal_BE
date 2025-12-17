@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 @Transactional
-class CapsuleCreateControllerIntegrationTest {
+class CapsuleCreateControllerTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -133,6 +133,7 @@ class CapsuleCreateControllerIntegrationTest {
                 new SecretCapsuleCreateRequestDTO(
                         member.getMemberId(),
                         "senderNick",
+                        "receiver",
                         "나에게 보내는 캡슐",
                         "내년에는 행복하자!",
                         "PRIVATE",

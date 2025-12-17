@@ -18,6 +18,7 @@ public record CapsuleCreateRequestDTO(
         LocalDateTime unlockAt,
         LocalDateTime unlockUntil,
         String locationName,
+        String address,
         Double locationLat,
         Double locationLng,
         int locationRadiusM,
@@ -38,6 +39,7 @@ public record CapsuleCreateRequestDTO(
                 .unlockAt(unlockAt)
                 .unlockUntil(unlockUntil)
                 .locationName(locationName)
+                .address(address)
                 .locationLat(locationLat)
                 .locationLng(locationLng)
                 .locationRadiusM(locationRadiusM)
