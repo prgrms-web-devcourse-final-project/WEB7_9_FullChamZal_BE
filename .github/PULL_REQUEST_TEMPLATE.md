@@ -35,6 +35,7 @@
 - [ ] StoryTrack
 - [ ] Notification
 - [ ] Report
+- [ ] Sanction
 
 ## 확인했나요?
 - [ ] 코드 컨벤션

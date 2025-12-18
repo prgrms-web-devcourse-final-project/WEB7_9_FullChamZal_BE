@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 
 public record SecretCapsuleCreateRequestDTO(
         Long memberId,
+        String recipientPhone, // 수신자 전화번호 (전화번호 방식일 때 사용)
+        String capsulePassword, // 캡슐 비밀번호 (URL + 비밀번호 방식일 때 사용)
         String nickname,
         String receiverNickname,
         String title,
@@ -24,7 +26,6 @@ public record SecretCapsuleCreateRequestDTO(
         int maxViewCount
 ) {
     public Capsule toEntity() {
-
         return Capsule.builder()
                 .nickname(nickname)
                 .receiverNickname(receiverNickname)

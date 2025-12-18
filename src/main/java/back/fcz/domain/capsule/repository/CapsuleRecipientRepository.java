@@ -34,4 +34,11 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
     // phoneHash를 가지는 수신자 리스트 조회. JOIN을 이용하여 Capsule 테이블도 같이 조회
     @Query("SELECT cr FROM CapsuleRecipient cr JOIN FETCH cr.capsuleId c WHERE cr.recipientPhoneHash = :phoneHash")
     List<CapsuleRecipient> findAllByRecipientPhoneHashWithCapsule(@Param("phoneHash") String phoneHash);
+
+    @Query("""
+        select cr
+        from CapsuleRecipient cr
+        where cr.capsuleId.capsuleId in :capsuleIds
+    """)
+    List<CapsuleRecipient> findAllByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 }

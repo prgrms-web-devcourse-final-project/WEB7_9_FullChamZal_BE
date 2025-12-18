@@ -10,74 +10,80 @@ import java.time.LocalDateTime;
 @Builder
 public class AdminCapsuleDetailResponse {
 
-    private Long id;
+    private final Long id;
+    private final Long writerId;
+    private final String writerNickname;
 
-    // 기본 정보
-    private String title;
-    private String content;
-    private String writerNickname;
-    private String capsuleColor;
-    private String capsulePackingColor;
-    private String visibility;
+    private final String uuid;
+    private final String title;
+    private final String content;
 
-    // 해제 조건
-    private String unlockType;
-    private LocalDateTime unlockAt;
-    private String locationName;
-    private Double locationLat;
-    private Double locationLng;
-    private int locationRadiusM;
+    private final String visibility;
+    private final String unlockType;
+    private final LocalDateTime unlockAt;
+    private final LocalDateTime unlockUntil;
 
-    // 통계 / 상태
-    private int currentViewCount;
-    private Integer maxViewCount;
-    private boolean deleted;
-    private boolean protectedCapsule;
+    // 장소 정보
+    private final String locationAlias;   // 별칭
+    private final String address;         // 실제 주소
+    private final Double locationLat;
+    private final Double locationLng;
+    private final int locationRadiusM;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // PRIVATE 캡슐일 때만 채우는 값
+    private final String recipientName;
 
-    // 간단 통계
-    private long reportCount;
-    private long bookmarkCount;
+    private final int currentViewCount;
+    private final int maxViewCount;
 
-    public static AdminCapsuleDetailResponse from(Capsule capsule) {
-        return from(capsule, 0L, 0L);
-    }
+    private final boolean deleted;
+    private final boolean protectedCapsule; // 보호:1
 
-    public static AdminCapsuleDetailResponse from(Capsule capsule, long reportCount, long bookmarkCount) {
+    private final long reportCount;
+    private final long bookmarkCount; // TODO
+
+    private final LocalDateTime createdAt;
+
+    public static AdminCapsuleDetailResponse of(
+            Capsule capsule,
+            String recipientName,
+            long reportCount,
+            long bookmarkCount
+    ) {
+        boolean deleted = capsule.getIsDeleted() != 0;
+        boolean protectedCapsule = capsule.getIsProtected() == 1;
+
         return AdminCapsuleDetailResponse.builder()
                 .id(capsule.getCapsuleId())
+                .writerId(capsule.getMemberId() != null ? capsule.getMemberId().getMemberId() : null)
+                .writerNickname(capsule.getNickname())
+
+                .uuid(capsule.getUuid())
                 .title(capsule.getTitle())
                 .content(capsule.getContent())
-                .writerNickname(capsule.getNickname())
-                .capsuleColor(capsule.getCapsuleColor())
-                .capsulePackingColor(capsule.getCapsulePackingColor())
+
                 .visibility(capsule.getVisibility())
                 .unlockType(capsule.getUnlockType())
                 .unlockAt(capsule.getUnlockAt())
-                .locationName(capsule.getLocationName())
+                .unlockUntil(capsule.getUnlockUntil())
+
+                .locationAlias(capsule.getLocationName())
+                .address(capsule.getAddress())
                 .locationLat(capsule.getLocationLat())
                 .locationLng(capsule.getLocationLng())
                 .locationRadiusM(capsule.getLocationRadiusM())
+
+                .recipientName(recipientName)
+
                 .currentViewCount(capsule.getCurrentViewCount())
                 .maxViewCount(capsule.getMaxViewCount())
-                .deleted(isDeleted(capsule))
-                .protectedCapsule(isProtected(capsule))
-                .createdAt(capsule.getCreatedAt())
-                .updatedAt(capsule.getUpdatedAt())
+
+                .deleted(deleted)
+                .protectedCapsule(protectedCapsule)
+
                 .reportCount(reportCount)
                 .bookmarkCount(bookmarkCount)
+                .createdAt(capsule.getCreatedAt())
                 .build();
-    }
-
-    private static boolean isDeleted(Capsule capsule) {
-        Integer v = capsule.getIsDeleted();
-        return v != null && v != 0;
-    }
-
-    private static boolean isProtected(Capsule capsule) {
-        Integer v = capsule.getIsProtected();
-        return v != null && v == 1;
     }
 }

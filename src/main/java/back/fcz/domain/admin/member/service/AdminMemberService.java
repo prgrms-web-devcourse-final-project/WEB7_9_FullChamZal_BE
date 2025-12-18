@@ -1,10 +1,6 @@
 package back.fcz.domain.admin.member.service;
 
-import back.fcz.domain.admin.member.dto.AdminMemberDetailResponse;
-import back.fcz.domain.admin.member.dto.AdminMemberSearchRequest;
-import back.fcz.domain.admin.member.dto.AdminMemberStatusUpdateRequest;
-import back.fcz.domain.admin.member.dto.AdminMemberStatusUpdateResponse;
-import back.fcz.domain.admin.member.dto.AdminMemberSummaryResponse;
+import back.fcz.domain.admin.member.dto.*;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
@@ -25,30 +21,28 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminMemberService {
 
+    private static final int NOT_DELETED = 0;
+    private static final int PROTECTED = 1; // ✅ 보호:1
+
     private final MemberRepository memberRepository;
     private final CapsuleRepository capsuleRepository;
     private final ReportRepository reportRepository;
     private final PhoneVerificationRepository phoneVerificationRepository;
-    private final MemberSanctionHistoryRepository memberSanctionHistoryRepository;
+    private final MemberSanctionHistoryRepository sanctionHistoryRepository;
     private final CurrentUserContext currentUserContext;
 
     /**
-     * 관리자용 회원 목록 조회
+     * 관리자 회원 목록 조회 + 통계(신고당함/보호캡슐/캡슐수)
      */
     public PageResponse<AdminMemberSummaryResponse> searchMembers(AdminMemberSearchRequest cond) {
-
-        LocalDateTime from = toStartOfDay(cond.getFrom());
-        LocalDateTime toExclusive = toStartOfNextDay(cond.getTo());
 
         Pageable pageable = PageRequest.of(
                 cond.getPage(),
@@ -56,96 +50,86 @@ public class AdminMemberService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Member> members = memberRepository.searchAdmin(
+        LocalDateTime from = cond.getFrom() != null ? cond.getFrom().atStartOfDay() : null;
+        LocalDateTime to = cond.getTo() != null ? cond.getTo().plusDays(1).atStartOfDay() : null;
+
+        Page<Member> page = memberRepository.searchAdmin(
                 cond.getStatus(),
                 cond.getKeyword(),
                 from,
-                toExclusive,
+                to,
                 pageable
         );
 
-        // ✅ 결과가 없으면 바로 리턴 (IN () 방지)
-        if (members.isEmpty()) {
-            Page<AdminMemberSummaryResponse> empty = members.map(m ->
-                    AdminMemberSummaryResponse.of(m, 0L, 0L, 0L)
-            );
-            return new PageResponse<>(empty);
-        }
-
-        List<Long> memberIds = members.getContent().stream()
+        List<Long> memberIds = page.getContent().stream()
                 .map(Member::getMemberId)
                 .toList();
 
-        Map<Long, Long> reportCountMap = toCountMap(reportRepository.countByReporterMemberIds(memberIds));
         Map<Long, Long> capsuleCountMap = toCountMap(capsuleRepository.countActiveByMemberIds(memberIds));
         Map<Long, Long> blockedCapsuleCountMap = toCountMap(
-                capsuleRepository.countProtectedActiveByMemberIds(memberIds, 1)
+                capsuleRepository.countProtectedActiveByMemberIds(memberIds, PROTECTED)
         );
+        Map<Long, Long> reportedCountMap = toCountMap(reportRepository.countReportedByMemberIds(memberIds));
 
-        Page<AdminMemberSummaryResponse> dtoPage = members.map(m ->
-                AdminMemberSummaryResponse.of(
-                        m,
-                        reportCountMap.getOrDefault(m.getMemberId(), 0L),
-                        blockedCapsuleCountMap.getOrDefault(m.getMemberId(), 0L),
-                        capsuleCountMap.getOrDefault(m.getMemberId(), 0L)
-                )
-        );
+        Page<AdminMemberSummaryResponse> mapped = page.map(member -> {
+            long reportedCount = reportedCountMap.getOrDefault(member.getMemberId(), 0L);
+            long blockedCapsuleCount = blockedCapsuleCountMap.getOrDefault(member.getMemberId(), 0L);
+            long capsuleCount = capsuleCountMap.getOrDefault(member.getMemberId(), 0L);
 
-        return new PageResponse<>(dtoPage);
+            return AdminMemberSummaryResponse.of(
+                    member,
+                    reportedCount,
+                    blockedCapsuleCount,
+                    capsuleCount
+            );
+        });
+
+        return new PageResponse<>(mapped);
     }
-
-    private static Map<Long, Long> toCountMap(List<Object[]> rows) {
-        if (rows == null || rows.isEmpty()) return Collections.emptyMap();
-
-        Map<Long, Long> map = new HashMap<>();
-        for (Object[] row : rows) {
-            Long id = (Long) row[0];
-            Long cnt = (Long) row[1];
-            map.put(id, cnt);
-        }
-        return map;
-    }
-
 
     /**
-     * 1-2 회원 상세 조회
-     * - “최근” 데이터는 너무 많아질 수 있으니 Top5만 내려주는 형태(요약)
+     * 회원 상세 조회
+     * - 최근 캡슐 5개(미삭제)
+     * - 최근 전화번호 인증 5개
+     * - 통계(캡슐수/보호캡슐수/신고당함 수)
      */
     public AdminMemberDetailResponse getMemberDetail(Long memberId) {
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_MEMBER_NOT_FOUND));
 
-        long totalCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeleted(memberId, 0);
-        long totalBlockedCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeletedAndIsProtected(memberId, 0, 1);
+        long totalCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeleted(memberId, NOT_DELETED);
+        long totalBlockedCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeletedAndIsProtected(
+                memberId, NOT_DELETED, PROTECTED
+        );
+        long totalReportCount = reportRepository.countReportedByMemberId(memberId);
 
-        // 신고 누적: “이 회원이 신고한 횟수” vs “이 회원이 신고당한 횟수”가 애매한데,
-        // 현재 스키마상 확실히 계산 가능한 건 "신고한 횟수"이므로 그걸로 넣음.
-        // (신고당한 횟수는 Report -> Capsule -> Member 조인 카운트 쿼리 추가하면 가능)
-        long totalReportCount = reportRepository.countByReporter_MemberId(memberId);
+        List<Capsule> recentCapsules = capsuleRepository
+                .findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(memberId, NOT_DELETED);
 
-        // 최근 캡슐 5개 (미삭제만)
-        List<Capsule> recentCapsules =
-                capsuleRepository.findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(memberId, 0);
+        List<Long> capsuleIds = recentCapsules.stream().map(Capsule::getCapsuleId).toList();
+        Map<Long, Long> reportCountByCapsule = new HashMap<>();
+        for (Object[] row : reportRepository.countByCapsuleIds(capsuleIds)) {
+            reportCountByCapsule.put((Long) row[0], (Long) row[1]);
+        }
 
-        List<AdminMemberDetailResponse.RecentCapsuleSummary> recentCapsuleSummaries = recentCapsules.stream()
+        List<AdminMemberDetailResponse.RecentCapsuleSummary> recentCapsuleDtos = recentCapsules.stream()
                 .map(c -> AdminMemberDetailResponse.RecentCapsuleSummary.builder()
-                        .id(c.getCapsuleId()) // ✅ capsuleId()가 아니라 id()
+                        .id(c.getCapsuleId())
                         .title(c.getTitle())
-                        .status(resolveCapsuleStatus(c))
+                        .status("ACTIVE") // 지금은 미삭제만 가져오므로 ACTIVE 고정
                         .visibility(c.getVisibility())
                         .createdAt(c.getCreatedAt())
                         .openCount(c.getCurrentViewCount())
-                        .reportCount(reportRepository.countByCapsule_CapsuleId(c.getCapsuleId()))
+                        .reportCount(reportCountByCapsule.getOrDefault(c.getCapsuleId(), 0L))
                         .build()
                 )
-                .collect(Collectors.toList());
+                .toList();
 
-        // 최근 전화번호 인증 5개 (member.phoneHash 기준)
-        List<PhoneVerification> pvs = (member.getPhoneHash() == null)
-                ? List.of()
-                : phoneVerificationRepository.findTop5ByPhoneNumberHashOrderByCreatedAtDesc(member.getPhoneHash());
+        List<PhoneVerification> phoneLogs = phoneVerificationRepository
+                .findTop5ByPhoneNumberHashOrderByCreatedAtDesc(member.getPhoneHash());
 
-        List<AdminMemberDetailResponse.PhoneVerificationLog> recentPvLogs = pvs.stream()
+        List<AdminMemberDetailResponse.PhoneVerificationLog> phoneLogDtos = phoneLogs.stream()
                 .map(pv -> AdminMemberDetailResponse.PhoneVerificationLog.builder()
                         .id(pv.getId())
                         .purpose(pv.getPurpose().name())
@@ -156,93 +140,91 @@ public class AdminMemberService {
                         .verifiedAt(pv.getVerifiedAt())
                         .build()
                 )
-                .collect(Collectors.toList());
+                .toList();
 
         return AdminMemberDetailResponse.builder()
                 .id(member.getMemberId())
                 .userId(member.getUserId())
                 .name(member.getName())
                 .nickname(member.getNickname())
-                .status(member.getStatus()) // ✅ String이 아니라 MemberStatus
+                .status(member.getStatus())
                 .phoneNumber(member.getPhoneNumber())
                 .createdAt(member.getCreatedAt())
                 .updatedAt(member.getUpdatedAt())
                 .lastNicknameChangedAt(member.getNicknameChangedAt())
 
                 .totalCapsuleCount(totalCapsuleCount)
-                .totalReportCount(totalReportCount)
-                .totalBookmarkCount(0L)          // TODO: 즐겨찾기 연동 시 집계
+                .totalReportCount(totalReportCount)              // ✅ 신고당한 수
+                .totalBookmarkCount(0L)                          // TODO
                 .totalBlockedCapsuleCount(totalBlockedCapsuleCount)
-                .storyTrackCount(0L)             // TODO: StoryTrack 연동 시 집계
+                .storyTrackCount(0L)                             // TODO
 
-                .recentCapsules(recentCapsuleSummaries)
-                .recentNotifications(Collections.emptyList()) // TODO: 알림 로그 도메인 연결 시
-                .recentPhoneVerifications(recentPvLogs)
+                .recentCapsules(recentCapsuleDtos)
+                .recentNotifications(Collections.emptyList())    // TODO
+                .recentPhoneVerifications(phoneLogDtos)
                 .build();
     }
 
     /**
-     * 1-3 회원 상태 변경
+     * 회원 상태 변경 + 제재 이력 저장
      */
     @Transactional
     public AdminMemberStatusUpdateResponse updateMemberStatus(Long memberId, AdminMemberStatusUpdateRequest request) {
-        Long adminId = currentUserContext.getCurrentMemberId();
-
-        if (Objects.equals(adminId, memberId)) {
-            throw new BusinessException(ErrorCode.ADMIN_CANNOT_CHANGE_SELF_STATUS);
-        }
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_MEMBER_NOT_FOUND));
 
+        Long adminId = currentUserContext.getCurrentMemberId();
+        if (Objects.equals(adminId, memberId)) {
+            throw new BusinessException(ErrorCode.ADMIN_CANNOT_CHANGE_SELF_STATUS);
+        }
+
         MemberStatus before = member.getStatus();
         MemberStatus after = request.getStatus();
 
-        if (before == after) {
-            throw new BusinessException(ErrorCode.ADMIN_INVALID_MEMBER_STATUS_CHANGE);
+        if (after == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
-
-        // 정책: EXIT는 복구 금지
-        if (before == MemberStatus.EXIT && after != MemberStatus.EXIT) {
+        if (before == MemberStatus.EXIT) {
             throw new BusinessException(ErrorCode.ADMIN_INVALID_MEMBER_STATUS_CHANGE);
         }
 
         member.updateStatus(after);
 
+        SanctionType sanctionType = resolveSanctionType(before, after);
+
         MemberSanctionHistory history = MemberSanctionHistory.create(
-                memberId,
+                member.getMemberId(),          // ✅ Long
                 adminId,
-                resolveSanctionType(before, after),
-                before,
-                after,
-                (request.getReason() == null || request.getReason().isBlank()) ? "ADMIN_STATUS_CHANGE" : request.getReason(),
+                sanctionType,
+                before,                        // ✅ MemberStatus
+                after,                         // ✅ MemberStatus
+                (request.getReason() == null || request.getReason().isBlank())
+                        ? "ADMIN_STATUS_CHANGE"
+                        : request.getReason(),
                 request.getSanctionUntil()
         );
-        memberSanctionHistoryRepository.save(history);
+        sanctionHistoryRepository.save(history);
 
         return AdminMemberStatusUpdateResponse.of(member, request.getReason(), request.getSanctionUntil());
     }
 
-    private static LocalDateTime toStartOfDay(LocalDate date) {
-        return date == null ? null : date.atStartOfDay();
-    }
-
-    private static LocalDateTime toStartOfNextDay(LocalDate date) {
-        return date == null ? null : date.plusDays(1).atStartOfDay();
-    }
-
-    private static String resolveCapsuleStatus(Capsule c) {
-        Integer isDeleted = c.getIsDeleted();
-        Integer isProtected = c.getIsProtected();
-
-        if (isDeleted != null && isDeleted != 0) return "DELETED";
-        if (isProtected != null && isProtected == 1) return "PROTECTED";
-        return "ACTIVE";
-    }
-
-    private static SanctionType resolveSanctionType(MemberStatus before, MemberStatus after) {
-        if (after == MemberStatus.STOP) return SanctionType.STOP;
+    private SanctionType resolveSanctionType(MemberStatus before, MemberStatus after) {
+        if (before != MemberStatus.STOP && after == MemberStatus.STOP) return SanctionType.STOP;
+        if (before == MemberStatus.STOP && after == MemberStatus.ACTIVE) return SanctionType.RESTORE;
         if (after == MemberStatus.EXIT) return SanctionType.EXIT;
-        return SanctionType.RESTORE;
+        return SanctionType.RESTORE; // 기본값(운영 정책에 맞게 조정 가능)
+    }
+
+    private Map<Long, Long> toCountMap(List<Object[]> rows) {
+        Map<Long, Long> map = new HashMap<>();
+        if (rows == null) return map;
+
+        for (Object[] row : rows) {
+            Long id = (Long) row[0];
+            Long cnt = (Long) row[1];
+            map.put(id, cnt);
+        }
+        return map;
     }
 }
