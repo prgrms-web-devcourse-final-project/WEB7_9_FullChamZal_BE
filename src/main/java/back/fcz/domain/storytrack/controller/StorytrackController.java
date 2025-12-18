@@ -73,12 +73,11 @@ public class StorytrackController {
     })
     @PutMapping("/update")
     public ResponseEntity<ApiResponse<UpdatePathResponse>> updatePath(
-            @RequestParam Long storytrackStepId,
             @RequestBody UpdatePathRequest request
     ){
          Long loginMember = currentUserContext.getCurrentUser().memberId();
 
-        UpdatePathResponse response = storytrackService.updatePath(request, storytrackStepId, loginMember);
+        UpdatePathResponse response = storytrackService.updatePath(request, loginMember);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

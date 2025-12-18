@@ -91,12 +91,12 @@ public class StorytrackService {
 
     // 수정
     // 스토리트랙 경로 수정
-    public UpdatePathResponse updatePath (UpdatePathRequest request, Long storytrackStepId, Long loginMemberId){
+    public UpdatePathResponse updatePath (UpdatePathRequest request, Long loginMemberId){
         storytrackStepRepository.findAll()
                 .forEach(s -> log.info("FOUND STEP ID = {}", s.getId()));
 
         // 스토리트랙 경로 조회
-        StorytrackStep targetStep = storytrackStepRepository.findById(storytrackStepId)
+        StorytrackStep targetStep = (StorytrackStep) storytrackStepRepository.findByStorytrackIdAndStepOrderId(request.storytrackId(), request.stepOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_PAHT_NOT_FOUND));
 
         // 요청한 사람과 스토리트랙 작성자가 같은지 확인
@@ -135,6 +135,9 @@ public class StorytrackService {
                 .isDeleted(0)
                 .build();
 
+        storytrack.setTotalSteps(storytrack.getSteps().size());
+        Storytrack saved = storytrackRepository.save(storytrack);
+
         int stepOrder = 1;
 
         // 스토리트랙 스탭 생성
@@ -144,7 +147,8 @@ public class StorytrackService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
             // 스토리트랙 스탭 캡슐이 비공개 상태 캡슐일 때
-            if (capsule.getVisibility().equals("PRIVATE")) {
+            if (capsule.getVisibility().equals("PRIVATE")
+                    || capsule.getVisibility().equals("SELF")) {
                 throw new BusinessException(ErrorCode.CAPSULE_NOT_PUBLIC);
             }
 
@@ -153,12 +157,10 @@ public class StorytrackService {
                     .stepOrder(stepOrder++)
                     .build();
 
-            savedStorytrack.addStep(step);
-
-            storytrackStepRepository.save(step);
+            storytrack.addStep(step);
         }
 
-        return CreateStorytrackResponse.from(savedStorytrack);
+        return CreateStorytrackResponse.from(storytrack);
     }
 
 
