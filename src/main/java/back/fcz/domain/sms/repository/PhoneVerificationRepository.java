@@ -12,30 +12,20 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PhoneVerificationRepository extends JpaRepository<PhoneVerification,Long> {
-    long countByPhoneNumberHashAndPurposeAndCreatedAtAfter(
-            String PhoneNumberHash,
-            PhoneVerificationPurpose purpose,
-            LocalDateTime cooldownThreshold);
-
-
-
-    Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(
-            String phoneNumberHash,
-            PhoneVerificationPurpose purpose);
-
-    Page<PhoneVerification> findByPurpose(PhoneVerificationPurpose purpose, Pageable pageable);
-
-    Page<PhoneVerification> findByStatus(PhoneVerificationStatus status, Pageable pageable);
-
-    Page<PhoneVerification> findByPurposeAndStatus(
-            PhoneVerificationPurpose purpose,
-            PhoneVerificationStatus status,
-            Pageable pageable
-    );
-
 
     long countByPhoneNumberHash(String phoneNumberHash);
 
+    long countByPhoneNumberHashAndPurposeAndCreatedAtAfter(
+            String phoneNumberHash,
+            PhoneVerificationPurpose purpose,
+            LocalDateTime cooldownThreshold
+    );
+
+    // ✅ JPQL limit 금지 -> 파생 쿼리로 최신 1건
+    Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(
+            String phoneNumberHash,
+            PhoneVerificationPurpose purpose
+    );
 
     Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeAndStatusOrderByCreatedAtDesc(
             String phoneNumberHash,
@@ -43,7 +33,7 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
             PhoneVerificationStatus status
     );
 
-    // 기존에 "latest pending"이 필요하면 이렇게 써야 함 (JPQL limit 금지)
+    // 기존 코드 호환용
     default Optional<PhoneVerification> findLatestPending(String phoneNumberHash, PhoneVerificationPurpose purpose) {
         return findTop1ByPhoneNumberHashAndPurposeAndStatusOrderByCreatedAtDesc(
                 phoneNumberHash,
@@ -52,6 +42,15 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
         );
     }
 
+    // ✅ 최근 5개 로그
     List<PhoneVerification> findTop5ByPhoneNumberHashOrderByCreatedAtDesc(String phoneNumberHash);
 
+    Page<PhoneVerification> findByPurpose(PhoneVerificationPurpose purpose, Pageable pageable);
+    Page<PhoneVerification> findByStatus(PhoneVerificationStatus status, Pageable pageable);
+
+    Page<PhoneVerification> findByPurposeAndStatus(
+            PhoneVerificationPurpose purpose,
+            PhoneVerificationStatus status,
+            Pageable pageable
+    );
 }

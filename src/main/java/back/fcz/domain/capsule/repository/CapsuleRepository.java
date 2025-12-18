@@ -21,6 +21,15 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     // visibility 필터 (PUBLIC / PRIVATE)
     Page<Capsule> findByIsDeletedFalseAndVisibility(String visibility, Pageable pageable);
 
+    // 선착순
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE Capsule c 
+    SET c.currentViewCount = c.currentViewCount + 1 
+    WHERE c.capsuleId = :capsuleId 
+    AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
+""")
+    int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
     // TODO: 작성자, 기간, 키워드 검색 등은 추후 QueryDsl / Specification 으로 확장
     // 공개 캡슐이고 삭제되지 않았으며, 위치 정보가 유효한 캡슐 조회
     @Query("SELECT c FROM Capsule c " +
@@ -72,42 +81,57 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             Pageable pageable
     );
 
-    // ===== Admin 통계/조회용 =====
-    long countByMemberId_MemberIdAndIsDeleted(Long memberId, Integer isDeleted);
-
-    long countByMemberId_MemberIdAndIsDeletedAndIsProtected(Long memberId, Integer isDeleted, Integer isProtected);
-
-    List<Capsule> findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(Long memberId, Integer isDeleted);
-
+    // ✅ 관리자 캡슐 검색/필터
     @Query("""
-        select c.memberId.memberId, count(c)
+        select c
         from Capsule c
-        where c.memberId.memberId in :memberIds
-          and c.isDeleted = 0
-        group by c.memberId.memberId
-        """)
-    List<Object[]> countActiveByMemberIds(@Param("memberIds") List<Long> memberIds);
-
-    @Query("""
-        select c.memberId.memberId, count(c)
-        from Capsule c
-        where c.memberId.memberId in :memberIds
-          and c.isDeleted = 0
-          and c.isProtected = :isProtected
-        group by c.memberId.memberId
-        """)
-    List<Object[]> countProtectedActiveByMemberIds(
-            @Param("memberIds") List<Long> memberIds,
-            @Param("isProtected") Integer isProtected
+        where (:visibility is null or :visibility = '' or c.visibility = :visibility)
+          and (:isDeleted is null or c.isDeleted = :isDeleted)
+          and (:isProtected is null or c.isProtected = :isProtected)
+          and (
+                :keyword is null or :keyword = '' or
+                lower(c.title) like lower(concat('%', :keyword, '%')) or
+                lower(c.content) like lower(concat('%', :keyword, '%')) or
+                lower(c.nickname) like lower(concat('%', :keyword, '%')) or
+                lower(c.uuid) like lower(concat('%', :keyword, '%'))
+              )
+    """)
+    Page<Capsule> searchAdmin(
+            @Param("visibility") String visibility,
+            @Param("isDeleted") Integer isDeleted,
+            @Param("isProtected") Integer isProtected,
+            @Param("keyword") String keyword,
+            Pageable pageable
     );
 
-    // 선착순
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    // ✅ 회원 최근 캡슐 5개(미삭제)
+    List<Capsule> findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(Long memberId, int isDeleted);
+
+    // ✅ 회원별 "미삭제 캡슐 수" 배치 집계
     @Query("""
-    UPDATE Capsule c 
-    SET c.currentViewCount = c.currentViewCount + 1 
-    WHERE c.capsuleId = :capsuleId 
-    AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
-""")
-    int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
+        select c.memberId.memberId, count(c)
+        from Capsule c
+        where c.isDeleted = 0
+          and c.memberId.memberId in :memberIds
+        group by c.memberId.memberId
+    """)
+    List<Object[]> countActiveByMemberIds(@Param("memberIds") List<Long> memberIds);
+
+    // ✅ 회원별 "보호(블라인드) 캡슐 수" 배치 집계 (보호:1)
+    @Query("""
+        select c.memberId.memberId, count(c)
+        from Capsule c
+        where c.isDeleted = 0
+          and c.isProtected = :protectedValue
+          and c.memberId.memberId in :memberIds
+        group by c.memberId.memberId
+    """)
+    List<Object[]> countProtectedActiveByMemberIds(
+            @Param("memberIds") List<Long> memberIds,
+            @Param("protectedValue") int protectedValue
+    );
+
+    long countByMemberId_MemberIdAndIsDeleted(Long memberId, int isDeleted);
+    long countByMemberId_MemberIdAndIsDeletedAndIsProtected(Long memberId, int isDeleted, int isProtected);
+
 }
