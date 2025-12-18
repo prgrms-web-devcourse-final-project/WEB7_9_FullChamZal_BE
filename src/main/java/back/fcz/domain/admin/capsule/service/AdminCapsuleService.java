@@ -67,11 +67,15 @@ public class AdminCapsuleService {
 
             long reportCount = reportCountMap.getOrDefault(c.getCapsuleId(), 0L);
 
+            // 조회 여부 확인
+            boolean isUnlocked = c.getCurrentViewCount() > 0;
+
             return AdminCapsuleSummaryResponse.of(
                     c,
                     recipientName,
                     reportCount,
-                    0L // TODO bookmark
+                    0L, // TODO bookmark,
+                    isUnlocked
             );
         });
 
@@ -97,11 +101,15 @@ public class AdminCapsuleService {
                 .map(row -> (Long) row[1])
                 .orElse(0L);
 
+        // 조회 여부 확인
+        boolean isUnlocked = capsule.getCurrentViewCount() > 0;
+
         return AdminCapsuleDetailResponse.of(
                 capsule,
                 recipientName,
                 reportCount,
-                0L // TODO bookmark
+                0L, // TODO bookmark
+                isUnlocked
         );
     }
 
