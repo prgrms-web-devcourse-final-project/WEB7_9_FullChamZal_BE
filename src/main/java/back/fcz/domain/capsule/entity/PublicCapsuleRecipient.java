@@ -11,6 +11,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
+@Table(uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_capsule_member",
+                columnNames = {"capsule_id", "member_id"}
+        )
+})
 public class PublicCapsuleRecipient extends BaseEntity {
 
     @Id

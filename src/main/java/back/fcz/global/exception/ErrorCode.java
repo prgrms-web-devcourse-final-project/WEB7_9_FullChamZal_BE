@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_TYPE_VALUE("CMN004", HttpStatus.BAD_REQUEST, "잘못된 타입의 값입니다."),
     MISSING_REQUEST_PARAMETER("CMN005", HttpStatus.BAD_REQUEST, "필수 요청 파라미터가 누락되었습니다."),
     UNAUTHORIZED("CMN006", HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
+    TOO_MANY_REQUEST("CMN007", HttpStatus.TOO_MANY_REQUESTS, "현재 많은 사용자가 접속 중입니다. 잠시 후 다시 시도해 주세요."),
 
     // ========== 암호화 에러 ==========
     ENCRYPTION_FAILED("CRY001", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 암호화에 실패했습니다."),
@@ -74,6 +75,7 @@ public enum ErrorCode {
     CAPSULE_NOT_UPDATE("CPS007", HttpStatus.BAD_REQUEST, "캡슐을 수정할 수 없습니다."),
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
+
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
     BOOKMARK_NOT_FOUND("BMK002", HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
@@ -81,6 +83,9 @@ public enum ErrorCode {
     NOT_CAPSULE_RECIPIENT("BMK004", HttpStatus.FORBIDDEN, "해당 캡슐의 수신자가 아닙니다."),
     INVALID_CAPSULE_VISIBILITY("BMK005", HttpStatus.BAD_REQUEST, "잘못된 캡슐 공개 범위입니다."),
 
+    // ========== 선착순 에러 ==========
+    FIRST_COME_CLOSED("FCM001", HttpStatus.CONFLICT, "선착순 마감되었습니다."),
+    FAILED_FIRST_COME_REQUEST("FCM002", HttpStatus.TOO_MANY_REQUESTS, "조회수 증가에 실패했습니다. 잠시 후 다시 시도해 주세요."),
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
@@ -98,8 +103,15 @@ public enum ErrorCode {
     ADMIN_CANNOT_CHANGE_SELF_STATUS("ADM006", HttpStatus.FORBIDDEN, "자기 자신의 계정 상태는 변경할 수 없습니다."),
     ADMIN_INVALID_CAPSULE_STATUS_CHANGE("ADM007", HttpStatus.BAD_REQUEST, "유효하지 않은 캡슐 상태 변경입니다."),
     ADMIN_INVALID_REPORT_STATUS_CHANGE("ADM008", HttpStatus.BAD_REQUEST, "유효하지 않은 신고 상태 변경입니다."),
-    ADMIN_PHONE_VERIFICATION_NOT_FOUND("ADM009", HttpStatus.NOT_FOUND, "존재하지 않는 전화번호 인증 내역입니다.");
+    ADMIN_PHONE_VERIFICATION_NOT_FOUND("ADM009", HttpStatus.NOT_FOUND, "존재하지 않는 전화번호 인증 내역입니다."),
     // ADMIN_CAPSULE_INVALID_STATUS_CHANGE("ADM00y", HttpStatus.BAD_REQUEST, "잘못된 캡슐 상태 변경 요청입니다."),
+
+    // ============ 스토리트랙 에러 =============
+    STORYTRACK_NOT_FOUND("ST001", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 입니다."),
+    PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다."),
+    NOT_STORYTRACK_CREATER("ST003", HttpStatus.FORBIDDEN, "로그인한 사용자는 스토리트랙 생성자가 아닙니다."),
+    STORYTRACK_PAHT_NOT_FOUND("ST004", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 경로입니다."),
+    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다.");
 
 
 

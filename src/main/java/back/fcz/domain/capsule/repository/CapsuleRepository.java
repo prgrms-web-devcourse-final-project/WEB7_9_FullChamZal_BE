@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,15 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     // visibility 필터 (PUBLIC / PRIVATE)
     Page<Capsule> findByIsDeletedFalseAndVisibility(String visibility, Pageable pageable);
 
+    // 선착순
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE Capsule c 
+    SET c.currentViewCount = c.currentViewCount + 1 
+    WHERE c.capsuleId = :capsuleId 
+    AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
+""")
+    int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
     // TODO: 작성자, 기간, 키워드 검색 등은 추후 QueryDsl / Specification 으로 확장
     // 공개 캡슐이고 삭제되지 않았으며, 위치 정보가 유효한 캡슐 조회
     @Query("SELECT c FROM Capsule c " +

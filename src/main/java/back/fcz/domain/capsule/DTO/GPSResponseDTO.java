@@ -3,5 +3,5 @@ package back.fcz.domain.capsule.DTO;
 public record GPSResponseDTO(
         String address,
         Double locationLat,
-        Double locatinIng
+        Double locationLng
 ) { }

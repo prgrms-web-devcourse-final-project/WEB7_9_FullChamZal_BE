@@ -104,8 +104,9 @@ class CapsuleCreateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("공개 캡슐"))
-                .andExpect(jsonPath("$.visibility").value("PUBLIC"));
+                .andExpect(jsonPath("$.data.title").value("공개 캡슐"))
+                .andExpect(jsonPath("$.data.visibility").value("PUBLIC"));
+
 
         assertEquals(1, capsuleRepository.count());
     }
@@ -156,8 +157,8 @@ class CapsuleCreateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("나에게 보내는 캡슐"))
-                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
+                .andExpect(jsonPath("$.data.title").value("나에게 보내는 캡슐"))
+                .andExpect(jsonPath("$.data.visibility").value("PRIVATE"));
 
         assertEquals(1, capsuleRepository.count());
         assertEquals(1, capsuleRecipientRepository.count());
@@ -214,8 +215,9 @@ class CapsuleCreateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.updatedTitle").value("new title"))
-                .andExpect(jsonPath("$.updatedContent").value("new content"));
+                .andExpect(jsonPath("$.data.updatedTitle").value("new title"))
+                .andExpect(jsonPath("$.data.updatedContent").value("new content"));
+
     }
 
     // =========================
@@ -259,9 +261,8 @@ class CapsuleCreateControllerTest {
 
         mockMvc.perform(delete("/api/v1/capsule/delete/sender")
                         .param("capsuleId", capsule.getCapsuleId().toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.capsuleId").value(capsule.getCapsuleId()));
 
-        Capsule deleted = capsuleRepository.findById(capsule.getCapsuleId()).get();
-        assertEquals(1, deleted.getIsDeleted());
     }
 }

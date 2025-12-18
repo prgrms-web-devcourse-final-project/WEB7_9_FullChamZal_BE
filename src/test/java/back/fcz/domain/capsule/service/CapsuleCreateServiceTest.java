@@ -35,7 +35,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -77,7 +76,7 @@ class CapsuleCreateServiceTest {
         CapsuleCreateRequestDTO dto = new CapsuleCreateRequestDTO(
                 1L, "nick", "title", "content", null,
                 "white", "blue", "PUBLIC", "TIME",
-                LocalDateTime.now(), null, "Seoul","창원시 의창구", 37.11, 127.22,
+                LocalDateTime.now(), null, "Seoul", "창원시 의창구",37.11, 127.22,
                 100, 10
         );
 
@@ -108,12 +107,13 @@ class CapsuleCreateServiceTest {
         );
 
         String originalPassword = "1234";
-        String encryptedPassword = "encryptedPw";
+        String hashedPassword = "hashedPw";
 
         Capsule capsule = dto.toEntity();
         capsule.setMemberId(member);
 
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(phoneCrypto.hash(originalPassword)).thenReturn(hashedPassword);
         when(capsuleRepository.save(any(Capsule.class))).thenReturn(capsule);
 
         // when
@@ -168,21 +168,23 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                "TIME", LocalDateTime.now(), null, "Seoul",
+                "창원시 의창구",37.11, 127.22, 300, "red", "white", 10
         );
 
         when(memberRepository.findById(1L))
                 .thenReturn(Optional.of(member));
 
         // 해시값 가짜로 생성
-        when(phoneCrypto.hash(anyString()))
-                .thenReturn("hashedPhone");
+        given(phoneCrypto.hash("01000000000"))
+                .willReturn("hashedPhone");
 
         // hashedPhone으로 찾기
-        when(memberRepository.existsByPhoneHash("hashedPhone"))
-                .thenReturn(false); // 없으면 비회원
+        given(memberRepository.existsByPhoneHash("hashedPhone"))
+                .willReturn(false); // 없으면 비회원
 
+        when(phoneCrypto.hash(argThat(arg -> !arg.equals("01000000000"))))
+                .thenReturn("hashedPW");
 
         when(capsuleRepository.save(any(Capsule.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -220,11 +222,12 @@ class CapsuleCreateServiceTest {
     }
 
     @Test
+    @DisplayName("비공개 캡슐 - 비회원 전화 번호 방식")
     void testPrivateCapsulePhone_MemberNotFound() {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
+                "TIME", LocalDateTime.now(), null, "Seoul", "창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -245,7 +248,7 @@ class CapsuleCreateServiceTest {
         // given
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
+                "TIME", LocalDateTime.now(), null, "Seoul", "창원시 의창구",
                 37.11, 127.22, 300, "red", "white", 10
         );
 
@@ -275,8 +278,8 @@ class CapsuleCreateServiceTest {
     void capsuleToMe_memberNotFound() {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, "nick", "receiver","title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                "TIME", LocalDateTime.now(), null, "Seoul", "창원시 의창구"
+                ,37.11, 127.22, 300, "red", "white", 10
         );
 
         when(memberRepository.findById(99L))
