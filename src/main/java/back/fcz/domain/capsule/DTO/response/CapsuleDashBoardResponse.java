@@ -27,7 +27,7 @@ public record CapsuleDashBoardResponse(
                 capsule.getCapsuleId(),
                 capsule.getCapsuleColor(),
                 capsule.getCapsulePackingColor(),
-                capsuleRecipient.getRecipientName(),
+                capsuleRecipient==null ? "수신자 없음": capsuleRecipient.getRecipientName(),
                 capsule.getNickname(),
                 capsule.getTitle(),
                 capsule.getContent(),

@@ -25,14 +25,18 @@ public class CapsuleDashBoardService {
 
     // 사용자가 전송한 캡슐 목록 조회
     public List<CapsuleDashBoardResponse> readSendCapsuleList(Long memberId) {
-        // 사용자가 전송한 캡슐 목록 조회
         List<Capsule> capsules = capsuleRepository.findActiveCapsulesByMemberId(memberId);
+
+        for(Capsule capsule : capsules){
+            System.out.println("capsuleId : " + capsule.getCapsuleId());
+            System.out.println("수신자 : " + capsule.getReceiverNickname());
+        }
 
         List<CapsuleDashBoardResponse> response = capsules.stream()
                 .map(capsule -> {
                     // 캡슐의 수신자 조회
                     CapsuleRecipient recipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
-                            .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND));
+                            .orElse(null);
 
                     return new CapsuleDashBoardResponse(capsule, recipient);
                 })
