@@ -69,6 +69,7 @@ public class SecurityConfig {
                 // 개발 엔드포인트 예외 허용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers(H2_WHITELIST).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()

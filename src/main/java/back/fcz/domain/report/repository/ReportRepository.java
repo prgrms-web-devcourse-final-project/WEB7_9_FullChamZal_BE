@@ -49,4 +49,22 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
         group by r.capsule.capsuleId
         """)
     List<Object[]> countByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
+
+
+    // ✅ "신고당한 횟수" (member의 캡슐이 신고된 횟수)
+    @Query("""
+        select r.capsule.memberId.memberId, count(r)
+        from Report r
+        where r.capsule.memberId.memberId in :memberIds
+        group by r.capsule.memberId.memberId
+    """)
+    List<Object[]> countReportedByMemberIds(@Param("memberIds") List<Long> memberIds);
+
+    @Query("""
+        select count(r)
+        from Report r
+        where r.capsule.memberId.memberId = :memberId
+    """)
+    long countReportedByMemberId(@Param("memberId") Long memberId);
+
 }

@@ -69,8 +69,33 @@ public class CapsuleCreateService {
         return CapsuleCreateResponseDTO.from(saved);
     }
 
+    // 비공개 캡슐 생성 - 통합 진입점
+    public SecretCapsuleCreateResponseDTO createPrivateCapsule(SecretCapsuleCreateRequestDTO requestDTO) {
+        String recipientPhone = requestDTO.recipientPhone();
+        String capsulePassword = requestDTO.capsulePassword();
+
+        boolean hasPhone = recipientPhone != null && !recipientPhone.isBlank();
+        boolean hasPassword = capsulePassword != null && !capsulePassword.isBlank();
+
+        // 전화번호 또는 비밀번호 중 하나만 입력해야 함
+        if (!hasPhone && !hasPassword) {
+            throw new BusinessException(ErrorCode.CAPSULE_NOT_CREATE);
+        }
+
+        // 전화번호와 비밀번호 둘 다 입력하면 안 됨
+        if (hasPhone && hasPassword) {
+            throw new BusinessException(ErrorCode.CAPSULE_NOT_CREATE);
+        }
+
+        if (hasPhone) {
+            return privateCapsulePhone(requestDTO, recipientPhone);
+        } else {
+            return privateCapsulePassword(requestDTO, capsulePassword);
+        }
+    }
+
     // 비공개 캡슐 생성 - URL + 비밀번호 조회
-    public SecretCapsuleCreateResponseDTO privateCapsulePassword (SecretCapsuleCreateRequestDTO capsuleCreate, String password){
+    private SecretCapsuleCreateResponseDTO privateCapsulePassword (SecretCapsuleCreateRequestDTO capsuleCreate, String password){
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -95,7 +120,7 @@ public class CapsuleCreateService {
     }
 
     // 비공개 캡슐 생성 - 전화 번호 조회
-    public SecretCapsuleCreateResponseDTO privateCapsulePhone (SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
+    private SecretCapsuleCreateResponseDTO privateCapsulePhone (SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
 
         Capsule capsule = capsuleCreate.toEntity();
         capsule.setUuid(setUUID());
@@ -145,7 +170,7 @@ public class CapsuleCreateService {
     }
 
     // 비공개 캡슐 - 나에게 보내는 캡슐
-    public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String receiveTel){
+    public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String encryptedPhone, String phoneHash){
         Capsule capsule = requestDTO.toEntity();
 
         // 닉네임 null일 때 방지, "" 닉네임은 가능
@@ -168,8 +193,8 @@ public class CapsuleCreateService {
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
                 .recipientName(requestDTO.nickname())
-                .recipientPhone(receiveTel)
-                .recipientPhoneHash(phoneCrypto.hash(receiveTel))
+                .recipientPhone(encryptedPhone)
+                .recipientPhoneHash(phoneHash)
                 .isSenderSelf(1)
                 .build();
 
@@ -246,8 +271,8 @@ public class CapsuleCreateService {
 
     // 발신자 삭제
      public CapsuleDeleteResponseDTO senderDelete(
-             Long memberId,
-             Long capsuleId
+             Long capsuleId,
+             Long memberId
      ){
 
         // 발신자 캡슐 존재 확인

@@ -2,6 +2,7 @@ package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.unlock.dto.request.NearbyOpenCapsuleRequest;
 import back.fcz.domain.unlock.dto.response.NearbyOpenCapsuleResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,14 +20,16 @@ import static org.mockito.Mockito.when;
 
 public class NearbyOpenCapsuleServiceTest {
     private NearbyOpenCapsuleService nearbyOpenCapsuleService;
+    private PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private CapsuleRepository capsuleRepository;
     private UnlockService unlockService;
 
     @BeforeEach
     void setUp() {
+        publicCapsuleRecipientRepository = mock(PublicCapsuleRecipientRepository.class);
         capsuleRepository = mock(CapsuleRepository.class);
         unlockService = mock(UnlockService.class);
-        nearbyOpenCapsuleService = new NearbyOpenCapsuleService(capsuleRepository, unlockService);
+        nearbyOpenCapsuleService = new NearbyOpenCapsuleService(publicCapsuleRecipientRepository, capsuleRepository, unlockService);
     }
 
     // 테스트에 사용할 사용자 위치. 서울 시청 위도, 경도
@@ -37,6 +40,10 @@ public class NearbyOpenCapsuleServiceTest {
     @DisplayName("요청 반경 내에 캡슐만 조회되며, 사용자-캡슐 거리를 기준으로 오름차순 정렬된다")
     void getNearbyOpenCapsules_success() {
         // given
+        Long memberId = 1L;
+        when(publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId))
+                .thenReturn(java.util.Set.of(1L));
+
         Capsule capsule1 = createCapsule(1L, 37.5674, 126.9780);
         Capsule capsule2 = createCapsule(2L, 37.5709, 126.9780);
         Capsule capsule3 = createCapsule(3L, 37.5845, 127.0000);
@@ -56,7 +63,7 @@ public class NearbyOpenCapsuleServiceTest {
         NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, 1000);
 
         // when
-        List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(request);
+        List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(memberId, request);
 
         // then
         assertThat(result).hasSize(2);
@@ -72,6 +79,10 @@ public class NearbyOpenCapsuleServiceTest {
     @DisplayName("radius가 null일 경우, 기본값 1000m가 사용된다")
     void getNearbyOpenCapsules_default_radius() {
         // given
+        Long memberId = 1L;
+        when(publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId))
+                .thenReturn(java.util.Set.of(1L));
+
         Capsule capsule = createCapsule(1L, 37.5709, 126.9780);
         when(capsuleRepository.findOpenCapsule("PUBLIC", 0)).thenReturn(List.of(capsule));
 
@@ -83,7 +94,7 @@ public class NearbyOpenCapsuleServiceTest {
         NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, null);
 
         // when
-        List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(request);
+        List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(memberId, request);
 
         // then
         // 기본값 1000m 내에 500m 캡슐이 있으므로 결과가 포함되어야 함

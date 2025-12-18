@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,9 +34,10 @@ public class NearbyOpenCapsuleController {
     })
     @GetMapping("/api/v1/capsule/nearby")
     public ResponseEntity<ApiResponse<List<NearbyOpenCapsuleResponse>>> getNearbyOpenCapsules(
+            @AuthenticationPrincipal Long memberId,
             @Valid @ModelAttribute NearbyOpenCapsuleRequest request
     ) {
-        List<NearbyOpenCapsuleResponse> response = nearbyOpenCapsuleService.getNearbyOpenCapsules(request);
+        List<NearbyOpenCapsuleResponse> response = nearbyOpenCapsuleService.getNearbyOpenCapsules(memberId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

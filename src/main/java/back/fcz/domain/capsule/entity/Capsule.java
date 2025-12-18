@@ -44,7 +44,7 @@ public class Capsule extends BaseEntity {
     @Column(name = "capsule_packing_color", nullable = false)
     private String capsulePackingColor; // 편지지 봉투 색상
     @Column(name = "visibility", nullable = false)
-    private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개)
+    private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개), SELF(자신에게 보냄)
 
     @Column(name = "unlock_type", nullable = false)
     private String unlockType;       // 해제 조건 : TIME, LOCATION, TIME_AND_LOCATION
@@ -72,7 +72,7 @@ public class Capsule extends BaseEntity {
     @Column(name = "is_deleted")
     private int isDeleted = 0;         // 삭제 여부(Soft Delete, 삭제 전 0, 삭제후 1, , 관리자 삭제 후 2)
     @Column(name = "is_protected")
-    private int isProtected = 0;      // 보호 여부(보호 : 0, 미보호 : 1)
+    private int isProtected = 0;      // 보호 여부(보호 : 1, 미보호 : 0)
 
     public void setMemberId(Member member){
         this.memberId = member;
