@@ -2,7 +2,9 @@ package back.fcz.domain.storytrack.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
+import back.fcz.domain.storytrack.dto.response.CreateStorytrackResponse;
 import back.fcz.domain.storytrack.dto.response.DeleteParticipantResponse;
 import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
 import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
@@ -107,9 +109,11 @@ public class StorytrackService {
 
     // 생성
     // 스토리 트랙 생성
-//    public createStorytrackResponse createStorytrack(){
-//
-//    }
+    public CreateStorytrackResponse createStorytrack(CreateStorytrackRequest request){
+
+        Storytrack storytrack = new CreateStorytrackRequest.toEntity();
+
+    }
 
     // 스토리트랙 참여 회원 생성
 //    public joinStorytrackResponse joinParticipant(){

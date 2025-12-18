@@ -1,9 +1,10 @@
 package back.fcz.domain.storytrack.dto.request;
 
+import back.fcz.domain.storytrack.entity.Storytrack;
 
 import java.util.List;
 
-record CreateStorytrackRequest(
+public record CreateStorytrackRequest(
         String title,
         String description,
         String trackType,
@@ -12,4 +13,16 @@ record CreateStorytrackRequest(
         int totalSteps,
         List<Integer> capsuleList
 ){
+    public Storytrack toEntity() {
+
+        return Storytrack.builder()
+                .title(title)
+                .description(description)
+                .trackType(trackType)
+                .isPublic(isPublic)
+                .price(price)
+                .totalSteps(totalSteps)
+                .capsuleList(capsuleList)
+                .build();
+    }
 }
