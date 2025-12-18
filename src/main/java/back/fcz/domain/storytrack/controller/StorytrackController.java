@@ -8,6 +8,7 @@ import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
 import back.fcz.domain.storytrack.service.StorytrackService;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +36,14 @@ public class StorytrackController {
             ErrorCode.PARTICIPANT_EXISTS
     })
     @DeleteMapping("/delete")
-    public ResponseEntity<DeleteStorytrackResponse> deleteStorytrack(
+    public ResponseEntity
+            <ApiResponse<DeleteStorytrackResponse>> deleteStorytrack(
             @RequestParam Long storytrackId
     ){
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
-        return ResponseEntity.ok(storytrackService.deleteStorytrack(loginMember, storytrackId));
+        DeleteStorytrackResponse response = storytrackService.deleteStorytrack(loginMember, storytrackId);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 참여자 - 참여 스토리트랙 삭제(참여종료)
@@ -49,12 +52,14 @@ public class StorytrackController {
             ErrorCode.PARTICIPANT_NOT_FOUND
     })
     @DeleteMapping("/delete/participant")
-    public ResponseEntity<DeleteParticipantResponse> deleteParticipant(
+    public ResponseEntity<ApiResponse<DeleteParticipantResponse>> deleteParticipant(
             @RequestParam Long storytrackId
     ){
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
-        return ResponseEntity.ok(storytrackService.deleteParticipant(loginMember, storytrackId));
+        DeleteParticipantResponse response = storytrackService.deleteParticipant(loginMember, storytrackId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 수정
@@ -66,13 +71,16 @@ public class StorytrackController {
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @PutMapping("/update")
-    public ResponseEntity<UpdatePathResponse> updatePath(
+    public ResponseEntity
+            <ApiResponse<UpdatePathResponse>> updatePath(
             @RequestParam Long storytrackStepId,
             @RequestBody UpdatePathRequest request
     ){
          Long loginMember = currentUserContext.getCurrentUser().memberId();
 
-        return ResponseEntity.ok(storytrackService.updatePath(request, storytrackStepId, loginMember));
+        UpdatePathResponse response = storytrackService.updatePath(request, storytrackStepId, loginMember);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
 
