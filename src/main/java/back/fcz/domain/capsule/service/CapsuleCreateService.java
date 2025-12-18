@@ -61,6 +61,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
         capsule.setMemberId(member);
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
@@ -76,7 +77,7 @@ public class CapsuleCreateService {
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
-
+        // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
         secretCapsule.setUuid(setUUID());
         secretCapsule.setCapPassword(phoneCrypto.hash(password)); // 사용자가 지정한 비밀번호 저장
         secretCapsule.setMemberId(member);
@@ -98,6 +99,7 @@ public class CapsuleCreateService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         if(memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel))){ // 회원
+            // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
             capsule.setMemberId(member);
             capsule.setProtected(1);
             Capsule saved = capsuleRepository.save(capsule);
@@ -112,7 +114,7 @@ public class CapsuleCreateService {
 
             recipientRepository.save(recipientRecord);
 
-            String url = domain + "/" +saved.getUuid();
+            String url = domain + "/" + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
@@ -121,9 +123,10 @@ public class CapsuleCreateService {
             capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
 
+            // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
             Capsule saved = capsuleRepository.save(capsule);
 
-            String url = domain + "/" +saved.getUuid();
+            String url = domain + "/" + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
@@ -137,6 +140,7 @@ public class CapsuleCreateService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 캡슐 설정
+        // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
         capsule.setProtected(1);
         capsule.setUuid(setUUID());
         capsule.setMemberId(member);
