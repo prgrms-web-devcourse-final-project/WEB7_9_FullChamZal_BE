@@ -62,3 +62,6 @@ jwt:
 cookie:
   secure: true
   same-site: None
+
+server:
+  forward-headers-strategy: native
