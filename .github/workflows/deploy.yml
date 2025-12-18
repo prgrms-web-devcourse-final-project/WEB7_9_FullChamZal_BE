@@ -45,12 +45,11 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:latest
-
   deploy:
     runs-on: ubuntu-latest
     needs: [ build_and_push ]
     steps:
-      - name: Deploy by SSM
+      - name: Deploy by SSM (Blue-Green)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
           aws-region: ${{ secrets.AWS_REGION }}
@@ -58,10 +57,50 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           instance-ids: ${{ secrets.EC2_INSTANCE_ID }}
           working-directory: /
-          comment: Deploy
+          comment: Blue-Green Deploy
           command: |
-            cd /opt/deploy && \
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.PERSONAL_ACCESS_TOKEN }} && \
-            docker pull ghcr.io/${{ needs.build_and_push.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:latest && \
-            docker compose up -d && \
+            set -e
+            cd /opt/dear
+
+            echo "🔐 Login GHCR"
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+            echo "📥 Pull latest image"
+            docker pull ghcr.io/${{ needs.build_and_push.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:latest
+
+            echo "🔎 Detect active color"
+            if docker ps --format '{{.Names}}' | grep -q '^app-blue$'; then
+              ACTIVE=blue
+              INACTIVE=green
+            else
+              ACTIVE=green
+              INACTIVE=blue
+            fi
+
+            echo "🟢 Active: $ACTIVE"
+            echo "🔵 Inactive: $INACTIVE"
+
+            echo "🚀 Start inactive app (app-$INACTIVE)"
+            docker compose up -d app-$INACTIVE
+
+            echo "⏳ Health check app-$INACTIVE"
+            for i in {1..30}; do
+              if curl -fs http://app-$INACTIVE:8080/actuator/health | grep -q UP; then
+                echo "✅ app-$INACTIVE is healthy"
+                break
+              fi
+              echo "… waiting ($i)"
+              sleep 5
+            done
+
+            if ! curl -fs http://app-$INACTIVE:8080/actuator/health | grep -q UP; then
+              echo "❌ Health check failed"
+              exit 1
+            fi
+
+            echo ""
+            echo "🎯 READY TO SWITCH"
+            echo "👉 NPM에서 Forward Host를 app-$INACTIVE:8080 으로 변경하세요"
+            echo ""
+
             docker image prune -f
