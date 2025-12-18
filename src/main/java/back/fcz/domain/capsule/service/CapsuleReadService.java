@@ -66,9 +66,8 @@ public class CapsuleReadService {
                 throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
             }
         }
-
-        // 1. 공개인지 비공개인지
-        if(capsule.getVisibility().equals("PUBLIC")){
+        // 공개인지 비공개인지
+        else if(capsule.getVisibility().equals("PUBLIC")){
             //공개 캡슐로직
             log.info("공개 캡슐 로직 진입 - capsuleId: {}", capsule.getCapsuleId());
             return publicCapsuleLogic(capsule, requestDto);

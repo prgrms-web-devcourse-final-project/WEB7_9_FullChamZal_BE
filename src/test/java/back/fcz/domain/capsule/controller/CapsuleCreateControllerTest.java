@@ -140,6 +140,8 @@ class CapsuleCreateControllerTest {
         SecretCapsuleCreateRequestDTO requestDTO =
                 new SecretCapsuleCreateRequestDTO(
                         member.getMemberId(),
+                        null,
+                        "1234",
                         "senderNick",
                         "receiver",
                         "비공개 캡슐",
@@ -159,7 +161,6 @@ class CapsuleCreateControllerTest {
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
-                        .param("capsulePassword", "1234")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
@@ -187,14 +188,16 @@ class CapsuleCreateControllerTest {
                         .build()
         );
 
+        String receiverPhone = "01000000000";
+        String receiverPhoneHash = phoneCrypto.hash(receiverPhone);
 
-        Member receiver = memberRepository.save(
+        memberRepository.save(
                 Member.builder()
                         .userId("receiver")
                         .name("받는이")
                         .nickname("받는이닉")
                         .passwordHash("pw")
-                        .phoneHash(phoneCrypto.hash("01000000000"))
+                        .phoneHash(receiverPhoneHash)
                         .phoneNumber("encrypted2")
                         .role(MemberRole.USER)
                         .status(MemberStatus.ACTIVE)
@@ -204,6 +207,8 @@ class CapsuleCreateControllerTest {
         SecretCapsuleCreateRequestDTO requestDTO =
                 new SecretCapsuleCreateRequestDTO(
                         sender.getMemberId(),
+                        receiverPhone,
+                        null,
                         "senderNick",
                         "receiver",
                         "비공개 캡슐",
@@ -253,6 +258,8 @@ class CapsuleCreateControllerTest {
         SecretCapsuleCreateRequestDTO requestDTO =
                 new SecretCapsuleCreateRequestDTO(
                         member.getMemberId(),
+                        null,
+                        "1234",
                         "senderNick",
                         null,
                         "비공개 캡슐",
