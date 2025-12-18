@@ -2,11 +2,9 @@ package back.fcz.domain.storytrack.controller;
 
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
+import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
-import back.fcz.domain.storytrack.dto.response.CreateStorytrackResponse;
-import back.fcz.domain.storytrack.dto.response.DeleteParticipantResponse;
-import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
-import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
+import back.fcz.domain.storytrack.dto.response.*;
 import back.fcz.domain.storytrack.service.StorytrackService;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
@@ -103,6 +101,16 @@ public class StorytrackController {
     }
 
     // 스토리트랙 참여자 생성
+    @PostMapping("/creat/participant")
+    public ResponseEntity<ApiResponse<JoinStorytrackResponse>> joinStorytrack(
+            @RequestBody JoinStorytrackRequest request
+            ){
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        JoinStorytrackResponse response = storytrackService.joinParticipant(request, loginMember);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     // 조회
     // 전체 스토리트랙 조회

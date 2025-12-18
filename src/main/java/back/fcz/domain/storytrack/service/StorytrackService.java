@@ -162,7 +162,7 @@ public class StorytrackService {
     // 스토리트랙 참여 회원 생성
     public JoinStorytrackResponse joinParticipant(JoinStorytrackRequest request, Long memberId){
         // 멤버 존재 확인
-        Member member = memberRepository.findById(request.memberId())
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         // 스토리트랙 존재 확인
