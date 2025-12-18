@@ -92,9 +92,6 @@ public class StorytrackService {
     // 수정
     // 스토리트랙 경로 수정
     public UpdatePathResponse updatePath (UpdatePathRequest request, Long loginMemberId){
-        storytrackStepRepository.findAll()
-                .forEach(s -> log.info("FOUND STEP ID = {}", s.getId()));
-
         // 스토리트랙 경로 조회
         StorytrackStep targetStep = (StorytrackStep) storytrackStepRepository.findByStorytrackIdAndStepOrderId(request.storytrackId(), request.stepOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_PAHT_NOT_FOUND));
