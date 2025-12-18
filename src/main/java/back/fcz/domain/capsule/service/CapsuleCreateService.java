@@ -77,6 +77,11 @@ public class CapsuleCreateService {
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
+        // 닉네임 null일 때 방지, "" 닉네임은 가능
+        if(secretCapsule.getReceiverNickname() == null){
+            throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
+        }
+
         // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
         secretCapsule.setUuid(setUUID());
         secretCapsule.setCapPassword(phoneCrypto.hash(password)); // 사용자가 지정한 비밀번호 저장
@@ -95,10 +100,16 @@ public class CapsuleCreateService {
         Capsule capsule = capsuleCreate.toEntity();
         capsule.setUuid(setUUID());
 
+        // 닉네임 null일 때 방지, "" 닉네임은 가능
+        if(capsule.getReceiverNickname() == null){
+            throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
+        }
+
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         if(memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel))){ // 회원
+
             // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
             capsule.setMemberId(member);
             capsule.setProtected(1);
@@ -119,6 +130,7 @@ public class CapsuleCreateService {
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
         }else{ // 비회원
+
             String capsulePW = generatePassword(); // 생성한 비밀번호
             capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
@@ -135,6 +147,11 @@ public class CapsuleCreateService {
     // 비공개 캡슐 - 나에게 보내는 캡슐
     public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String receiveTel){
         Capsule capsule = requestDTO.toEntity();
+
+        // 닉네임 null일 때 방지, "" 닉네임은 가능
+        if(capsule.getReceiverNickname() == null){
+            throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
+        }
 
         Member member = memberRepository.findById(requestDTO.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));

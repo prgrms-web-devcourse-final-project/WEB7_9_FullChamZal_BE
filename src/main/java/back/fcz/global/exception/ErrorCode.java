@@ -75,6 +75,7 @@ public enum ErrorCode {
     CAPSULE_NOT_UPDATE("CPS007", HttpStatus.BAD_REQUEST, "캡슐을 수정할 수 없습니다."),
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
+    RECEIVERNICKNAME_IS_REQUIRED("CP010", HttpStatus.BAD_REQUEST, "수신자 닉네임을 입력해주세요."),
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
