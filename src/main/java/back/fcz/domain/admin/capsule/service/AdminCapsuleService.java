@@ -37,6 +37,7 @@ public class AdminCapsuleService {
             String visibility,
             Integer isDeleted,
             Integer isProtected,
+            Boolean unlocked,
             String keyword
     ) {
         Pageable pageable = PageRequest.of(
@@ -49,6 +50,7 @@ public class AdminCapsuleService {
                 visibility,
                 isDeleted,
                 isProtected,
+                unlocked,
                 keyword,
                 pageable
         );

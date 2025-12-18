@@ -89,6 +89,11 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
           and (:isDeleted is null or c.isDeleted = :isDeleted)
           and (:isProtected is null or c.isProtected = :isProtected)
           and (
+                      :unlocked is null\s
+                      or (:unlocked = true and c.currentViewCount > 0)
+                      or (:unlocked = false and c.currentViewCount = 0)
+              )
+          and (
                 :keyword is null or :keyword = '' or
                 lower(c.title) like lower(concat('%', :keyword, '%')) or
                 lower(c.content) like lower(concat('%', :keyword, '%')) or
@@ -100,6 +105,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             @Param("visibility") String visibility,
             @Param("isDeleted") Integer isDeleted,
             @Param("isProtected") Integer isProtected,
+            @Param("unlocked") Boolean unlocked,
             @Param("keyword") String keyword,
             Pageable pageable
     );
