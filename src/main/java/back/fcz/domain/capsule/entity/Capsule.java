@@ -44,7 +44,7 @@ public class Capsule extends BaseEntity {
     @Column(name = "capsule_packing_color", nullable = false)
     private String capsulePackingColor; // 편지지 봉투 색상
     @Column(name = "visibility", nullable = false)
-    private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개)
+    private String visibility;        // 공개범위 : PRIVATE(개인), PUBLIC(공개), SELF(자신에게 보냄)
 
     @Column(name = "unlock_type", nullable = false)
     private String unlockType;       // 해제 조건 : TIME, LOCATION, TIME_AND_LOCATION

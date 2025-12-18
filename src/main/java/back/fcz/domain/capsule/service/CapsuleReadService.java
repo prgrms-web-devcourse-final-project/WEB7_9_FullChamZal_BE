@@ -1,7 +1,9 @@
 package back.fcz.domain.capsule.service;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
+import back.fcz.domain.capsule.DTO.request.CapsuleReadRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleOpenLog;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
@@ -49,7 +51,7 @@ public class CapsuleReadService {
         Capsule capsule = capsuleRepository.findById(requestDto.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
         //자신에게 보내는 캡슐인 경우(시공간 검증만)
-        if(requestDto.isSendSelf() == 1){
+        if(capsule.getVisibility().equals("SELF")){
             // 시간/위치 조건 검증
             boolean conditionMet = unlockService.validateUnlockConditionsForPrivate(
                     capsule,
@@ -146,7 +148,7 @@ public class CapsuleReadService {
 
 
         //2. 전화번호 기반인지 url+비번 기반인지
-        if( !(requestDto.url() == null || requestDto.url().isBlank()) ){
+        if( !(requestDto.password() == null || requestDto.password().isBlank()) ){
             System.out.println("url+비밀번호 기반 캡슐");
             //url+비번 기반 -> 수신자가 회원인지 비회원인지 판단
             if(capsuleRecipientRepository.existsByCapsuleId_CapsuleId(capsule.getCapsuleId())){
@@ -246,11 +248,11 @@ public class CapsuleReadService {
 
     //공개 캡슐 읽기
     public CapsuleConditionResponseDTO readPublicCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean viewStatus) {
-
+        String viewerType = currentUserContext.getCurrentUser().role().getDescription();
         CapsuleOpenLog log = CapsuleOpenLog.builder()
                 .capsuleId(capsule)
                 .memberId(null)
-                .viewerType(requestDto.viewerType())
+                .viewerType(viewerType)
                 .openedAt(requestDto.unlockAt())
                 .currentLat(requestDto.locationLat())
                 .currentLng(requestDto.locationLng())
@@ -278,12 +280,13 @@ public class CapsuleReadService {
 
     //개인 캡슐 읽기 - 수신자가 회원인 경우(로그 + CapsuleRecipient를 남김)
     public CapsuleConditionResponseDTO readMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto){
+        String viewerType = currentUserContext.getCurrentUser().role().getDescription();
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         Member member = memberRepository.findById(currentMemberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         CapsuleOpenLog log = CapsuleOpenLog.builder()
                 .capsuleId(capsule)
                 .memberId(member)
-                .viewerType(requestDto.viewerType())
+                .viewerType(viewerType)
                 .openedAt(requestDto.unlockAt())
                 .currentLat(requestDto.locationLat())
                 .currentLng(requestDto.locationLng())
@@ -303,10 +306,11 @@ public class CapsuleReadService {
     }
     //개인 캡슐 읽기 - 수신자가 비회원인 경우(로그만 남김)
     public CapsuleConditionResponseDTO readNonMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto){
+        String viewerType = currentUserContext.getCurrentUser().role().getDescription();
         CapsuleOpenLog log = CapsuleOpenLog.builder()
                 .capsuleId(capsule)
                 .memberId(null)
-                .viewerType(requestDto.viewerType())
+                .viewerType(viewerType)
                 .openedAt(requestDto.unlockAt())
                 .currentLat(requestDto.locationLat())
                 .currentLng(requestDto.locationLng())
@@ -327,6 +331,15 @@ public class CapsuleReadService {
             return true;
         } catch (BusinessException e) {
             return false;
+        }
+    }
+
+    public CapsuleReadResponse existedPassword(CapsuleReadRequest request){
+        Capsule capsule = capsuleRepository.findById(request.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        if(capsule.getCapPassword()==null){
+            return CapsuleReadResponse.from(false);
+        }else{
+            return CapsuleReadResponse.from(true);
         }
     }
 }
