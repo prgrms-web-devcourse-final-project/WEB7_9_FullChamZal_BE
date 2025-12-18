@@ -15,12 +15,14 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
+import back.fcz.domain.unlock.service.FirstComeService;
 import back.fcz.domain.unlock.service.UnlockService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,12 +30,13 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Slf4j
 public class CapsuleReadService {
     private final CapsuleRepository capsuleRepository;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
     private final PhoneCrypto phoneCrypto;
     private final UnlockService unlockService;
+    private final FirstComeService firstComeService;
     private final MemberRepository memberRepository;
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final CapsuleOpenLogRepository capsuleOpenLogRepository;
@@ -41,20 +44,31 @@ public class CapsuleReadService {
     private final CurrentUserContext currentUserContext;
 
     //조건확인하고 검증됐다면 읽기
+    @Transactional
     public CapsuleConditionResponseDTO conditionAndRead(CapsuleConditionRequestDTO requestDto) {
         Capsule capsule = capsuleRepository.findById(requestDto.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
         //자신에게 보내는 캡슐인 경우(시공간 검증만)
-        if(requestDto.isSendSelf()==1){
-            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
+        if(requestDto.isSendSelf() == 1){
+            // 시간/위치 조건 검증
+            boolean conditionMet = unlockService.validateUnlockConditionsForPrivate(
+                    capsule,
+                    requestDto.unlockAt(),
+                    requestDto.locationLat(),
+                    requestDto.locationLng()
+            );
+
+            if(conditionMet){
                 return readMemberCapsule(capsule, requestDto);
+            } else {
+                throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
             }
         }
 
         // 1. 공개인지 비공개인지
         if(capsule.getVisibility().equals("PUBLIC")){
             //공개 캡슐로직
-            System.out.println("공개 캡슐 로직");
+            log.info("공개 캡슐 로직 진입 - capsuleId: {}", capsule.getCapsuleId());
             return publicCapsuleLogic(capsule, requestDto);
         }else{
             //개인 캡슐로직
@@ -65,38 +79,71 @@ public class CapsuleReadService {
     }
 
     //공개 캡슐
+    @Transactional
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
-        Long currentMemberId = currentUserContext.getCurrentMemberId();
-        //2. 조회 횟수 검증
-        if(publicCapsuleRecipientRepository.existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId)){
-            System.out.println("기존에 조회 된 공개 캡슐");
-            //기존에 조회했던 것이니 바로 조회가능
-            boolean viewStatus = true;
-            return readPublicCapsule(capsule, requestDto, viewStatus);
-        }else{
-            System.out.println("기존에 조회 되지 않은 공개 캡슐");
-            boolean viewStatus = false;
+        log.info("=== 공개 캡슐 로직 시작 - capsuleId: {} ===", capsule.getCapsuleId());
 
-            //조회한 적 없으니 조건 검증이 필요 / 공개 캡슐은 시간, 위치만 검증하면됨
-            if(capsuleCondition(capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())){
+        // 공개 캡슐은 회원만 조회 가능 - 로그인 체크
+        if (!isUserLoggedIn()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        
+        Long currentMemberId = currentUserContext.getCurrentMemberId();
+        log.info("로그인 회원 - memberId: {}", currentMemberId);
+
+        log.info("첫 조회 - 검증 시작");
+
+        // 시간/위치 조건 검증
+        boolean conditionMet = unlockService.validateTimeAndLocationConditions(
+                capsule, requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng()
+        );
+
+        if (!conditionMet) {
+            log.warn("시간/위치 조건 미충족");
+            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+        }
+
+        log.info("시간/위치 조건 통과");
+
+        if (firstComeService.hasFirstComeLimit(capsule)) {
+            log.info("선착순 제한 있음 - maxViewCount: {}", capsule.getMaxViewCount());
+
+            // 선착순 검증과 PublicCapsuleRecipient 저장을 원자적으로 처리
+            boolean isNewView = firstComeService.tryIncrementViewCountAndSaveRecipient(
+                    capsule.getCapsuleId(),
+                    currentMemberId,
+                    requestDto.unlockAt()
+            );
+
+            log.info("선착순 검증 및 저장 완료");
+            return readPublicCapsule(capsule, requestDto, !isNewView);
+        } else {
+            log.info("선착순 없음 - 바로 저장");
+
+            boolean isFirstTimeViewing = !publicCapsuleRecipientRepository
+                    .existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId);
+
+            if (isFirstTimeViewing) {
                 PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
                         .capsuleId(capsule)
                         .memberId(currentMemberId)
                         .unlockedAt(requestDto.unlockAt())
                         .build();
                 publicCapsuleRecipientRepository.save(publicCapsuleLog);
-                System.out.println("publicCapsuleLog 저장 완료");
-                return readPublicCapsule(capsule, requestDto, viewStatus);
-            }else{// 검증 실패
-                throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+                log.info("저장 완료");
+            } else {
+                log.info("재조회 - 저장 건너뜀");
             }
+
+            log.info("=== 공개 캡슐 로직 종료 ===");
+            return readPublicCapsule(capsule, requestDto, !isFirstTimeViewing);
         }
     }
 
     //개인 캡슐
     public CapsuleConditionResponseDTO privateCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         //전화번호 기반인지 url+비번 기반인지를 먼저 확인하고 조회 횟수를 검증할것
-        
+
 
         //2. 전화번호 기반인지 url+비번 기반인지
         if( !(requestDto.url() == null || requestDto.url().isBlank()) ){
@@ -170,7 +217,9 @@ public class CapsuleReadService {
 
         if(phoneCrypto.verifyHash(phoneNumber, capsuleRecipient.getRecipientPhoneHash())){
             //두 값이 같다면 해제 조건 확인
-            return capsuleCondition(capsule, unlockAt, locationLat, locationLng);
+            return unlockService.validateUnlockConditionsForPrivate(
+                    capsule, unlockAt, locationLat, locationLng
+            );
         }else{
             //같지 않다면 403 에러
             throw new BusinessException(ErrorCode.CAPSULE_NOT_RECEIVER);
@@ -190,31 +239,9 @@ public class CapsuleReadService {
         }
 
         //캡슐 해제 조건 검증
-        return capsuleCondition(capsule, unlockAt, locationLat, locationLng);
-    }
-
-    //캡슐 해제 조건 검증
-    private boolean capsuleCondition(Capsule capsule, LocalDateTime unlockAt, Double locationLat, Double locationLng) {
-        System.out.println("검증 로직 진입");
-        if(capsule.getUnlockType().equals("TIME") && unlockService.isTimeConditionMet(capsule.getCapsuleId(), unlockAt)) {
-            System.out.println("시간 검증 통과");
-            return true;
-        }else if(capsule.getUnlockType().equals("LOCATION") && unlockService.isLocationConditionMet(capsule.getCapsuleId(), locationLat, locationLng)) {
-            System.out.println("공간 검증 통과");
-            return true;
-        }else if (capsule.getUnlockType().equals("TIME_AND_LOCATION") && unlockService.isTimeAndLocationConditionMet(capsule.getCapsuleId(), unlockAt, locationLat, locationLng)) {
-            System.out.println("시공간 검증 통과");
-            return true;
-        }else{
-            //   시간/위치 검증 실패
-            System.out.println("unlockAt : " + unlockAt);
-            System.out.println("capsuleUnlockAt : " +  capsule.getUnlockAt());
-            System.out.println("locationLat : " + locationLat);
-            System.out.println("capsuleLocationLat" +  capsule.getLocationLat());
-            System.out.println("locationLng : " + locationLng);
-            System.out.println("capsuleLocationLat" +  capsule.getLocationLng());
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
-        }
+        return unlockService.validateUnlockConditionsForPrivate(
+                capsule, unlockAt, locationLat, locationLng
+        );
     }
 
     //공개 캡슐 읽기
@@ -231,7 +258,20 @@ public class CapsuleReadService {
                 .ipAddress(null)
                 .build();
         capsuleOpenLogRepository.save(log);
-        capsule.increasedViewCount();
+
+        // viewStatus = false: 처음 조회
+        // viewStatus = true: 재조회
+        boolean isFirstView = !viewStatus;
+        boolean hasFirstCome = firstComeService.hasFirstComeLimit(capsule);
+
+        // 조회수 증가 조건:
+        // 1. 처음 조회이고
+        // 2. 선착순이 없는 경우만
+        // (선착순 있으면 FirstComeService에서 이미 증가됨)
+        if (isFirstView && !hasFirstCome) {
+            capsule.increasedViewCount();
+        }
+
         return CapsuleConditionResponseDTO.from(capsule, viewStatus);
 
     }
@@ -280,4 +320,13 @@ public class CapsuleReadService {
         return CapsuleConditionResponseDTO.from(capsule);
     }
 
+    // 사용자 로그인 여부
+    private boolean isUserLoggedIn() {
+        try {
+            currentUserContext.getCurrentMemberId();
+            return true;
+        } catch (BusinessException e) {
+            return false;
+        }
+    }
 }

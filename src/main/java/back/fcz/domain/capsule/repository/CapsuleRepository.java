@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -99,4 +100,14 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             @Param("memberIds") List<Long> memberIds,
             @Param("isProtected") Integer isProtected
     );
+
+    // 선착순
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE Capsule c 
+    SET c.currentViewCount = c.currentViewCount + 1 
+    WHERE c.capsuleId = :capsuleId 
+    AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
+""")
+    int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
 }

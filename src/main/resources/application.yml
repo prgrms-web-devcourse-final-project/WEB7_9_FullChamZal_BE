@@ -12,6 +12,9 @@ spring:
   datasource:
     hikari:
       auto-commit: true
+      maximum-pool-size: 50              # 동시 접속 처리
+      connection-timeout: 30000          # 커넥션 획득 타임아웃 (30초)
+      leak-detection-threshold: 60000    # 커넥션 누수 감지 (60초)
 
   data:
     redis:
@@ -24,6 +27,12 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+        connection:
+          isolation: 2                 # READ_COMMITTED 격리 수준
+      javax:
+        persistence:
+          lock:
+            timeout: 3000              # 비관적 락 타임아웃
     show-sql: true
 
   mvc:

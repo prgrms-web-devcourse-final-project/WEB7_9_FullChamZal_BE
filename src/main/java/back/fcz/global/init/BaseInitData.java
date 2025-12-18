@@ -54,6 +54,8 @@ public class BaseInitData implements CommandLineRunner {
             createTestMembers();
         }
 
+        createFirstComeTestMembers();
+
         if (phoneVerificationRepository.count() == 0) {
             createTestPhoneVerifications();
         }
@@ -65,6 +67,8 @@ public class BaseInitData implements CommandLineRunner {
         if (capsuleRepository.count() == 0) {
             createTestCapsules();
         }
+
+        createFirstComeTestCapsule();
     }
 
     private void createTestMembers() {
@@ -640,5 +644,77 @@ public class BaseInitData implements CommandLineRunner {
         }
     }
 
+    /**
+     * K6 선착순 테스트 전용 회원 100명 생성
+     * - testuser1 ~ testuser100
+     * - password: password123
+     * - phone: 010-9999-0001 ~ 010-9999-0100
+     */
+    private void createFirstComeTestMembers() {
+
+        // 이미 생성되어 있으면 다시 만들지 않음
+        boolean exists = memberRepository.existsByUserId("testuser1");
+        if (exists) {
+            return;
+        }
+
+        for (int i = 1; i <= 100; i++) {
+            String userId = "testuser" + i;
+            String phone = String.format("010-9999-%04d", i);
+
+            createMember(
+                    userId,
+                    "password123",
+                    "선착순테스터" + i,
+                    "fc_tester_" + i,
+                    phone,
+                    MemberStatus.ACTIVE,
+                    MemberRole.USER
+            );
+        }
+    }
+
+    /**
+     * K6 선착순 테스트 전용 공개 캡슐 생성
+     */
+    private void createFirstComeTestCapsule() {
+
+        // 이미 존재하면 중복 생성 방지
+        boolean exists = capsuleRepository.findAll().stream()
+                .anyMatch(c -> "K6 선착순 테스트 캡슐".equals(c.getTitle()));
+
+        if (exists) {
+            return;
+        }
+
+        // 작성자: USER 중 아무나
+        Member writer = memberRepository.findAll().stream()
+                .filter(m -> m.getRole() == MemberRole.USER)
+                .findFirst()
+                .orElse(null);
+
+        if (writer == null) {
+            return;
+        }
+
+        Capsule capsule = Capsule.builder()
+                .memberId(writer)
+                .uuid(UUID.randomUUID().toString())
+                .nickname(writer.getNickname())
+                .title("선착순 테스트 K6")
+                .content("K6 동시성(선착순) 테스트 전용 캡슐입니다.")
+                .capsuleColor("WHITE")
+                .capsulePackingColor("BLUE")
+                .visibility("PUBLIC")
+                .unlockType("TIME")
+                .unlockAt(LocalDateTime.now().minusDays(1))
+                .maxViewCount(10)
+                .currentViewCount(0)
+                .isProtected(0)
+                .isDeleted(0)
+                .build();
+
+        capsuleRepository.save(capsule);
+    }
 
 }

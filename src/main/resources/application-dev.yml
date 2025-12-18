@@ -13,8 +13,8 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   jpa:
     hibernate:
@@ -29,8 +29,8 @@ spring:
       path: /h2-console
 
 cors:
-  allowed-origins: http://localhost:3000
-  capsule-domain: http://localhost:3000 # 프론트의 라우팅 방식, 도메인 생성 시 바뀔 부분
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  capsule-domain: ${CORS_CAPSULE_DOMAIN:http://localhost:3000} # 프론트의 라우팅 방식, 도메인 생성 시 바뀔 부분
 
 logging:
   level:

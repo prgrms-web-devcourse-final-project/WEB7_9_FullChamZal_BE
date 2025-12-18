@@ -14,6 +14,34 @@ import java.time.LocalDateTime;
 public class UnlockService {
     private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
     private final CapsuleRepository capsuleRepository;
+    private final FirstComeService firstComeService;
+
+    // 개인 캡슐
+    public boolean validateUnlockConditionsForPrivate(
+            Capsule capsule,
+            LocalDateTime currentTime,
+            Double currentLat,
+            Double currentLng
+    ) {
+        return validateTimeAndLocationConditions(capsule, currentTime, currentLat, currentLng);
+    }
+
+    // 시간/위치 조건만 검증 (선착순 제외)
+    public boolean validateTimeAndLocationConditions(
+            Capsule capsule,
+            LocalDateTime currentTime,
+            Double currentLat,
+            Double currentLng
+    ) {
+        String unlockType = capsule.getUnlockType();
+
+        return switch (unlockType) {
+            case "TIME" -> isTimeConditionMet(capsule.getCapsuleId(), currentTime);
+            case "LOCATION" -> isLocationConditionMet(capsule.getCapsuleId(), currentLat, currentLng);
+            case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule.getCapsuleId(), currentTime, currentLat, currentLng);
+            default -> throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
+        };
+    }
 
     /*
     시간 해제 조건 검증
