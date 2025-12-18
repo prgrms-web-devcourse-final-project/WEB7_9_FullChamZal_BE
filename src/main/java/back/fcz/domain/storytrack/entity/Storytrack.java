@@ -18,18 +18,24 @@ public class Storytrack extends BaseEntity {
     private Long storytrackId;
 
     @ManyToOne
-    @JoinColumn(name = "member_id")
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "track_type")
+    @Column(name = "track_type", nullable = false)
     private String trackType;
 
-    @Column(name = "is_public")
+    @Column(name = "is_public", nullable = false)
     private int isPublic; // 비공개 0, 공개 1
+
+    @Column(name = "price")
+    private int price;
+
+    @Column(name = "total_steps", nullable = false)
+    private int totalSteps;
 }
