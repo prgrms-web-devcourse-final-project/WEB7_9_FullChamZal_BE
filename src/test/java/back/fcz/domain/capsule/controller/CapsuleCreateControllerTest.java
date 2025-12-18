@@ -134,6 +134,8 @@ class CapsuleCreateControllerTest {
         SecretCapsuleCreateRequestDTO requestDTO =
                 new SecretCapsuleCreateRequestDTO(
                         member.getMemberId(),
+                        "01012345678",
+                        "수신자",
                         "senderNick",
                         "receiver",
                         "나에게 보내는 캡슐",

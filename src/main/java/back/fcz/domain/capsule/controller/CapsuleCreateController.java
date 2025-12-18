@@ -54,21 +54,10 @@ public class CapsuleCreateController {
     })
     @PostMapping("/create/private")
     public ResponseEntity<ApiResponse<SecretCapsuleCreateResponseDTO>> createPrivateCapsule(
-            @RequestParam(required = false) String phoneNum,
-            @RequestParam(required = false) String capsulePassword,
             @RequestBody SecretCapsuleCreateRequestDTO requestDTO
     ){
-        if(phoneNum == null){ // url + 비밀번호 방식
-            SecretCapsuleCreateResponseDTO response = capsuleCreateService.privateCapsulePassword(requestDTO, capsulePassword);
-            return  ResponseEntity.ok(ApiResponse.success(response));
-        }
-
-        if(capsulePassword == null){ // 전화 번호 입력 방식
-            SecretCapsuleCreateResponseDTO response = capsuleCreateService.privateCapsulePhone(requestDTO, phoneNum);
-            return  ResponseEntity.ok(ApiResponse.success(response));
-        }
-
-        throw new BusinessException(ErrorCode.CAPSULE_NOT_CREATE);
+        SecretCapsuleCreateResponseDTO response = capsuleCreateService.createPrivateCapsule(requestDTO);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 비공개 캡슐 - 나에게 보내는 캡슐
