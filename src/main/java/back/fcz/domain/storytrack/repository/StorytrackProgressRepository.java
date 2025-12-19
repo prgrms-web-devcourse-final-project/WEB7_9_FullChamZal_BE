@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface StorytrackProgressRepository extends JpaRepository<StorytrackProgress, Long> {
     Optional<StorytrackProgress> findByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
 
+    // 스토리트랙 참여자 집계
     @Query("""
     SELECT COUNT(sp)
     FROM StorytrackProgress sp
@@ -17,5 +18,12 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
       AND sp.deletedAt IS NULL
 """)
     long countActiveParticipants(@Param("storytrackId") Long storytrackId);
+
+    // 스토리트랙 참여자 조회
+    StorytrackProgress findByStorytrack_StorytrackId(Long storytrackId);
+
+    // 집계용
+    int countByStorytrack_StorytrackId(Long storytrackId);
+    int countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(Long storytrackId);
 
 }

@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.storytrack.dto.PathResponse;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
@@ -191,7 +192,7 @@ public class StorytrackService {
     }
 
     // 조회
-    // 전체 스토리 트랙 조회
+    // 전체 스토리 트랙 목록 조회
     public Page<TotalStorytrackResponse> readTotalStorytrack(int page, int size) {
 
         Pageable pageable = PageRequest.of(
@@ -205,11 +206,36 @@ public class StorytrackService {
     }
 
     // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회
-    public StorytrackDashboardResponse storytrackDashBoard(){
+    // 대략적인 경로(순서), 총 인원 수, 완료한 인원 수, 스토리트랙 제작자(닉네임)
+    public StorytrackDashboardResponse storytrackDashBoard(
+            Long storytrackId,
+            Pageable pageable
+    ) {
+        Storytrack storytrack = storytrackRepository
+                .findByStorytrackIdAndIsDeleted(storytrackId, 0)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
+        int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
+        int completeProgress = storytrackProgressRepository.countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(storytrackId);
+
+        // 스토리트랙 경로
+        Page<StorytrackStep> stepPage =
+                storytrackStepRepository.findStepsWithCapsule(storytrackId, pageable);
+
+        Page<PathResponse> pathPage =
+                stepPage.map(PathResponse::from);
+
+        return StorytrackDashboardResponse.of(
+                storytrack,
+                pathPage,
+                totalParticipant,
+                completeProgress
+        );
     }
 
+
     // 생성, 참여 : 스토리트랙 경로 조회
+    // 단계, 각 단계의 캡슐 조회
 //    public storytrackPathResponse storytrackPath(){
 //
 //    }
@@ -237,11 +263,9 @@ public class StorytrackService {
     /* public CapsuleDTO readCapsuelStorytrack(){
        // 생성자인지 참여자인지 확인
 
-       // 생성자면 캡슐 오픈 -> 확인 (논의 필요)
-
        // 참여자면 캡슐 조건 확인
          // 스토리트랙 타입 확인
             // 스토리트랙의 단계에 맞나? -> 조건 미충족 시 예외
        // 캡슐 조건이 맞나 -> 조건 미충족 시 예외
-    */ }
+    */
 }
