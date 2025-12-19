@@ -114,7 +114,7 @@ public class CapsuleCreateService {
 
         Capsule saved = capsuleRepository.save(secretCapsule);
 
-        String url  = domain + "/" +saved.getUuid();
+        String url  = domain +saved.getUuid();
 
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
     }
@@ -150,7 +150,7 @@ public class CapsuleCreateService {
 
             recipientRepository.save(recipientRecord);
 
-            String url = domain + "/" + saved.getUuid();
+            String url = domain + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
@@ -163,7 +163,7 @@ public class CapsuleCreateService {
             // TODO: 캡슐 이미지 추가 하실 때 여기서 하시면 됩니다.
             Capsule saved = capsuleRepository.save(capsule);
 
-            String url = domain + "/" + saved.getUuid();
+            String url = domain + saved.getUuid();
 
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
