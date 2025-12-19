@@ -38,6 +38,7 @@ public class AdminCapsuleDetailResponse {
 
     private final boolean deleted;
     private final boolean protectedCapsule; // 보호:1
+    private final boolean unlocked;        // 조회 여부
 
     private final long reportCount;
     private final long bookmarkCount; // TODO
@@ -48,7 +49,8 @@ public class AdminCapsuleDetailResponse {
             Capsule capsule,
             String recipientName,
             long reportCount,
-            long bookmarkCount
+            long bookmarkCount,
+            boolean isUnlocked
     ) {
         boolean deleted = capsule.getIsDeleted() != 0;
         boolean protectedCapsule = capsule.getIsProtected() == 1;
@@ -80,6 +82,7 @@ public class AdminCapsuleDetailResponse {
 
                 .deleted(deleted)
                 .protectedCapsule(protectedCapsule)
+                .unlocked(isUnlocked)
 
                 .reportCount(reportCount)
                 .bookmarkCount(bookmarkCount)

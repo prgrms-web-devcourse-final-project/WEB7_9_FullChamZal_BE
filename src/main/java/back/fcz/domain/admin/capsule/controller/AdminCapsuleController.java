@@ -37,10 +37,11 @@ public class AdminCapsuleController {
             @RequestParam(required = false) String visibility,
             @RequestParam(required = false) Integer isDeleted,     // 0/1/2
             @RequestParam(required = false) Integer isProtected,   // 0/1
+            @RequestParam(required = false) Boolean unlocked,      // true(조회됨), false(미조회), null(전체)
             @RequestParam(required = false) String keyword
     ) {
         PageResponse<AdminCapsuleSummaryResponse> response =
-                adminCapsuleService.getCapsules(page, size, visibility, isDeleted, isProtected, keyword);
+                adminCapsuleService.getCapsules(page, size, visibility, isDeleted, isProtected, unlocked, keyword);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
