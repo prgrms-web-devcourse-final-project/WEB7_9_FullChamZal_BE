@@ -243,9 +243,7 @@ public class CapsuleReadService {
     }
 
     // 전화번호 검증 로직
-    public boolean phoneNumberVerification(
-            Capsule capsule, String phoneNumber, LocalDateTime unlockAt, Double locationLat, Double locationLng
-    ) {
+    public boolean phoneNumberVerification(Capsule capsule, String phoneNumber, LocalDateTime unlockAt, Double locationLat, Double locationLng) {
         System.out.println("전화번호 검증 시작");
         CapsuleRecipient capsuleRecipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
@@ -295,12 +293,7 @@ public class CapsuleReadService {
     }
 
     // 개인 캡슐 읽기 - isProtected=1 (CapsuleRecipient 있음)
-    public CapsuleConditionResponseDTO readMemberCapsule(
-            Capsule capsule,
-            CapsuleConditionRequestDTO requestDto,
-            boolean shouldIncrement,
-            CapsuleRecipient recipient
-    ){
+    public CapsuleConditionResponseDTO readMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement, CapsuleRecipient recipient){
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         Member member = memberRepository.findById(currentMemberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
@@ -330,11 +323,7 @@ public class CapsuleReadService {
     }
 
     // 개인 캡슐 읽기 - isProtected=0, 로그인 상태 (CapsuleRecipient 없음)
-    private CapsuleConditionResponseDTO readMemberCapsuleWithoutRecipient(
-            Capsule capsule,
-            CapsuleConditionRequestDTO requestDto,
-            boolean shouldIncrement
-    ) {
+    private CapsuleConditionResponseDTO readMemberCapsuleWithoutRecipient(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement) {
         log.info("회원 캡슐 읽기 (CapsuleRecipient 없음) - capsuleId: {}, shouldIncrement: {}",
                 capsule.getCapsuleId(), shouldIncrement);
 
