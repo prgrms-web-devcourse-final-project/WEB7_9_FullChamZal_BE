@@ -402,11 +402,13 @@ public class CapsuleReadService {
     }
 
     public CapsuleReadResponse existedPassword(CapsuleReadRequest request){
-        Capsule capsule = capsuleRepository.findById(request.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        Capsule capsule = capsuleRepository.findByUuid(request.uuid())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
         if(capsule.getCapPassword()==null){
-            return CapsuleReadResponse.from(false);
+            return CapsuleReadResponse.from(capsule.getCapsuleId(), capsule.getIsProtected(), false);
         }else{
-            return CapsuleReadResponse.from(true);
+            return CapsuleReadResponse.from(capsule.getCapsuleId(), capsule.getIsProtected(),true);
         }
     }
 }
