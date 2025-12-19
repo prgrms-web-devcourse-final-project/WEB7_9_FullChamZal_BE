@@ -12,6 +12,7 @@ import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -114,6 +115,15 @@ public class StorytrackController {
 
     // 조회
     // 전체 스토리트랙 조회
+    @GetMapping("/storytrackList")
+    public ResponseEntity<ApiResponse<Page<TotalStorytrackResponse>>> readStorytrackList (
+            @RequestParam(defaultValue ="0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Page<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(page, size);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     // 스토리트랙 상세 조회
 
