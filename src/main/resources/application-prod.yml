@@ -4,7 +4,7 @@ spring:
       enabled: false
 
   datasource:
-    url: ${DATABASE_URL}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -14,6 +14,13 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
 
   jpa:
     hibernate:
@@ -26,13 +33,6 @@ spring:
         use_sql_comments: false
     show-sql: false
 
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 3000ms
-
 logging:
   level:
     root: INFO
@@ -44,13 +44,14 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://finalprojectfrontend.vercel.app}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  capsule-domain: ${CORS_CAPSULE_DOMAIN}
 
 server:
   port: ${PORT:8080}
   error:
-    include-message: always
-    include-binding-errors: always
+    include-message: never
+    include-binding-errors: never
     include-stacktrace: never
     include-exception: false
 
@@ -58,14 +59,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health, info
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: never
 
 cookie:
   secure: true
   same-site: None
+  domain: ${COOKIE_DOMAIN:}
 
 coolsms:
   api-key: ${COOLSMS_API_KEY}
