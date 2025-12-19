@@ -175,8 +175,8 @@ public class AuthController {
         ### 동작 방식
         1. 프론트엔드 서버에서 해당 URL로 **브라우저 이동(GET)** 을 수행합니다.
         2. 백엔드 서버는 Google OAuth 인증 페이지로 **302 Redirect** 합니다.
-        3. 사용자가 Google 계정으로 로그인합니다.
-        4. Google 로그인 성공 후, 백엔드 서버의 OAuth2 콜백 엔드포인트로 리다이렉트됩니다.
+        3. 사용자의 Google 계정으로 로그인합니다.
+        4. 로그인 성공 후, 백엔드 서버의 OAuth2 콜백 엔드포인트로 리다이렉트됩니다.
         5. 백엔드 서버에서 다음 작업을 수행합니다:
            - 신규 회원: 회원 가입 처리 (DB에 이름, 이메일, 고유 ID 저장)
            - JWT Access Token / Refresh Token 생성
