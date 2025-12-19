@@ -76,6 +76,7 @@ public enum ErrorCode {
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
     RECEIVERNICKNAME_IS_REQUIRED("CP010", HttpStatus.BAD_REQUEST, "수신자 닉네임을 입력해주세요."),
+    CAPSULE_CONTENT_BLOCKED("CPS011", HttpStatus.BAD_REQUEST, "유해한 내용이 감지되어 캡슐을 저장할 수 없습니다."),
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
@@ -112,8 +113,10 @@ public enum ErrorCode {
     PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다."),
     NOT_STORYTRACK_CREATER("ST003", HttpStatus.FORBIDDEN, "로그인한 사용자는 스토리트랙 생성자가 아닙니다."),
     STORYTRACK_PAHT_NOT_FOUND("ST004", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 경로입니다."),
-    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다.");
+    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다."),
 
+    // ========== AI(OpenAI) / Moderation ==========
+    OPENAI_MODERATION_FAILED("AI001", HttpStatus.SERVICE_UNAVAILABLE, "콘텐츠 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
 
 
     private final String code;
