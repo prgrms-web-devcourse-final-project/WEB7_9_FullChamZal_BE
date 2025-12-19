@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum MemberRole {
 
     USER("일반 회원"),
-    ADMIN("관리자");
+    ADMIN("관리자"),
+    GUEST("비회원");
 
     private final String description;
 }

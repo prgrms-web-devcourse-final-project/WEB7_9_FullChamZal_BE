@@ -53,7 +53,6 @@ public class CapsuleReadController {
         return ResponseEntity.ok(ApiResponse.success(capsuleReadService.existedPassword(capsuleReadRequest)));
     }
 
-
     //캡슐 조건 검증 -> 조건 만족 후 읽기
     @Operation(summary = "요청 캡슐 검증 및 조회",
             description = "사용자가 받은 캡슐의 내용을 조건에 맞으면 보여줍니다. "
