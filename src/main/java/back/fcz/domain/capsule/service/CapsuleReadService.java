@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.service;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.entity.Capsule;
@@ -390,8 +389,8 @@ public class CapsuleReadService {
         }
     }
 
-    public CapsuleReadResponse existedPassword(CapsuleReadRequest request){
-        Capsule capsule = capsuleRepository.findByUuid(request.uuid())
+    public CapsuleReadResponse existedPassword(String request){
+        Capsule capsule = capsuleRepository.findByUuid(request)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
         if(capsule.getCapPassword()==null){
