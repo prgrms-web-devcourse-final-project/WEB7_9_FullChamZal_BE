@@ -192,9 +192,9 @@ public class AuthController {
 
         ---
         ### 주의 사항
-        - fetch / axios 등의 API Client로 호출하면 정상 동작하지 않습니다.
-        - **브라우저 페이지 이동 방식**으로 호출해야 합니다. 예) '<a href>', 'window.location.href'
         - 이 API는 JSON 응답을 반환하지 않습니다.
+        - fetch / axios 등의 API Client로 호출하면 동작하지 않습니다.
+        - **브라우저 페이지 이동 방식**으로 호출해야 합니다. 예) `<a> 태그`, `window.location.href`
         """
     )
     @GetMapping("/oauth2/authorization/google")
