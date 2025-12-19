@@ -2,8 +2,10 @@ package back.fcz.global.init;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
@@ -43,9 +45,8 @@ public class BaseInitData implements CommandLineRunner {
     private final PhoneVerificationRepository phoneVerificationRepository;
     private final CapsuleRepository capsuleRepository;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
+    private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final ReportRepository reportRepository;
-
-
 
     @Override
     @Transactional
@@ -78,7 +79,7 @@ public class BaseInitData implements CommandLineRunner {
                 "password123",
                 "홍길동",
                 "테스터",
-                "010-1234-5678",
+                "01012345678",
                 MemberStatus.ACTIVE,
                 MemberRole.USER
         );
@@ -89,7 +90,7 @@ public class BaseInitData implements CommandLineRunner {
                 "password123",
                 "김철수",
                 "캡슐러버",
-                "010-2345-6789",
+                "01023456789",
                 MemberStatus.ACTIVE,
                 MemberRole.USER
         );
@@ -100,7 +101,7 @@ public class BaseInitData implements CommandLineRunner {
                 "admin123",
                 "관리자",
                 "어드민",
-                "010-9999-9999",
+                "01099999999",
                 MemberStatus.ACTIVE,
                 MemberRole.ADMIN
         );
@@ -111,7 +112,7 @@ public class BaseInitData implements CommandLineRunner {
                 "test1234",
                 "정지유저",
                 "STOP_USER",
-                "010-1111-2222",
+                "01011112222",
                 MemberStatus.STOP,
                 MemberRole.USER
         );
@@ -121,7 +122,7 @@ public class BaseInitData implements CommandLineRunner {
 
         // 성공적으로 인증된 번호
         createPhoneVerification(
-                "010-1234-5678",
+                "01012345678",
                 "123456",
                 PhoneVerificationPurpose.SIGNUP,
                 PhoneVerificationStatus.VERIFIED,
@@ -132,7 +133,7 @@ public class BaseInitData implements CommandLineRunner {
         );
         // 인증하고 있는 중간 상태
         createPhoneVerification(
-                "010-0012-3456",
+                "01000123456",
                 "222333",
                 PhoneVerificationPurpose.SIGNUP,
                 PhoneVerificationStatus.PENDING,
@@ -145,7 +146,7 @@ public class BaseInitData implements CommandLineRunner {
 
         // 만료된 인증 코드
         createPhoneVerification(
-                "010-0001-2345",
+                "01000012345",
                 "654321",
                 PhoneVerificationPurpose.SIGNUP,
                 PhoneVerificationStatus.EXPIRED,
@@ -157,7 +158,7 @@ public class BaseInitData implements CommandLineRunner {
 
         // 시도 횟수 초과로 실패한 인증
         createPhoneVerification(
-                "010-0000-1234",
+                "01000001234",
                 "111222",
                 PhoneVerificationPurpose.CHANGE_PHONE,
                 PhoneVerificationStatus.EXPIRED,
@@ -385,6 +386,8 @@ public class BaseInitData implements CommandLineRunner {
             locationRadius = randomFrom(List.of(50, 100, 300, 500), random);
         }
 
+        int viewCount = (i % 2 == 1) ? 1 : 0;
+
         Capsule capsule = Capsule.builder()
                 .memberId(writer)
                 .uuid(UUID.randomUUID().toString())
@@ -400,12 +403,22 @@ public class BaseInitData implements CommandLineRunner {
                 .locationLat(locationLat)
                 .locationLng(locationLng)
                 .locationRadiusM(locationRadius)
-                .currentViewCount(0)
+                .currentViewCount(viewCount)
                 .isProtected(0)
                 .isDeleted(0)
                 .build();
 
-        capsuleRepository.save(capsule);
+        Capsule saved = capsuleRepository.save(capsule);
+
+        if (viewCount > 0) {
+            PublicCapsuleRecipient recipient = PublicCapsuleRecipient.builder()
+                    .capsuleId(saved)
+                    .memberId(writer.getMemberId())
+                    .unlockedAt(LocalDateTime.now().minusDays(random.nextInt(7)))
+                    .build();
+
+            publicCapsuleRecipientRepository.save(recipient);
+        }
     }
 
     /* =========================
@@ -437,6 +450,7 @@ public class BaseInitData implements CommandLineRunner {
         }
 
         String rawPassword = randomPassword(random);
+        int viewCount = (i % 2 == 0) ? 1 : 0;
 
         Capsule capsule = Capsule.builder()
                 .memberId(writer)
@@ -455,7 +469,7 @@ public class BaseInitData implements CommandLineRunner {
                 .locationLng(locationLng)
                 .locationRadiusM(locationRadius)
                 .capPassword(phoneCrypto.hash("5678"))
-                .currentViewCount(0)
+                .currentViewCount(viewCount)
                 .isProtected(0)
                 .isDeleted(0)
                 .build();
@@ -491,6 +505,8 @@ public class BaseInitData implements CommandLineRunner {
             locationRadius = randomFrom(List.of(50, 100, 300, 500), random);
         }
 
+        int viewCount = (i % 2 == 1) ? 1 : 0;
+
         Capsule capsule = Capsule.builder()
                 .memberId(writer)
                 .uuid(UUID.randomUUID().toString())
@@ -507,18 +523,23 @@ public class BaseInitData implements CommandLineRunner {
                 .locationLat(locationLat)
                 .locationLng(locationLng)
                 .locationRadiusM(locationRadius)
-                .currentViewCount(0)
+                .currentViewCount(viewCount)
                 .isProtected(1)
                 .isDeleted(0)
                 .build();
 
         Capsule saved = capsuleRepository.save(capsule);
 
+        LocalDateTime unlockedAt = (viewCount > 0)
+                ? LocalDateTime.now().minusDays(random.nextInt(7))
+                : null;
+
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
                 .recipientName(recipient.getName())
                 .recipientPhone(recipient.getPhoneNumber())
                 .recipientPhoneHash(recipient.getPhoneHash())
+                .unlockedAt(unlockedAt)
                 .isSenderSelf(0)
                 .build();
 
@@ -552,6 +573,8 @@ public class BaseInitData implements CommandLineRunner {
             locationRadius = randomFrom(List.of(50, 100, 300, 500), random);
         }
 
+        int viewCount = (i % 2 == 0) ? 1 : 0;
+
         Capsule capsule = Capsule.builder()
                 .memberId(writer)
                 .uuid(UUID.randomUUID().toString())
@@ -569,7 +592,7 @@ public class BaseInitData implements CommandLineRunner {
                 .locationLng(locationLng)
                 .locationRadiusM(locationRadius)
                 .capPassword(phoneCrypto.hash("5678"))
-                .currentViewCount(0)
+                .currentViewCount(viewCount)
                 .isProtected(0)
                 .isDeleted(0)
                 .build();
@@ -590,6 +613,8 @@ public class BaseInitData implements CommandLineRunner {
             unlockAt = randomUnlockAt(random);
         }
 
+        int viewCount = (i % 2 == 0) ? 1 : 0;
+
         Capsule capsule = Capsule.builder()
                 .memberId(member)
                 .uuid(UUID.randomUUID().toString())
@@ -602,18 +627,23 @@ public class BaseInitData implements CommandLineRunner {
                 .visibility("SELF")
                 .unlockType(unlockType)
                 .unlockAt(unlockAt)
-                .currentViewCount(0)
+                .currentViewCount(viewCount)
                 .isProtected(1)
                 .isDeleted(0)
                 .build();
 
         Capsule saved = capsuleRepository.save(capsule);
 
+        LocalDateTime unlockedAt = (viewCount > 0)
+                ? LocalDateTime.now().minusDays(random.nextInt(7))
+                : null;
+
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
                 .recipientName(member.getName())
                 .recipientPhone(member.getPhoneNumber())
                 .recipientPhoneHash(member.getPhoneHash())
+                .unlockedAt(unlockedAt)
                 .isSenderSelf(1)
                 .build();
 

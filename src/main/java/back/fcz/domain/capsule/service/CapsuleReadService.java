@@ -61,7 +61,8 @@ public class CapsuleReadService {
             );
 
             if(conditionMet){
-                return readMemberCapsule(capsule, requestDto);
+                boolean isFirstView = capsule.getCurrentViewCount() == 0;
+                return readMemberCapsule(capsule, requestDto, isFirstView);
             } else {
                 throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
             }
@@ -156,13 +157,13 @@ public class CapsuleReadService {
                 //이제 기존에 조회 했던 것인지 검증
                 if(capsule.getCurrentViewCount() > 0){
                     //기존에 조회함 -> 바로 조회가능
-                    return readMemberCapsule(capsule, requestDto);
+                    return readMemberCapsule(capsule, requestDto, false);
                 }else{
                     //처음 조회하는 것 -> 검증 로직 통과하면 조회가능
                     if(urlAndPasswordVerification(
                             capsule, requestDto.password(), capsule.getCapPassword(), requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng())
                     ){
-                        return readMemberCapsule(capsule, requestDto);
+                        return readMemberCapsule(capsule, requestDto, true);
                     }else{
                         throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
                     }
@@ -172,13 +173,13 @@ public class CapsuleReadService {
                 System.out.println("url+비밀번호 기반 캡슐 : 수신자 비회원");
                 if(capsule.getCurrentViewCount() > 0){
                     //기존에 조회함 -> 바로 조회가능
-                    return readNonMemberCapsule(capsule, requestDto);
+                    return readNonMemberCapsule(capsule, requestDto, false);
                 }else{
                     //처음 조회하는 것 -> 검증 로직 통과하면 조회가능
                     if(urlAndPasswordVerification(
                             capsule, requestDto.password(), capsule.getCapPassword(), requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng()
                     )){
-                        return readNonMemberCapsule(capsule, requestDto);
+                        return readNonMemberCapsule(capsule, requestDto, true);
                     }else{
                         throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
                     }
@@ -189,7 +190,7 @@ public class CapsuleReadService {
             System.out.println("전화번호 기반 캡슐");
             if(capsule.getCurrentViewCount()>0){
                 //기존에 조회함 -> 바로 조회가능
-                return readMemberCapsule(capsule, requestDto);
+                return readMemberCapsule(capsule, requestDto, false);
             }else{
                 InServerMemberResponse user = currentUserContext.getCurrentUser();
                 MemberDetailResponse response = memberService.getDetailMe(user);
@@ -199,7 +200,7 @@ public class CapsuleReadService {
                 if(phoneNumberVerification(
                         capsule, phoneNumber,  requestDto.unlockAt(), requestDto.locationLat(), requestDto.locationLng()
                 )){
-                    return readMemberCapsule(capsule, requestDto);
+                    return readMemberCapsule(capsule, requestDto, true);
                 }else{
                     throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
                 }
@@ -278,7 +279,7 @@ public class CapsuleReadService {
     }
 
     //개인 캡슐 읽기 - 수신자가 회원인 경우(로그 + CapsuleRecipient를 남김)
-    public CapsuleConditionResponseDTO readMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto){
+    public CapsuleConditionResponseDTO readMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement){
         String viewerType = currentUserContext.getCurrentUser().role().getDescription();
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         Member member = memberRepository.findById(currentMemberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -293,18 +294,25 @@ public class CapsuleReadService {
                 .ipAddress(null)
                 .build();
         capsuleOpenLogRepository.save(log);
-        capsule.increasedViewCount();
+
+        if (shouldIncrement) {
+            capsule.increasedViewCount();
+        }
 
         CapsuleRecipient recipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
 
-        recipient.setUnlockedAt(requestDto.unlockAt());
-        capsuleRecipientRepository.save(recipient);
+        // 처음 조회할 때만 unlockedAt 설정
+        if (shouldIncrement && recipient.getUnlockedAt() == null) {
+            recipient.setUnlockedAt(requestDto.unlockAt());
+            capsuleRecipientRepository.save(recipient);
+        }
 
         return CapsuleConditionResponseDTO.from(capsule, recipient);
     }
+
     //개인 캡슐 읽기 - 수신자가 비회원인 경우(로그만 남김)
-    public CapsuleConditionResponseDTO readNonMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto){
+    public CapsuleConditionResponseDTO readNonMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement){
         String viewerType = currentUserContext.getCurrentUser().role().getDescription();
         CapsuleOpenLog log = CapsuleOpenLog.builder()
                 .capsuleId(capsule)
@@ -319,6 +327,11 @@ public class CapsuleReadService {
         capsuleOpenLogRepository.save(log);
         capsule.increasedViewCount();
         //수신자가 비회원인 경우는 CapsuleRecipient 자체가 없으니 갱신도 불가능
+
+        // 처음 조회하면 조회수 증가
+        if (shouldIncrement) {
+            capsule.increasedViewCount();
+        }
 
         return CapsuleConditionResponseDTO.from(capsule);
     }
