@@ -52,34 +52,16 @@ public class CapsuleReadService {
     public CapsuleConditionResponseDTO conditionAndRead(CapsuleConditionRequestDTO requestDto) {
         Capsule capsule = capsuleRepository.findById(requestDto.capsuleId()).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        //자신에게 보내는 캡슐인 경우(시공간 검증만)
-        if(capsule.getVisibility().equals("SELF")){
-            // 시간/위치 조건 검증
-            boolean conditionMet = unlockService.validateUnlockConditionsForPrivate(
-                    capsule,
-                    requestDto.unlockAt(),
-                    requestDto.locationLat(),
-                    requestDto.locationLng()
-            );
-
-            if(conditionMet){
-                boolean isFirstView = capsule.getCurrentViewCount() == 0;
-                return readMemberCapsule(capsule, requestDto, isFirstView);
-            } else {
-                throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
-            }
-        }
         // 공개인지 비공개인지
-        else if(capsule.getVisibility().equals("PUBLIC")){
-            //공개 캡슐로직
+        if(capsule.getVisibility().equals("PUBLIC")){
+            // PUBLIC 캡슐 로직
             log.info("공개 캡슐 로직 진입 - capsuleId: {}", capsule.getCapsuleId());
             return publicCapsuleLogic(capsule, requestDto);
         }else{
-            //개인 캡슐로직
+            // PRIVATE와 SELF 모두 개인 캡슐 로직으로 동일하게 처리
             System.out.println("개인 캡슐 로직");
             return privateCapsuleLogic(capsule, requestDto);
         }
-
     }
 
     //공개 캡슐
@@ -154,41 +136,28 @@ public class CapsuleReadService {
         log.info("개인 캡슐 검증 시작 - hasPassword: {}, isLoggedIn: {}, isProtected: {}",
                 hasPassword, isLoggedIn, capsule.getIsProtected());
 
-        // Case 1: isProtected = 1 (저장된 캡슐) - JWT 인증 필수
-        if(capsule.getIsProtected() == 1) {
-            log.info("isProtected=1 캡슐 - JWT 인증 기반 조회");
-
-            if(!isLoggedIn) {
-                log.warn("비로그인 상태로 isProtected=1 캡슐 접근 시도");
-                throw new BusinessException(ErrorCode.UNAUTHORIZED);
-            }
-
-            return handleProtectedCapsuleAccess(capsule, requestDto);
-        }
-
-        // Case 2: isProtected=0 + URL+비밀번호 방식 - 회원/비회원 동일 처리 (JWT 처리 불필요)
-        if(hasPassword) {
-            log.info("isProtected=0, URL + 비밀번호 방식 캡슐 - 회원/비회원 동일 처리");
-            return handlePasswordAccess(capsule, requestDto, isLoggedIn);
-        }
-
-        // Case 3: 전화번호 방식 (회원 필수, isProtected가 무조건 1이어야 함)
-        else {
-            log.info("전화번호 방식 캡슐 - 회원 인증 필요");
-
-            if (!isLoggedIn) {
-                throw new BusinessException(ErrorCode.UNAUTHORIZED);
-            }
-
-            return handlePhoneBasedAccess(capsule, requestDto);
+        if (capsule.getIsProtected() == 1) {
+            // JWT 인증 필수 (전화번호 전송 방식 OR URL+비밀번호에서 저장 버튼 누른 경우)
+            log.info("isProtected=1 캡슐 - JWT 인증 필수");
+            return handleProtectedCapsule(capsule, requestDto);
+        } else {
+            // 비밀번호 인증 (URL+비밀번호 방식, 아직 저장 안 함)
+            log.info("isProtected=0 캡슐 - 비밀번호 인증");
+            return handleUnprotectedCapsule(capsule, requestDto);
         }
     }
 
-    // isProtected = 1인 캡슐 접근 처리 (= 저장된 캡슐) - 저장 버튼 눌러서 isProtected = 1로 전환됐거나, 전화번호로 전송된 캡슐
-    private CapsuleConditionResponseDTO handleProtectedCapsuleAccess(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
+    // isProtected = 1 처리: JWT 인증 + 전화번호 해시 검증
+    private CapsuleConditionResponseDTO handleProtectedCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         log.info("보호된 캡슐 접근 처리 - capsuleId: {}", capsule.getCapsuleId());
 
-        CapsuleRecipient recipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
+        if (!isUserLoggedIn()) {
+            log.warn("비로그인 상태로 isProtected=1 캡슐 접근 시도");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        CapsuleRecipient recipient = capsuleRecipientRepository
+                .findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
 
         InServerMemberResponse user = currentUserContext.getCurrentUser();
@@ -204,9 +173,10 @@ public class CapsuleReadService {
 
         if(capsule.getCurrentViewCount() > 0) {
             log.info("재조회 - 조건 검증 생략");
-            return readMemberCapsule(capsule, requestDto, false);
+            return readMemberCapsule(capsule, requestDto, false, recipient);
         }
 
+        log.info("첫 조회 - 조건 검증 시작");
         boolean conditionMet = unlockService.validateUnlockConditionsForPrivate(
                 capsule,
                 requestDto.unlockAt(),
@@ -220,28 +190,37 @@ public class CapsuleReadService {
         }
 
         log.info("시간/위치 조건 통과 - 캡슐 조회 허용");
-        return readMemberCapsule(capsule, requestDto, true);
+        return readMemberCapsule(capsule, requestDto, true, recipient);
     }
 
-    // isProtected=0 + URL+비밀번호 방식 - 회원/비회원 동일 처리 (JWT 처리 불필요)
-    private CapsuleConditionResponseDTO handlePasswordAccess(
-            Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean isLoggedIn) {
-        log.info("URL+비밀번호 기반 캡슐 접근 - 로그인 여부: {}", isLoggedIn);
+    // isProtected=0 처리: 비밀번호 검증 (로그인 여부는 로그 타입에만 영향)
+    private CapsuleConditionResponseDTO handleUnprotectedCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
+        log.info("비보호 캡슐 접근 처리 - capsuleId: {}", capsule.getCapsuleId());
+
+        if (requestDto.password() == null || requestDto.password().isBlank()) {
+            log.warn("비밀번호 미입력");
+            throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_REQUIRED);
+        }
 
         if (!phoneCrypto.verifyHash(requestDto.password(), capsule.getCapPassword())) {
             log.warn("비밀번호 불일치");
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH);
         }
 
+        log.info("비밀번호 검증 통과");
+
+        boolean isLoggedIn = isUserLoggedIn();
+
         if (capsule.getCurrentViewCount() > 0) {
-            log.info("재조회 - 조건 검증 생략");
+            log.info("재조회 - 조건 검증 생략, 로그인 여부: {}", isLoggedIn);
             if (isLoggedIn) {
-                return readMemberCapsule(capsule, requestDto, false);
+                return readMemberCapsuleWithoutRecipient(capsule, requestDto, false);
             } else {
                 return readCapsuleAsGuest(capsule, requestDto, false);
             }
         }
 
+        log.info("첫 조회 - 조건 검증 시작");
         boolean conditionMet = unlockService.validateUnlockConditionsForPrivate(
                 capsule,
                 requestDto.unlockAt(),
@@ -254,34 +233,12 @@ public class CapsuleReadService {
             throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
         }
 
-        log.info("시간/위치 조건 통과 - 캡슐 읽기 허용");
+        log.info("시간/위치 조건 통과 - 캡슐 읽기 허용, 로그인 여부: {}", isLoggedIn);
 
         if (isLoggedIn) {
-            return readMemberCapsule(capsule, requestDto, true);
+            return readMemberCapsuleWithoutRecipient(capsule, requestDto, true);
         } else {
             return readCapsuleAsGuest(capsule, requestDto, true);
-        }
-    }
-
-    // 전화번호 방식 접근 처리 (회원 필수, JWT 검증 필수)
-    private CapsuleConditionResponseDTO handlePhoneBasedAccess(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
-        log.info("전화번호 기반 캡슐 처리");
-
-        if (capsule.getCurrentViewCount() > 0) {
-            return readMemberCapsule(capsule, requestDto, false);
-        }
-
-        InServerMemberResponse user = currentUserContext.getCurrentUser();
-        MemberDetailResponse response = memberService.getDetailMe(user);
-        String phoneNumber = response.phoneNumber();
-
-        log.info("전화번호 검증 시작");
-
-        if (phoneNumberVerification(capsule, phoneNumber, requestDto.unlockAt(),
-                requestDto.locationLat(), requestDto.locationLng())) {
-            return readMemberCapsule(capsule, requestDto, true);
-        } else {
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
         }
     }
 
@@ -337,8 +294,13 @@ public class CapsuleReadService {
 
     }
 
-    //개인 캡슐 읽기 - 수신자가 회원인 경우(로그 + CapsuleRecipient를 남김)
-    public CapsuleConditionResponseDTO readMemberCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement){
+    // 개인 캡슐 읽기 - isProtected=1 (CapsuleRecipient 있음)
+    public CapsuleConditionResponseDTO readMemberCapsule(
+            Capsule capsule,
+            CapsuleConditionRequestDTO requestDto,
+            boolean shouldIncrement,
+            CapsuleRecipient recipient
+    ){
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         Member member = memberRepository.findById(currentMemberId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
@@ -354,20 +316,50 @@ public class CapsuleReadService {
                 .build();
         capsuleOpenLogRepository.save(log);
 
+        // 첫 조회일 때만 조회수 증가 및 unlockedAt 설정
+        if (shouldIncrement) {
+            capsule.increasedViewCount();
+
+            if (recipient.getUnlockedAt() == null) {
+                recipient.setUnlockedAt(requestDto.unlockAt());
+                capsuleRecipientRepository.save(recipient);
+            }
+        }
+
+        return CapsuleConditionResponseDTO.from(capsule, recipient);
+    }
+
+    // 개인 캡슐 읽기 - isProtected=0, 로그인 상태 (CapsuleRecipient 없음)
+    private CapsuleConditionResponseDTO readMemberCapsuleWithoutRecipient(
+            Capsule capsule,
+            CapsuleConditionRequestDTO requestDto,
+            boolean shouldIncrement
+    ) {
+        log.info("회원 캡슐 읽기 (CapsuleRecipient 없음) - capsuleId: {}, shouldIncrement: {}",
+                capsule.getCapsuleId(), shouldIncrement);
+
+        Long currentMemberId = currentUserContext.getCurrentMemberId();
+        Member member = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        CapsuleOpenLog log = CapsuleOpenLog.builder()
+                .capsuleId(capsule)
+                .memberId(member)
+                .viewerType("MEMBER")
+                .openedAt(requestDto.unlockAt())
+                .currentLat(requestDto.locationLat())
+                .currentLng(requestDto.locationLng())
+                .userAgent(null)
+                .ipAddress(null)
+                .build();
+        capsuleOpenLogRepository.save(log);
+
+        // 첫 조회일 때만 조회수 증가
         if (shouldIncrement) {
             capsule.increasedViewCount();
         }
 
-        CapsuleRecipient recipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
-
-        // 처음 조회할 때만 unlockedAt 설정
-        if (shouldIncrement && recipient.getUnlockedAt() == null) {
-            recipient.setUnlockedAt(requestDto.unlockAt());
-            capsuleRecipientRepository.save(recipient);
-        }
-
-        return CapsuleConditionResponseDTO.from(capsule, recipient);
+        return CapsuleConditionResponseDTO.from(capsule);
     }
 
     //개인 캡슐 읽기 - 수신자가 비회원인 경우(로그만 남김)
