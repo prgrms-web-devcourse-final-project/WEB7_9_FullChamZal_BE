@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+// import back.fcz.domain.storytrack.dto.response.StorytrackDashBoardResponse;
 import back.fcz.domain.storytrack.dto.PathResponse;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
@@ -207,7 +208,7 @@ public class StorytrackService {
 
     // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회
     // 대략적인 경로(순서), 총 인원 수, 완료한 인원 수, 스토리트랙 제작자(닉네임)
-    public StorytrackDashboardResponse storytrackDashBoard(
+    public StorytrackDashBoardResponse storytrackDashboard(
             Long storytrackId,
             Pageable pageable
     ) {
@@ -225,7 +226,7 @@ public class StorytrackService {
         Page<PathResponse> pathPage =
                 stepPage.map(PathResponse::from);
 
-        return StorytrackDashboardResponse.of(
+        return StorytrackDashBoardResponse.of(
                 storytrack,
                 pathPage,
                 totalParticipant,

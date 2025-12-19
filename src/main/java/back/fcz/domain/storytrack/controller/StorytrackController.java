@@ -130,7 +130,7 @@ public class StorytrackController {
 
     // 스토리트랙 상세 조회
     @GetMapping("/dashboard/{storytrackId}")
-    public ResponseEntity<ApiResponse<StorytrackDashboardResponse>> dashboard(
+    public ResponseEntity<ApiResponse<StorytrackDashBoardResponse>> dashboard(
             @PathVariable Long storytrackId,
             @PageableDefault(
                     size = 10,
@@ -138,7 +138,7 @@ public class StorytrackController {
                     direction = Sort.Direction.ASC
             ) Pageable pageable
     ) {
-        StorytrackDashboardResponse response = storytrackService.storytrackDashBoard(storytrackId, pageable);
+        StorytrackDashBoardResponse response = storytrackService.storytrackDashboard(storytrackId, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
