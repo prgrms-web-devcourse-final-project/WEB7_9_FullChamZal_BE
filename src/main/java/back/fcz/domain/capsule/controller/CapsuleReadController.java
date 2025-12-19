@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequest;
 import back.fcz.domain.capsule.DTO.request.CapsuleSaveButtonRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
