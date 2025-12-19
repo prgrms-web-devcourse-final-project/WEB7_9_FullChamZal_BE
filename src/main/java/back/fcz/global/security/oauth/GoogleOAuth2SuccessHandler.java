@@ -49,6 +49,7 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 .httpOnly(true)
                 .secure(cookieProperties.isSecure())
                 .sameSite(cookieProperties.getSameSite())
+                .domain(cookieProperties.getDomain())
                 .path("/")
                 .maxAge(jwtProperties.getAccessToken().getExpiration() / 1000)
                 .build();
@@ -58,6 +59,7 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 .httpOnly(true)
                 .secure(cookieProperties.isSecure())
                 .sameSite(cookieProperties.getSameSite())
+                .domain(cookieProperties.getDomain())
                 .path("/")
                 .maxAge(jwtProperties.getRefreshToken().getExpiration() / 1000)
                 .build();
