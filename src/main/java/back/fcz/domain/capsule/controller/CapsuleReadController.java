@@ -41,7 +41,7 @@ public class CapsuleReadController {
 
     //캡슐의 비밀번호 존재 여부
     @Operation(summary = "캡슐의 비밀번호 존재 여부",
-            description = "캡슐 id를 받으면 해당 캡슐이 비밀번호가 설정된 캡슐인지를 알려줍니다."
+            description = "캡슐 UUID를 받으면 해당 캡슐의 ID와 비밀번호 설정 여부를 알려줍니다."
     )
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_FOUND
