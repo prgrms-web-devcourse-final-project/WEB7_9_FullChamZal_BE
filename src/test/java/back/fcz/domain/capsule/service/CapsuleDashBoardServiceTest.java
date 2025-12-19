@@ -53,6 +53,7 @@ public class CapsuleDashBoardServiceTest {
                 .capsuleId(1L)
                 .uuid("test")
                 .nickname("test")
+                .receiverNickname("receiver test")
                 .content("test")
                 .capsuleColor("RED")
                 .capsulePackingColor("RED")
@@ -122,9 +123,9 @@ public class CapsuleDashBoardServiceTest {
         assertThat(result).hasSize(2);
 
         assertThat(result.get(0).capsuleId()).isEqualTo(1L);
-        assertThat(result.get(0).recipient()).isEqualTo("recipient1");
+        assertThat(result.get(0).recipient()).isEqualTo("receiver test"); // 발신자가 작성한 닉네임
         assertThat(result.get(1).capsuleId()).isEqualTo(2L);
-        assertThat(result.get(1).recipient()).isEqualTo("recipient2");
+        assertThat(result.get(1).recipient()).isEqualTo(null); // 공개 테이블이라서 null로 저장된 수신자 닉네임
     }
 
     @Test
