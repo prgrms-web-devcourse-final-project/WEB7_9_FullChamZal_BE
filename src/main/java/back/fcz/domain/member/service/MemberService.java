@@ -54,6 +54,7 @@ public class MemberService {
         Member member = memberRepository.findById(user.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        // OAuth 로그인 회원의 경우, 첫 로그인 시 PhoneNumber == null
         String maskedPhone = null;
 
         if (member.getPhoneNumber() != null) {
