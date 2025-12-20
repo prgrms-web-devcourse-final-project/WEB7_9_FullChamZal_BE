@@ -49,7 +49,8 @@ public class CapsuleCreateController {
     @Operation(summary = "비공개 캡슐 생성", description = "전화번호와 비밀번호의 유무에 따라 url+비밀번호 방식, 전화 번호 입력 방식을 사용합니다.")
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_CREATE,
-            ErrorCode.MEMBER_NOT_FOUND
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED
     })
     @PostMapping("/create/private")
     public ResponseEntity<ApiResponse<SecretCapsuleCreateResponseDTO>> createPrivateCapsule(
@@ -61,7 +62,10 @@ public class CapsuleCreateController {
 
     // 비공개 캡슐 - 나에게 보내는 캡슐
     @Operation(summary = "비공개 캡슐 생성", description = "나에게 보내는 캡슐 생성입니다.")
-    @ApiErrorCodeExample({ ErrorCode.MEMBER_NOT_FOUND })
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED
+    })
     @PostMapping("/create/me")
     public ResponseEntity
             <ApiResponse<SecretCapsuleCreateResponseDTO>> createToMeCapsule(
