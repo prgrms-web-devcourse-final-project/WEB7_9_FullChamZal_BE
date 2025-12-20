@@ -29,8 +29,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -85,7 +83,7 @@ public class CapsuleReadService {
 
         if (!conditionMet) {
             log.warn("시간/위치 조건 미충족");
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+            return CapsuleConditionResponseDTO.failFrom(capsule);
         }
 
         log.info("시간/위치 조건 통과");
@@ -185,7 +183,7 @@ public class CapsuleReadService {
 
         if (!conditionMet) {
             log.warn("시간/위치 조건 미충족");
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+            return CapsuleConditionResponseDTO.failFrom(capsule);
         }
 
         log.info("시간/위치 조건 통과 - 캡슐 조회 허용");
@@ -229,7 +227,7 @@ public class CapsuleReadService {
 
         if (!conditionMet) {
             log.warn("시간/위치 조건 미충족");
-            throw new BusinessException(ErrorCode.NOT_OPENED_CAPSULE);
+            return CapsuleConditionResponseDTO.failFrom(capsule);
         }
 
         log.info("시간/위치 조건 통과 - 캡슐 읽기 허용, 로그인 여부: {}", isLoggedIn);
@@ -239,24 +237,6 @@ public class CapsuleReadService {
         } else {
             return readCapsuleAsGuest(capsule, requestDto, true);
         }
-    }
-
-    // 전화번호 검증 로직
-    public boolean phoneNumberVerification(Capsule capsule, String phoneNumber, LocalDateTime unlockAt, Double locationLat, Double locationLng) {
-        System.out.println("전화번호 검증 시작");
-        CapsuleRecipient capsuleRecipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
-
-        if(phoneCrypto.verifyHash(phoneNumber, capsuleRecipient.getRecipientPhoneHash())){
-            //두 값이 같다면 해제 조건 확인
-            return unlockService.validateUnlockConditionsForPrivate(
-                    capsule, unlockAt, locationLat, locationLng
-            );
-        }else{
-            //같지 않다면 403 에러
-            throw new BusinessException(ErrorCode.CAPSULE_NOT_RECEIVER);
-        }
-
     }
 
     //공개 캡슐 읽기
@@ -318,7 +298,7 @@ public class CapsuleReadService {
             }
         }
 
-        return CapsuleConditionResponseDTO.from(capsule, recipient);
+        return CapsuleConditionResponseDTO.from(capsule);
     }
 
     // 개인 캡슐 읽기 - isProtected=0, 로그인 상태 (CapsuleRecipient 없음)

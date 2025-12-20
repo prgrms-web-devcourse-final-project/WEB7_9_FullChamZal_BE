@@ -22,7 +22,9 @@ public record CapsuleConditionResponseDTO(
         LocalDateTime unlockUntil, // 해제 세부 조건(열람 마감 시간) : 시간 기반 해제 일시
         String locationName,       // 장소 이름(별명)
         Double locationLat,        // 해제 세부 조건(위도) : 위치 기반 해제 일시
-        Double locationLng         // 해제 세부 조건(경도) : 위치 기반 해제 일시
+        Double locationLng,         // 해제 세부 조건(경도) : 위치 기반 해제 일시
+
+        String result // 해제 성공 여부
 ) {
     //개인 캡슐이며 수신자가 회원인 경우
     public static CapsuleConditionResponseDTO from(Capsule capsule, CapsuleRecipient recipient) {
@@ -44,7 +46,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
-                capsule.getLocationLng()
+                capsule.getLocationLng(),
+
+                "SUCCESS"
         );
     }
 
@@ -55,7 +59,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getCapsuleId(),
                 capsule.getCapsuleColor(),
                 capsule.getCapsulePackingColor(),
-                "비회원",
+                capsule.getReceiverNickname(),
                 capsule.getNickname(),
                 capsule.getTitle(),
                 capsule.getContent(),
@@ -68,7 +72,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
-                capsule.getLocationLng()
+                capsule.getLocationLng(),
+
+                "SUCCESS"
         );
     }
 
@@ -93,7 +99,33 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
-                capsule.getLocationLng()
+                capsule.getLocationLng(),
+
+                "SUCCESS"
+        );
+    }
+
+    public static CapsuleConditionResponseDTO failFrom(Capsule capsule) {
+        return new CapsuleConditionResponseDTO(
+                capsule.getCapsuleId(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+
+                capsule.getUnlockType(),
+
+                capsule.getUnlockAt(),
+                capsule.getUnlockUntil(),
+                capsule.getLocationName(),
+                capsule.getLocationLat(),
+                capsule.getLocationLng(),
+
+                "FAIL"
         );
     }
 }
