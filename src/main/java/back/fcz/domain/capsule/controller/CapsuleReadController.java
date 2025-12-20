@@ -6,7 +6,6 @@ import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleSaveButtonResponse;
-import back.fcz.domain.capsule.service.CapsuleCreateService;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
@@ -33,7 +32,6 @@ public class CapsuleReadController {
     private final CapsuleReadService capsuleReadService;
     private final CapsuleDashBoardService  capsuleDashBoardService;
     private final CapsuleSaveButtonService  capsuleSaveButtonService;
-    private final CapsuleCreateService capsuleCreateService;
 
 
     //캡슐의 비밀번호 존재 여부
@@ -59,6 +57,7 @@ public class CapsuleReadController {
             ErrorCode.CAPSULE_NOT_RECEIVER,
             ErrorCode.CAPSULE_NOT_FOUND,
             ErrorCode.CAPSULE_PASSWORD_NOT_MATCH,
+            ErrorCode.CAPSULE_PASSWORD_REQUIRED,
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.RECIPIENT_NOT_FOUND,
             ErrorCode.UNAUTHORIZED
@@ -74,6 +73,9 @@ public class CapsuleReadController {
     @Operation(summary = "url + 비밀번호로 생성된 캡슐 저장",
             description = "url + 비밀번호로 생성된 캡슐을 저장하는 API입니다. 저장 시 isProtected 값이 1로 변경됩니다.")
     @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.CAPSULE_NOT_FOUND,
             ErrorCode.CAPSULE_ALREADY_SAVED,
             ErrorCode.PUBLIC_CAPSULE_CANNOT_BE_SAVED,
             ErrorCode.CAPSULE_OPEN_LOG_NOT_FOUND
