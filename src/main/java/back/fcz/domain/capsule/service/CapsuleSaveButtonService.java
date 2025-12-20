@@ -65,7 +65,7 @@ public class CapsuleSaveButtonService {
             isSenderSelf = 1;
         }
 
-        LocalDateTime unlockedAt = findFirstOpenedAt(capsule.getCapsuleId());
+        LocalDateTime unlockedAt = findFirstOpenedAt(capsule.getCapsuleId(), memberId);
 
         CapsuleRecipient capsuleRecipient = CapsuleRecipient.builder()
                 .capsuleId(capsule)
@@ -83,9 +83,9 @@ public class CapsuleSaveButtonService {
         return new CapsuleSaveButtonResponse("캡슐이 저장 되었습니다.");
     }
 
-    private LocalDateTime findFirstOpenedAt(Long capsuleId) {
+    private LocalDateTime findFirstOpenedAt(Long capsuleId, Long memberId) {
         return capsuleOpenLogRepository
-                .findFirstByCapsuleId_CapsuleIdOrderByOpenedAtAsc(capsuleId)
+                .findFirstByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtAsc(capsuleId, memberId)
                 .map(CapsuleOpenLog::getOpenedAt)
                 .orElseGet(() -> {
                     log.warn("CapsuleOpenLog 없음 - 현재 시각으로 fallback, capsuleId: {}", capsuleId);
