@@ -40,12 +40,6 @@ public class CapsuleRecipient extends BaseEntity {
     @Column(name = "is_sender_self", nullable = false)
     private int isSenderSelf;
 
-    public void anonymize(Long uniqueId) {
-        this.recipientName = "탈퇴한 수신자";
-        this.recipientPhone = "DELETED_" + uniqueId;
-        this.recipientPhoneHash = "DELETED_" + uniqueId;
-    }
-
     public void setUnlockedAt(LocalDateTime unlockedAt) {
         this.unlockedAt = unlockedAt;
     }
