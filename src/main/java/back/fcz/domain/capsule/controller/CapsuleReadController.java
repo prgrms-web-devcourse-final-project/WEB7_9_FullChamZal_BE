@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequest;
 import back.fcz.domain.capsule.DTO.request.CapsuleSaveButtonRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
@@ -41,18 +40,17 @@ public class CapsuleReadController {
 
     //캡슐의 비밀번호 존재 여부
     @Operation(summary = "캡슐의 비밀번호 존재 여부",
-            description = "캡슐 id를 받으면 해당 캡슐이 비밀번호가 설정된 캡슐인지를 알려줍니다."
+            description = "캡슐 UUID를 받으면 해당 캡슐의 ID와 비밀번호 설정 여부를 알려줍니다."
     )
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @GetMapping("/readCapsule")
     public ResponseEntity<ApiResponse<CapsuleReadResponse>> readCapsule(
-            @RequestBody CapsuleReadRequest capsuleReadRequest
+            @RequestParam String uuid
     ){
-        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.existedPassword(capsuleReadRequest)));
+        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.existedPassword(uuid)));
     }
-
 
     //캡슐 조건 검증 -> 조건 만족 후 읽기
     @Operation(summary = "요청 캡슐 검증 및 조회",

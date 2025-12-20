@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
+@Table(name = "capsule", indexes = {
+        @Index(name = "idx_capsule_uuid", columnList = "uuid", unique = true)
+})
 public class Capsule extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +25,7 @@ public class Capsule extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member memberId;            // 회원 고유 ID
 
-    @Column(name = "uuid", nullable = false)
+    @Column(name = "uuid", nullable = false, unique = true, length = 36)
     private String uuid;              // URL용 UUIDv4(난수화)
 
     @Column(name = "nickname", nullable = false)

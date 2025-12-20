@@ -294,9 +294,25 @@ class CapsuleCreateServiceTest {
     @DisplayName("receiverNickname null이면 예외 발생")
     void receiverNickname_null_throwsException() {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
-                1L, null, null, "nick", null, "title", "content", "PRIVATE",
-                "TIME", LocalDateTime.now(), null, "Seoul",
-                "창원시 의창구",37.11, 127.22, 300, "red", "white", 10
+                1L,
+                null,
+                "1234",
+                "nick",
+                null,
+                "title",
+                "content",
+                "PRIVATE",
+                "TIME",
+                LocalDateTime.now(),
+                null,
+                "Seoul",
+                "창원시 의창구",
+                37.11,
+                127.22,
+                300,
+                "red",
+                "white",
+                10
         );
 
         when(memberRepository.findById(1L))
@@ -304,12 +320,14 @@ class CapsuleCreateServiceTest {
 
         BusinessException ex = assertThrows(
                 BusinessException.class,
-                () -> capsuleCreateService.privateCapsulePassword(dto, "1234")
+                () -> capsuleCreateService.createPrivateCapsule(dto)
         );
 
-        assertEquals(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED, ex.getErrorCode());
+        assertEquals(
+                ErrorCode.RECEIVERNICKNAME_IS_REQUIRED,
+                ex.getErrorCode()
+        );
     }
-
 
     @DisplayName("비공개 캡슐 생성 - 전화번호와 비밀번호 둘 다 없으면 예외 발생")
     void createPrivateCapsule_bothNull_throwsException() {

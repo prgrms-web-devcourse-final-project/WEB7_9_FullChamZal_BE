@@ -155,7 +155,7 @@ public class MemberController {
                     user.memberId(), e.getErrorCode());
         }
 
-        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite());
+        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite(), cookieProperties.getDomain());
 
         return ResponseEntity.ok(ApiResponse.success());
     }

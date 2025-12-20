@@ -21,6 +21,9 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     // visibility 필터 (PUBLIC / PRIVATE)
     Page<Capsule> findByIsDeletedFalseAndVisibility(String visibility, Pageable pageable);
 
+    // uuid로 캡슐 찾기
+    Optional<Capsule> findByUuid(String uuid);
+
     // 선착순
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
@@ -81,13 +84,18 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             Pageable pageable
     );
 
-    // ✅ 관리자 캡슐 검색/필터
+    // 관리자 캡슐 검색/필터
     @Query("""
         select c
         from Capsule c
         where (:visibility is null or :visibility = '' or c.visibility = :visibility)
           and (:isDeleted is null or c.isDeleted = :isDeleted)
           and (:isProtected is null or c.isProtected = :isProtected)
+          and (
+                      :unlocked is null\s
+                      or (:unlocked = true and c.currentViewCount > 0)
+                      or (:unlocked = false and c.currentViewCount = 0)
+              )
           and (
                 :keyword is null or :keyword = '' or
                 lower(c.title) like lower(concat('%', :keyword, '%')) or
@@ -100,14 +108,15 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             @Param("visibility") String visibility,
             @Param("isDeleted") Integer isDeleted,
             @Param("isProtected") Integer isProtected,
+            @Param("unlocked") Boolean unlocked,
             @Param("keyword") String keyword,
             Pageable pageable
     );
 
-    // ✅ 회원 최근 캡슐 5개(미삭제)
+    // 회원 최근 캡슐 5개(미삭제)
     List<Capsule> findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(Long memberId, int isDeleted);
 
-    // ✅ 회원별 "미삭제 캡슐 수" 배치 집계
+    // 회원별 "미삭제 캡슐 수" 배치 집계
     @Query("""
         select c.memberId.memberId, count(c)
         from Capsule c
@@ -117,7 +126,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     """)
     List<Object[]> countActiveByMemberIds(@Param("memberIds") List<Long> memberIds);
 
-    // ✅ 회원별 "보호(블라인드) 캡슐 수" 배치 집계 (보호:1)
+    // 회원별 "보호(블라인드) 캡슐 수" 배치 집계 (보호:1)
     @Query("""
         select c.memberId.memberId, count(c)
         from Capsule c
