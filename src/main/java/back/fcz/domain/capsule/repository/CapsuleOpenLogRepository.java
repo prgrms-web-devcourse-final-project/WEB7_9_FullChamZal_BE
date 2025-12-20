@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface CapsuleOpenLogRepository extends JpaRepository<CapsuleOpenLog, Long>{
     Optional<CapsuleOpenLog> findByCapsuleId_CapsuleId(Long capsuleId);
+    Optional<CapsuleOpenLog> findFirstByCapsuleId_CapsuleIdOrderByOpenedAtAsc(Long capsuleId);
 }

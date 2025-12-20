@@ -15,6 +15,8 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
 
     Optional<CapsuleRecipient> findByCapsuleId_CapsuleId(Long capsuleId);
 
+    boolean existsByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String recipientPhoneHash);
+
     boolean existsByCapsuleId_CapsuleId(Long capsuleId);
 
     // 회원 탈퇴 시

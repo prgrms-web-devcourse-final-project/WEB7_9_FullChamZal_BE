@@ -6,6 +6,7 @@ import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleSaveButtonResponse;
+import back.fcz.domain.capsule.service.CapsuleCreateService;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
@@ -14,15 +15,11 @@ import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -36,6 +33,7 @@ public class CapsuleReadController {
     private final CapsuleReadService capsuleReadService;
     private final CapsuleDashBoardService  capsuleDashBoardService;
     private final CapsuleSaveButtonService  capsuleSaveButtonService;
+    private final CapsuleCreateService capsuleCreateService;
 
 
     //캡슐의 비밀번호 존재 여부
@@ -80,25 +78,8 @@ public class CapsuleReadController {
     })
     @PostMapping("/save")
     public ResponseEntity<ApiResponse<CapsuleSaveButtonResponse>> save(
-            @RequestBody CapsuleSaveButtonRequest  capsuleSaveButtonRequest,
-            HttpServletRequest request
-            ){
-        //로그인 상태인지 확인
-        boolean hasJwtToken = capsuleSaveButtonService.hasJwtTokenInRequest(request);
-
-        if(hasJwtToken){
-            Long currentMemberId = capsuleSaveButtonService.loginCheck();
-            return ResponseEntity.ok(ApiResponse.success(capsuleSaveButtonService.saveRecipient(capsuleSaveButtonRequest, currentMemberId)));
-        }else{
-            //로그인이 안되어있다면 로그인 화면으로 리다이렉트
-            String loginUrl = "http://localhost:8080/api/v1/auth/login";
-
-            HttpHeaders headers = new HttpHeaders();
-            //응답 헤더에 Location필드(새로 요청할 목표 URL) 추가
-            headers.setLocation(URI.create(loginUrl));
-
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-        }
+            @RequestBody CapsuleSaveButtonRequest capsuleSaveButtonRequest){
+        return ResponseEntity.ok(ApiResponse.success(capsuleSaveButtonService.saveRecipient(capsuleSaveButtonRequest)));
     }
 
 

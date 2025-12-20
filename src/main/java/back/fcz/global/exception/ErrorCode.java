@@ -77,6 +77,8 @@ public enum ErrorCode {
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
     RECEIVERNICKNAME_IS_REQUIRED("CP010", HttpStatus.BAD_REQUEST, "수신자 닉네임을 입력해주세요."),
     CAPSULE_PASSWORD_REQUIRED("CP011", HttpStatus.BAD_REQUEST, "캡슐 비밀번호 입력이 필요합니다."),
+    CAPSULE_ALREADY_SAVED("CP012", HttpStatus.CONFLICT, "이미 저장된 캡슐입니다."),
+    PUBLIC_CAPSULE_CANNOT_BE_SAVED("CP013", HttpStatus.BAD_REQUEST, "공개 캡슐은 저장할 수 없습니다."),
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
