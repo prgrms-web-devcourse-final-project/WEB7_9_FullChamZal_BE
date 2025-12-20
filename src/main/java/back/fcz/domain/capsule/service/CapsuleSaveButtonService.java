@@ -89,7 +89,7 @@ public class CapsuleSaveButtonService {
                 .map(CapsuleOpenLog::getOpenedAt)
                 .orElseGet(() -> {
                     log.warn("CapsuleOpenLog 없음 - 현재 시각으로 fallback, capsuleId: {}", capsuleId);
-                    return LocalDateTime.now();
+                    throw new BusinessException(ErrorCode.CAPSULE_OPEN_LOG_NOT_FOUND);
                 });
     }
 
