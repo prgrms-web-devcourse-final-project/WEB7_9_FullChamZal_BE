@@ -71,10 +71,12 @@ public class CapsuleReadController {
     }
 
     //캡슐 저장 버튼(비회원이 CapsuleRecipient기록을 남길때 호출됩니다.)
-    @Operation(summary = "",
-            description = "url+비밀번호 읽기를 성공했을때 호출되는 api입니다.")
+    @Operation(summary = "url + 비밀번호로 생성된 캡슐 저장",
+            description = "url + 비밀번호로 생성된 캡슐을 저장하는 API입니다. 저장 시 isProtected 값이 1로 변경됩니다.")
     @ApiErrorCodeExample({
-
+            ErrorCode.CAPSULE_ALREADY_SAVED,
+            ErrorCode.PUBLIC_CAPSULE_CANNOT_BE_SAVED,
+            ErrorCode.CAPSULE_OPEN_LOG_NOT_FOUND
     })
     @PostMapping("/save")
     public ResponseEntity<ApiResponse<CapsuleSaveButtonResponse>> save(
