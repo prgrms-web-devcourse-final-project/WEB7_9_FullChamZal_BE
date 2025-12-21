@@ -13,4 +13,5 @@ public class CookieProperties {
 
     private boolean secure;
     private String sameSite;
+    private String domain;
 }

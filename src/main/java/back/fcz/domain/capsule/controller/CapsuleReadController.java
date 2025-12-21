@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
-import back.fcz.domain.capsule.DTO.request.CapsuleReadRequest;
 import back.fcz.domain.capsule.DTO.request.CapsuleSaveButtonRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
@@ -15,15 +14,11 @@ import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -41,18 +36,17 @@ public class CapsuleReadController {
 
     //캡슐의 비밀번호 존재 여부
     @Operation(summary = "캡슐의 비밀번호 존재 여부",
-            description = "캡슐 id를 받으면 해당 캡슐이 비밀번호가 설정된 캡슐인지를 알려줍니다."
+            description = "캡슐 UUID를 받으면 해당 캡슐의 ID와 비밀번호 설정 여부를 알려줍니다."
     )
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @GetMapping("/readCapsule")
     public ResponseEntity<ApiResponse<CapsuleReadResponse>> readCapsule(
-            @RequestBody CapsuleReadRequest capsuleReadRequest
+            @RequestParam String uuid
     ){
-        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.existedPassword(capsuleReadRequest)));
+        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.existedPassword(uuid)));
     }
-
 
     //캡슐 조건 검증 -> 조건 만족 후 읽기
     @Operation(summary = "요청 캡슐 검증 및 조회",
@@ -63,6 +57,7 @@ public class CapsuleReadController {
             ErrorCode.CAPSULE_NOT_RECEIVER,
             ErrorCode.CAPSULE_NOT_FOUND,
             ErrorCode.CAPSULE_PASSWORD_NOT_MATCH,
+            ErrorCode.CAPSULE_PASSWORD_REQUIRED,
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.RECIPIENT_NOT_FOUND,
             ErrorCode.UNAUTHORIZED
@@ -75,32 +70,20 @@ public class CapsuleReadController {
     }
 
     //캡슐 저장 버튼(비회원이 CapsuleRecipient기록을 남길때 호출됩니다.)
-    @Operation(summary = "",
-            description = "url+비밀번호 읽기를 성공했을때 호출되는 api입니다.")
+    @Operation(summary = "url + 비밀번호로 생성된 캡슐 저장",
+            description = "url + 비밀번호로 생성된 캡슐을 저장하는 API입니다. 저장 시 isProtected 값이 1로 변경됩니다.")
     @ApiErrorCodeExample({
-
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.CAPSULE_NOT_FOUND,
+            ErrorCode.CAPSULE_ALREADY_SAVED,
+            ErrorCode.PUBLIC_CAPSULE_CANNOT_BE_SAVED,
+            ErrorCode.CAPSULE_OPEN_LOG_NOT_FOUND
     })
     @PostMapping("/save")
     public ResponseEntity<ApiResponse<CapsuleSaveButtonResponse>> save(
-            @RequestBody CapsuleSaveButtonRequest  capsuleSaveButtonRequest,
-            HttpServletRequest request
-            ){
-        //로그인 상태인지 확인
-        boolean hasJwtToken = capsuleSaveButtonService.hasJwtTokenInRequest(request);
-
-        if(hasJwtToken){
-            Long currentMemberId = capsuleSaveButtonService.loginCheck();
-            return ResponseEntity.ok(ApiResponse.success(capsuleSaveButtonService.saveRecipient(capsuleSaveButtonRequest, currentMemberId)));
-        }else{
-            //로그인이 안되어있다면 로그인 화면으로 리다이렉트
-            String loginUrl = "http://localhost:8080/api/v1/auth/login";
-
-            HttpHeaders headers = new HttpHeaders();
-            //응답 헤더에 Location필드(새로 요청할 목표 URL) 추가
-            headers.setLocation(URI.create(loginUrl));
-
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-        }
+            @RequestBody CapsuleSaveButtonRequest capsuleSaveButtonRequest){
+        return ResponseEntity.ok(ApiResponse.success(capsuleSaveButtonService.saveRecipient(capsuleSaveButtonRequest)));
     }
 
 

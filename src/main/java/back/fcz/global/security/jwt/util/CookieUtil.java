@@ -60,14 +60,14 @@ public class CookieUtil {
     }
 
     // 로그아웃용 쿠키 삭제
-    public static void deleteAllTokenCookies(HttpServletResponse response, boolean isSecure, String sameSite) {
-        deleteCookie(response, ACCESS_TOKEN_COOKIE, isSecure, sameSite);
-        deleteCookie(response, REFRESH_TOKEN_COOKIE, isSecure, sameSite);
+    public static void deleteAllTokenCookies(HttpServletResponse response, boolean isSecure, String sameSite, String domain) {
+        deleteCookie(response, ACCESS_TOKEN_COOKIE, isSecure, sameSite, domain);
+        deleteCookie(response, REFRESH_TOKEN_COOKIE, isSecure, sameSite, domain);
         log.info("모든 토큰 쿠키 삭제 완료");
     }
 
     // 쿠키 삭제
-    public static void deleteCookie(HttpServletResponse response, String cookieName, boolean isSecure, String sameSite) {
+    public static void deleteCookie(HttpServletResponse response, String cookieName, boolean isSecure, String sameSite, String domain) {
         Cookie cookie = new Cookie(cookieName, "");
 
         cookie.setMaxAge(0);
@@ -75,6 +75,10 @@ public class CookieUtil {
         cookie.setHttpOnly(true);
         cookie.setSecure(isSecure);
         cookie.setAttribute("SameSite", sameSite);
+
+        if (domain != null && !domain.isEmpty()) {
+            cookie.setDomain(domain);
+        }
 
         response.addCookie(cookie);
 

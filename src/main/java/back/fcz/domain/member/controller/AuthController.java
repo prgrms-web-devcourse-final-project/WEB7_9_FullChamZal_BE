@@ -78,6 +78,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.isSecure())
                 .sameSite(cookieProperties.getSameSite())
+                .domain(cookieProperties.getDomain())
                 .path("/")
                 .maxAge(jwtProperties.getRefreshToken().getExpiration() / 1000)
                 .build();
@@ -88,6 +89,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.isSecure())
                 .sameSite(cookieProperties.getSameSite())
+                .domain(cookieProperties.getDomain())
                 .path("/")
                 .maxAge(jwtProperties.getAccessToken().getExpiration() / 1000)
                 .build();
@@ -123,7 +125,7 @@ public class AuthController {
                     e.getErrorCode(), e.getMessage());
         }
 
-        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite());
+        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite(), cookieProperties.getDomain());
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -152,6 +154,7 @@ public class AuthController {
                     .httpOnly(true)
                     .secure(cookieProperties.isSecure())
                     .sameSite(cookieProperties.getSameSite())
+                    .domain(cookieProperties.getDomain())
                     .path("/")
                     .maxAge(jwtProperties.getAccessToken().getExpiration() / 1000)
                     .build();
