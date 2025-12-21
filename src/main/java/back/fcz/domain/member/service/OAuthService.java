@@ -4,6 +4,7 @@ import back.fcz.domain.member.dto.request.OAuthSignupRequest;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OAuthService {
     private final MemberRepository memberRepository;
+    private final PhoneVerificationService phoneVerificationService;
     private final PhoneCrypto phoneCrypto;
 
     @Transactional
