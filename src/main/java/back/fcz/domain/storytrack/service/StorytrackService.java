@@ -1,7 +1,10 @@
 package back.fcz.domain.storytrack.service;
 
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.storytrack.dto.PathResponse;
@@ -38,6 +41,8 @@ public class StorytrackService {
     private final StorytrackStepRepository storytrackStepRepository;
     private final CapsuleRepository capsuleRepository;
     private final MemberRepository memberRepository;
+
+    private final CapsuleReadService capsuleReadService;
 
     // 삭제
     // 생성자 : 스토리트랙 삭제
@@ -330,18 +335,58 @@ public class StorytrackService {
                 .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
+        // FREE 타입이면 그냥 바로 넘어가기
+        if ("FREE".equals(progress.getStorytrack().getTrackType())) {
+            return;
+        }
+
         // 캡슐이 속한 스텝 조회
         StorytrackStep step = storytrackStepRepository
                 .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(capsuleId, storytrackId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STEP_NOT_FOUND));
 
-        // 스토리트랙 타입에 따른 검증 -> FREE 타입이면 통과
-        if (progress.getStorytrack().getTrackType().equals("SEQUENTIAL")) {
-            int expectedStepOrder = progress.getLastCompletedStep() + 1;
+        // SEQUENTIAL 검증
+        int expectedStepOrder = progress.getLastCompletedStep() + 1;
 
-            if (step.getStepOrder() != expectedStepOrder) {
-                throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
-            }
+        if (step.getStepOrder() != expectedStepOrder) {
+            throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
         }
+    }
+
+    @Transactional
+    public CapsuleConditionResponseDTO openCapsuleAndUpdateProgress(
+            Long memberId,
+            Long storytrackId,
+            CapsuleConditionRequestDTO request
+    ) {
+        // 참여자 진행 정보 조회
+        StorytrackProgress progress =
+                storytrackProgressRepository
+                        .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                        .orElseThrow(() ->
+                                new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND)
+                        );
+
+        // 현재 캡슐이 속한 step 조회
+        StorytrackStep step =
+                storytrackStepRepository
+                        .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(
+                                request.capsuleId(), storytrackId
+                        )
+                        .orElseThrow(() ->
+                                new BusinessException(ErrorCode.STEP_NOT_FOUND)
+                        );
+
+        // 캡슐 조건 검증 + 오픈
+        CapsuleConditionResponseDTO response =
+                capsuleReadService.conditionAndRead(request);
+
+        // 진행 상태 업데이트
+        progress.completeStep(
+                step.getStepOrder(),
+                progress.getStorytrack().getTotalSteps()
+        );
+
+        return response;
     }
 }

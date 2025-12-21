@@ -40,4 +40,13 @@ public class StorytrackProgress extends BaseEntity {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    public void completeStep(int stepOrder, int totalSteps) {
+        this.completedSteps += 1;
+        this.lastCompletedStep = stepOrder;
+
+        if (this.completedSteps == totalSteps) {
+            this.completedAt = LocalDateTime.now();
+        }
+    }
 }

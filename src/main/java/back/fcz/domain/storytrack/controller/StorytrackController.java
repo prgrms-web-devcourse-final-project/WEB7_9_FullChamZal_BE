@@ -135,7 +135,7 @@ public class StorytrackController {
     @ApiErrorCodeExample({})
     @GetMapping("/List")
     public ResponseEntity<ApiResponse<Page<TotalStorytrackResponse>>> readStorytrackList (
-            @RequestParam(defaultValue ="0") int page,
+            @RequestParam(defaultValue ="1") int page,
             @RequestParam(defaultValue = "10") int size
     ){
         Page<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(page, size);
@@ -161,7 +161,8 @@ public class StorytrackController {
     // 스토리트랙 경로 조회
     @Operation(summary = "스토리트랙 경로 조회", description = "스토리트랙의 캡슐 순서와 해당 캡슐의 간단한 내용을 조회할 수 있습니다.")
     @ApiErrorCodeExample({
-            ErrorCode.STORYTRACK_NOT_FOUND
+            ErrorCode.STORYTRACK_NOT_FOUND,
+            ErrorCode. STORYTRACK_PAHT_NOT_FOUND
     })
     @GetMapping("/path")
     public ResponseEntity<ApiResponse<StorytrackPathResponse>> storytrackPath(
@@ -176,7 +177,8 @@ public class StorytrackController {
     @Operation(summary = "생성한 스토리트랙 조회", description = "본인이 생성한 스토리트랙을 조회할 수 있습니다.")
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
-            ErrorCode.MEMBER_NOT_ACTIVE
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.STORYTRACK_NOT_FOUND
     })
     @GetMapping("/creater/storytrackList")
     public ResponseEntity<ApiResponse<List<CreaterStorytrackListResponse>>> createdStorytrackList(){
@@ -188,10 +190,11 @@ public class StorytrackController {
     }
 
     // 참여자 : 참여한 스토리트랙 목록 조회
-    @Operation(summary = "참여한 스토리트랙 조회", description = "본인이 참여한 스토리트랙을 조회할 수 있습니다.")
+    @Operation(summary = "참여한 스토리트랙 조회", description = "본인이 참여한 스토리트랙 내역을 조회할 수 있습니다.")
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
-            ErrorCode.MEMBER_NOT_ACTIVE
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.PARTICIPANT_NOT_FOUND
     })
     @GetMapping("/participant/joinedList")
     public ResponseEntity<ApiResponse<List<ParticipantStorytrackListResponse>>> joinedStorytrackList(){
@@ -206,7 +209,8 @@ public class StorytrackController {
     @Operation(summary = "스토리트랙 진행 상세 조회", description = "참여한 스토리트랙의 진행상황을 조회할 수 있습니다.")
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
-            ErrorCode.MEMBER_NOT_ACTIVE
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.PARTICIPANT_NOT_FOUND
     })
     @GetMapping("/participant/progress")
     public ResponseEntity<ApiResponse<ParticipantProgressResponse>> sotyrtrackProgress (
@@ -220,37 +224,38 @@ public class StorytrackController {
     }
 
     // 스토리트랙 캡슐 오픈
-    @Operation(summary = "스토리트랙 진행 상세 조회", description = "참여한 스토리트랙의 진행상황을 조회할 수 있습니다.")
+    @Operation(summary = "스토리트랙 캡슐 오픈", description = "참여 여부와 현재 단계를 검증, 캡슐 오픈을 진행합니다.")
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.PARTICIPANT_NOT_FOUND,
-            ErrorCode.NOT_OPENED_CAPSULE,
-            ErrorCode.UNAUTHORIZED,
-            ErrorCode.NOT_OPENED_CAPSULE,
-            ErrorCode.PARTICIPANT_NOT_FOUND,
             ErrorCode.STEP_NOT_FOUND,
             ErrorCode.INVALID_STEP_ORDER
     })
-    @GetMapping("/participant/capsuleOpen")
+    @PostMapping("/participant/capsuleOpen")
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> storytrackCapsuleOpen (
             @RequestParam Long storytrackId,
-            @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto
-    ){
+            @RequestBody CapsuleConditionRequestDTO request
+    ) {
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
-        // 참여자 확인
+        // 참여 여부 검증
         storytrackService.validateParticipant(loginMember, storytrackId);
 
-        // 스토리트랙 캡슐 단계 확인
+        // 진행 단계 검증
+
         storytrackService.validateStepAccess(
                 loginMember,
                 storytrackId,
-                capsuleConditionRequestDto.capsuleId()
+                request.capsuleId()
         );
 
-        // 캡슐 오픈
-        CapsuleConditionResponseDTO response = capsuleReadService.conditionAndRead(capsuleConditionRequestDto);
+        CapsuleConditionResponseDTO response =
+                storytrackService.openCapsuleAndUpdateProgress(
+                        loginMember,
+                        storytrackId,
+                        request
+                );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
