@@ -4,7 +4,6 @@ import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
-// import back.fcz.domain.storytrack.dto.response.StorytrackDashBoardResponse;
 import back.fcz.domain.storytrack.dto.PathResponse;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
@@ -259,9 +258,13 @@ public class StorytrackService {
     }
 
     // 생성자 : 생성한 스토리트랙 목록 조회
-//    public createrStorytrackListResponse createdStorytrackList(){
-//
-//    }
+    public List<CreaterStorytrackListResponse> createdStorytrackList(Long memberId) {
+
+        return storytrackRepository.findByMember_MemberId(memberId)
+                .stream()
+                .map(CreaterStorytrackListResponse::from)
+                .toList();
+    }
 
     // 생성자 : 스토리트랙 참여자 목록 조회
 
