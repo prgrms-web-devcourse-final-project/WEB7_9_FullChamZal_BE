@@ -50,9 +50,10 @@ coolsms:
 
 openai:
   api:
-    key: ${OPENAI_API_KEY}
-    base-url: https://api.openai.com/v1
+    key: ${OPENAI_API_KEY:}
+
   moderation:
     model: omni-moderation-2024-09-26
-    block-flagged: false   # ✅ 지금은 "통과 + 기록"
-    fail-open: true        # ✅ OpenAI 장애에도 통과 + 기록
+    block-on-flagged: false   # true면 flagged 시 저장 막음
+    fail-closed: false        # true면 OpenAI 장애 시 저장 막음
+
