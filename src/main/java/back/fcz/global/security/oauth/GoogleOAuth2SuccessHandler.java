@@ -29,7 +29,9 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
     private String frontendDomain;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+    public void onAuthenticationSuccess(
+            HttpServletRequest request, HttpServletResponse response, Authentication authentication
+    ) throws IOException {
         PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
         Member member = principal.member();
 
