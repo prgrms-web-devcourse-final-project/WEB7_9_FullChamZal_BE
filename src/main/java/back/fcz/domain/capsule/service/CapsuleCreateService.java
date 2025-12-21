@@ -40,7 +40,7 @@ public class CapsuleCreateService {
     private final PhoneCrypto phoneCrypto;
     private final PublicCapsuleRecipientRepository publicRecipientRepository;
 
-    // ✅ 추가: 캡슐 텍스트 검증 + 감사로그
+    // ✅ moderation
     private final CapsuleModerationService capsuleModerationService;
 
     // url 도메인
@@ -59,22 +59,20 @@ public class CapsuleCreateService {
         return String.valueOf(number);
     }
 
-    // 공개 캡슐 생성
-    public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate){
+    /**
+     * 공개 캡슐 생성
+     * - moderation flagged이면 생성 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌 (CapsuleModerationService에서 처리)
+     */
+    public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate) {
         Capsule capsule = capsuleCreate.toEntity();
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        capsule.setMemberId(member);
-        capsule.setUuid(setUUID());
-
-        // ✅ 저장 전 Moderation (기록 남김)
+        // ✅ 저장 직전 moderation 검사 (flagged면 서비스에서 예외 던짐)
         Long auditId = capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
-                capsule.getUuid(),
-                null,
                 capsule.getTitle(),
                 capsule.getContent(),
                 capsule.getReceiverNickname(),
@@ -82,15 +80,19 @@ public class CapsuleCreateService {
                 capsule.getAddress()
         );
 
+        capsule.setMemberId(member);
+        capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
 
-        // ✅ 생성 후 로그에 capsuleId 붙이기
+        // ✅ 생성 후 audit log에 capsuleId attach
         capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
         return CapsuleCreateResponseDTO.from(saved);
     }
 
-    // 비공개 캡슐 생성 - 통합 진입점
+    /**
+     * 비공개 캡슐 생성 - 통합 진입점
+     */
     public SecretCapsuleCreateResponseDTO createPrivateCapsule(SecretCapsuleCreateRequestDTO requestDTO) {
         String recipientPhone = requestDTO.recipientPhone();
         String capsulePassword = requestDTO.capsulePassword();
@@ -98,12 +100,9 @@ public class CapsuleCreateService {
         boolean hasPhone = recipientPhone != null && !recipientPhone.isBlank();
         boolean hasPassword = capsulePassword != null && !capsulePassword.isBlank();
 
-        // 전화번호 또는 비밀번호 중 하나만 입력해야 함
         if (!hasPhone && !hasPassword) {
             throw new BusinessException(ErrorCode.CAPSULE_NOT_CREATE);
         }
-
-        // 전화번호와 비밀번호 둘 다 입력하면 안 됨
         if (hasPhone && hasPassword) {
             throw new BusinessException(ErrorCode.CAPSULE_NOT_CREATE);
         }
@@ -115,29 +114,25 @@ public class CapsuleCreateService {
         }
     }
 
-    // 비공개 캡슐 생성 - URL + 비밀번호 조회
-    private SecretCapsuleCreateResponseDTO privateCapsulePassword (SecretCapsuleCreateRequestDTO capsuleCreate, String password){
+    /**
+     * 비공개 캡슐 생성 - URL + 비밀번호 조회
+     */
+    private SecretCapsuleCreateResponseDTO privateCapsulePassword(SecretCapsuleCreateRequestDTO capsuleCreate, String password) {
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
-        // 닉네임 null일 때 방지, "" 닉네임은 가능
-        if(secretCapsule.getReceiverNickname() == null){
+        // 닉네임 null 방지 ("" 허용)
+        if (secretCapsule.getReceiverNickname() == null) {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
 
-        secretCapsule.setUuid(setUUID());
-        secretCapsule.setCapPassword(phoneCrypto.hash(password)); // 사용자가 지정한 비밀번호 저장
-        secretCapsule.setMemberId(member);
-
-        // ✅ 저장 전 Moderation
+        // ✅ moderation (저장 직전 / flagged면 예외)
         Long auditId = capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
-                secretCapsule.getUuid(),
-                null,
                 secretCapsule.getTitle(),
                 secretCapsule.getContent(),
                 secretCapsule.getReceiverNickname(),
@@ -145,51 +140,59 @@ public class CapsuleCreateService {
                 secretCapsule.getAddress()
         );
 
+        secretCapsule.setUuid(setUUID());
+        secretCapsule.setCapPassword(phoneCrypto.hash(password));
+        secretCapsule.setMemberId(member);
+
+        // URL+비밀번호 방식은 보호=0
+        secretCapsule.setProtected(0);
+
         Capsule saved = capsuleRepository.save(secretCapsule);
 
-        // ✅ 생성 후 로그에 capsuleId 붙이기
+        // ✅ attach
         capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
-        String url  = domain + "/" + saved.getUuid();
-
+        String url = domain + "/" + saved.getUuid();
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
     }
 
-    // 비공개 캡슐 생성 - 전화 번호 조회
-    private SecretCapsuleCreateResponseDTO privateCapsulePhone (SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel){
+    /**
+     * 비공개 캡슐 생성 - 전화번호 조회
+     * - 수신자 전화번호가 "회원"이면 보호=1 (recipient 테이블 저장)
+     * - "비회원"이면 보호=0 + 비밀번호 생성
+     */
+    private SecretCapsuleCreateResponseDTO privateCapsulePhone(SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel) {
 
         Capsule capsule = capsuleCreate.toEntity();
         capsule.setUuid(setUUID());
 
-        // 닉네임 null일 때 방지, "" 닉네임은 가능
-        if(capsule.getReceiverNickname() == null){
+        if (capsule.getReceiverNickname() == null) {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if(memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel))){ // 회원
+        // ✅ moderation (저장 직전 / flagged면 예외)
+        Long auditId = capsuleModerationService.validateCapsuleText(
+                member.getMemberId(),
+                ModerationActionType.CAPSULE_CREATE,
+                capsule.getTitle(),
+                capsule.getContent(),
+                capsule.getReceiverNickname(),
+                capsule.getLocationName(),
+                capsule.getAddress()
+        );
+
+        boolean isRecipientMember = memberRepository.existsByPhoneHash(phoneCrypto.hash(receiveTel));
+
+        if (isRecipientMember) { // 회원 수신자
 
             capsule.setMemberId(member);
-            capsule.setProtected(1);
-
-            // ✅ 저장 전 Moderation
-            Long auditId = capsuleModerationService.validateCapsuleText(
-                    member.getMemberId(),
-                    ModerationActionType.CAPSULE_CREATE,
-                    capsule.getUuid(),
-                    null,
-                    capsule.getTitle(),
-                    capsule.getContent(),
-                    capsule.getReceiverNickname(),
-                    capsule.getLocationName(),
-                    capsule.getAddress()
-            );
-
+            capsule.setProtected(1); // ✅ 보호=1
             Capsule saved = capsuleRepository.save(capsule);
 
-            // ✅ 생성 후 로그에 capsuleId 붙이기
+            // ✅ attach
             capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
             CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
@@ -203,61 +206,42 @@ public class CapsuleCreateService {
             recipientRepository.save(recipientRecord);
 
             String url = domain + "/" + saved.getUuid();
-
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
-        }else{ // 비회원
+        } else { // 비회원 수신자
 
-            String capsulePW = generatePassword(); // 생성한 비밀번호
+            String capsulePW = generatePassword();
             capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
 
-            // ✅ 저장 전 Moderation
-            Long auditId = capsuleModerationService.validateCapsuleText(
-                    member.getMemberId(),
-                    ModerationActionType.CAPSULE_CREATE,
-                    capsule.getUuid(),
-                    null,
-                    capsule.getTitle(),
-                    capsule.getContent(),
-                    capsule.getReceiverNickname(),
-                    capsule.getLocationName(),
-                    capsule.getAddress()
-            );
-
+            capsule.setProtected(0); // ✅ 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
 
-            // ✅ 생성 후 로그에 capsuleId 붙이기
+            // ✅ attach
             capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
             String url = domain + "/" + saved.getUuid();
-
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
     }
 
-    // 비공개 캡슐 - 나에게 보내는 캡슐
-    public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String encryptedPhone, String phoneHash){
+    /**
+     * 비공개 캡슐 - 나에게 보내는 캡슐 (보호=1)
+     */
+    public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String encryptedPhone, String phoneHash) {
         Capsule capsule = requestDTO.toEntity();
 
-        // 닉네임 null일 때 방지, "" 닉네임은 가능
-        if(capsule.getReceiverNickname() == null){
+        if (capsule.getReceiverNickname() == null) {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
 
         Member member = memberRepository.findById(requestDTO.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        capsule.setProtected(1);
-        capsule.setUuid(setUUID());
-        capsule.setMemberId(member);
-
-        // ✅ 저장 전 Moderation
+        // ✅ moderation (저장 직전 / flagged면 예외)
         Long auditId = capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
-                capsule.getUuid(),
-                null,
                 capsule.getTitle(),
                 capsule.getContent(),
                 capsule.getReceiverNickname(),
@@ -265,9 +249,13 @@ public class CapsuleCreateService {
                 capsule.getAddress()
         );
 
+        capsule.setProtected(1);
+        capsule.setUuid(setUUID());
+        capsule.setMemberId(member);
+
         Capsule saved = capsuleRepository.save(capsule);
 
-        // ✅ 생성 후 로그에 capsuleId 붙이기
+        // ✅ attach
         capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
@@ -283,57 +271,65 @@ public class CapsuleCreateService {
         return SecretCapsuleCreateResponseDTO.from(saved, null, null);
     }
 
-    // 캡슐 수정
-    public CapsuleUpdateResponseDTO updateCapsule(
-            Long capsuleId,
-            CapsuleUpdateRequestDTO updateDTO
-    ){
-        // 캡슐 조회수 확인
-        if(capsuleRepository.findCurrentViewCountByCapsuleId(capsuleId) > 0) throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE);
+    /**
+     * 캡슐 수정
+     * - 열람 전(조회수=0)만 수정 가능
+     * - moderation flagged이면 수정 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌
+     */
+    public CapsuleUpdateResponseDTO updateCapsule(Long capsuleId, CapsuleUpdateRequestDTO updateDTO) {
+
+        if (capsuleRepository.findCurrentViewCountByCapsuleId(capsuleId) > 0) {
+            throw new BusinessException(ErrorCode.CAPSULE_NOT_UPDATE);
+        }
 
         Capsule targetCapsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        if(updateDTO.title() != null){
-            targetCapsule.setTitle(updateDTO.title());
+        String nextTitle = (updateDTO.title() != null) ? updateDTO.title() : targetCapsule.getTitle();
+        String nextContent = (updateDTO.content() != null) ? updateDTO.content() : targetCapsule.getContent();
+
+        Long actorId = null;
+        if (targetCapsule.getMemberId() != null) {
+            actorId = targetCapsule.getMemberId().getMemberId();
         }
 
-        if(updateDTO.content() != null){
-            targetCapsule.setContent(updateDTO.content());
-        }
-
-        // ✅ 수정 저장 전 Moderation (capsuleId 있음)
-        capsuleModerationService.validateCapsuleText(
-                targetCapsule.getMemberId().getMemberId(),
+        // ✅ 수정 저장 전 moderation (flagged면 예외)
+        // ✅ moderation (업데이트 전 검사) + auditId 얻고 capsuleId attach까지
+        Long auditId = capsuleModerationService.validateCapsuleText(
+                actorId,
                 ModerationActionType.CAPSULE_UPDATE,
-                targetCapsule.getUuid(),
-                targetCapsule.getCapsuleId(),
-                targetCapsule.getTitle(),
-                targetCapsule.getContent(),
+                nextTitle,
+                nextContent,
                 targetCapsule.getReceiverNickname(),
                 targetCapsule.getLocationName(),
                 targetCapsule.getAddress()
         );
+        capsuleModerationService.attachCapsuleId(auditId, targetCapsule.getCapsuleId());
+
+        if (updateDTO.title() != null) {
+            targetCapsule.setTitle(updateDTO.title());
+        }
+        if (updateDTO.content() != null) {
+            targetCapsule.setContent(updateDTO.content());
+        }
 
         Capsule saved = capsuleRepository.save(targetCapsule);
         return CapsuleUpdateResponseDTO.from(saved);
     }
 
-    // 캡슐 삭제
-    // 수신자 삭제
-    public CapsuleDeleteResponseDTO receiverDelete(
-            Long capsuleId,
-            String phoneHash
-    ){
-        // 수신자 캡슐 존재 확인
-        Optional<CapsuleRecipient> privateOpt = recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash);
+    /**
+     * 캡슐 삭제 - 수신자 삭제
+     */
+    public CapsuleDeleteResponseDTO receiverDelete(Long capsuleId, String phoneHash) {
 
-        if(privateOpt.isPresent()){
+        Optional<CapsuleRecipient> privateOpt =
+                recipientRepository.findByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, phoneHash);
+
+        if (privateOpt.isPresent()) {
             CapsuleRecipient privateCapsule = privateOpt.get();
 
             // deletedAt 갱신
             privateCapsule.markDeleted();
-
             recipientRepository.save(privateCapsule);
 
             return new CapsuleDeleteResponseDTO(
@@ -342,37 +338,35 @@ public class CapsuleCreateService {
             );
         }
 
-        Optional<PublicCapsuleRecipient> publicOps = publicRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash);
+        Optional<PublicCapsuleRecipient> publicOps =
+                publicRecipientRepository.findByCapsuleIdAndPhoneHash(capsuleId, phoneHash);
 
-        if(publicOps.isPresent()){
+        if (publicOps.isPresent()) {
             PublicCapsuleRecipient publicCapsule = publicOps.get();
 
             // deletedAt 갱신
             publicCapsule.markDeleted();
-
             publicRecipientRepository.save(publicCapsule);
 
             return new CapsuleDeleteResponseDTO(
                     capsuleId,
                     capsuleId + "번 캡슐이 삭제 되었습니다."
             );
-        }else{
+        } else {
             throw new BusinessException(ErrorCode.CAPSULE_NOT_FOUND);
         }
     }
 
-    // 발신자 삭제
-    public CapsuleDeleteResponseDTO senderDelete(
-            Long capsuleId,
-            Long memberId
-    ){
+    /**
+     * 캡슐 삭제 - 발신자 삭제
+     */
+    public CapsuleDeleteResponseDTO senderDelete(Long capsuleId, Long memberId) {
 
         Capsule capsule = capsuleRepository.findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
         capsule.markDeleted();
         capsule.setIsDeleted(1);
-
         capsuleRepository.save(capsule);
 
         return new CapsuleDeleteResponseDTO(
