@@ -16,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "스토리트랙 API", description = "스토리트랙 관련 API")
 @RestController
 @RequiredArgsConstructor
@@ -147,6 +149,14 @@ public class StorytrackController {
     }
 
     // 생성자 : 생성한 스토리트랙 목록 조회
+    @GetMapping("/creater/storytrackList")
+    public ResponseEntity<ApiResponse<List<CreaterStorytrackListResponse>>> createdStorytrackList(){
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        List<CreaterStorytrackListResponse> response = storytrackService.createdStorytrackList(loginMember);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     // 참여자 : 참여한 스토리트랙 목록 조회
 
