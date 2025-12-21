@@ -285,15 +285,23 @@ public class StorytrackService {
         return ParticipantProgressResponse.from(progress);
     }
 
-    // 스토리트랙 캡슐 상세 조회
-//    public CapsuleDTO readCapsuelStorytrack(Long memberId){
-//
-//
-//    }
-       // 생성자인지 참여자인지 확인
+    // 스토리트랙 캡슐 열람 전 참여자 검증
+    public void validateParticipant(Long memberId, Long storytrackId) {
 
-       // 참여자면 캡슐 조건 확인
-         // 스토리트랙 타입 확인
-            // 스토리트랙의 단계에 맞나? -> 조건 미충족 시 예외
-       // 캡슐 조건이 맞나 -> 조건 미충족 시 예외
+        boolean exists = storytrackProgressRepository
+                .existsByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId);
+
+        if (!exists) {
+            throw new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND);
+        }
+    }
+
+    //  스토리트랙 존재 확인
+    public void validateStorytrack(Long storytrackId){
+        boolean storytrackExists = storytrackRepository.exixtsById(storytrackId);
+
+        if(!storytrackExists) {
+            throw new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND);
+        }
+    }
 }
