@@ -1,5 +1,8 @@
 package back.fcz.domain.storytrack.controller;
 
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
+import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
@@ -29,6 +32,9 @@ public class StorytrackController {
 
     // 스토리트랙 서비스
     private final StorytrackService storytrackService;
+
+    // 캡슐 오픈 서비스
+    private final CapsuleReadService capsuleReadService;
 
     //삭제
     // 작성자 - 스토리트랙 삭제
@@ -181,4 +187,19 @@ public class StorytrackController {
     }
 
     // 스토리트랙 캡슐 오픈
+    @GetMapping("/participant/capsuleOpen")
+    public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> storytrackCapsuleOpen (
+            @RequestParam Long storytrackId,
+            @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto
+    ){
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        // 참여자 확인
+        storytrackService.validateParticipant(loginMember, storytrackId);
+
+        // 캡슐 오픈
+        CapsuleConditionResponseDTO response = capsuleReadService.conditionAndRead(capsuleConditionRequestDto);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
