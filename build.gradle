@@ -69,6 +69,9 @@ dependencies {
 
     // 8. actuator (모니터링)
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // 9. OAuth (OAuth 로그인)
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 // CI 테스트 제외
