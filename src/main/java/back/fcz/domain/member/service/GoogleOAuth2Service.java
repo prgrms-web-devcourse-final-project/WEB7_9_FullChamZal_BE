@@ -26,10 +26,6 @@ public class GoogleOAuth2Service extends DefaultOAuth2UserService {
         String name = (String) attributes.get("name");
         String sub = (String) attributes.get("sub");  // 구글에서 해당 유저에게 부여한 고유 ID 값
 
-        System.out.println("id = " + sub);
-        System.out.println("email = " + email);
-        System.out.println("name = " + name);
-
         Member member = memberRepository.findByUserId(email)
                 .orElseGet(() -> memberRepository.save(Member.createOAuth(email, name, sub)));
 
