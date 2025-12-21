@@ -238,15 +238,21 @@ public class StorytrackService {
     // 생성, 참여 : 스토리트랙 경로 조회
     // 단계, 각 단계의 캡슐 조회
     public StorytrackPathResponse storytrackPath(Long storytrackId) {
+
         Storytrack storytrack = storytrackRepository
                 .findByStorytrackIdAndIsDeleted(storytrackId, 0)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
-        List<PathResponse> paths =
-                storytrackStepRepository.findStepsWithCapsule(storytrackId)
-                        .stream()
-                        .map(PathResponse::from)
-                        .toList();
+        List<StorytrackStep> steps =
+                storytrackStepRepository.findStepsWithCapsule(storytrackId);
+
+        if (steps.isEmpty()) {
+            throw new BusinessException(ErrorCode. STORYTRACK_PAHT_NOT_FOUND);
+        }
+
+        List<PathResponse> paths = steps.stream()
+                .map(PathResponse::from)
+                .toList();
 
         return new StorytrackPathResponse(
                 storytrack.getStorytrackId(),
@@ -257,20 +263,33 @@ public class StorytrackService {
         );
     }
 
+
     // 생성자 : 생성한 스토리트랙 목록 조회
     public List<CreaterStorytrackListResponse> createdStorytrackList(Long memberId) {
 
-        return storytrackRepository.findByMember_MemberId(memberId)
-                .stream()
+        List<Storytrack> storytracks =
+                storytrackRepository.findByMember_MemberId(memberId);
+
+        if (storytracks.isEmpty()) {
+            throw new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND);
+        }
+
+        return storytracks.stream()
                 .map(CreaterStorytrackListResponse::from)
                 .toList();
     }
 
     // 참여자 : 참여한 스토리트랙 목록 조회
-    public List<ParticipantStorytrackListResponse> joinedStorytrackList(Long memberId){
+    public List<ParticipantStorytrackListResponse> joinedStorytrackList(Long memberId) {
 
-        return storytrackProgressRepository.findProgressesByMemberId(memberId)
-                .stream()
+        List<StorytrackProgress> progresses =
+                storytrackProgressRepository.findProgressesByMemberId(memberId);
+
+        if (progresses.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND);
+        }
+
+        return progresses.stream()
                 .map(progress -> ParticipantStorytrackListResponse.from(
                         progress,
                         progress.getStorytrack()
@@ -279,8 +298,12 @@ public class StorytrackService {
     }
 
     // 참여자 : 스토리트랙 진행 상세 조회
-    public ParticipantProgressResponse storytrackProgress(Long storytrackId, Long memberId){
-        StorytrackProgress progress = storytrackProgressRepository.findByStorytrack_StorytrackIdAndMember_MemberId(storytrackId, memberId);
+    public ParticipantProgressResponse storytrackProgress(Long storytrackId, Long memberId) {
+
+        StorytrackProgress progress =
+                storytrackProgressRepository
+                        .findByStorytrack_StorytrackIdAndMember_MemberId(storytrackId, memberId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         return ParticipantProgressResponse.from(progress);
     }
@@ -293,15 +316,6 @@ public class StorytrackService {
 
         if (!exists) {
             throw new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND);
-        }
-    }
-
-    //  스토리트랙 존재 확인
-    public void validateStorytrack(Long storytrackId){
-        boolean storytrackExists = storytrackRepository.exixtsById(storytrackId);
-
-        if(!storytrackExists) {
-            throw new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND);
         }
     }
 

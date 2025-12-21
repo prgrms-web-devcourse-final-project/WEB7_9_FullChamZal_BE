@@ -15,6 +15,4 @@ public interface StorytrackRepository extends JpaRepository<Storytrack, Long> {
     Optional<Storytrack> findByStorytrackIdAndIsDeleted(Long id, int isDeleted);
 
     List<Storytrack> findByMember_MemberId(Long memberId);
-
-    boolean exixtsById(Long storytrackId);
 }
