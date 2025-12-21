@@ -1,14 +1,14 @@
 package back.fcz.domain.storytrack.controller;
 
+
+import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.member.service.CurrentUserContext;
-import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
-import back.fcz.domain.storytrack.dto.response.DeleteParticipantResponse;
+import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
+import back.fcz.domain.storytrack.dto.response.CreateStorytrackResponse;
 import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
-import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
+import back.fcz.domain.storytrack.dto.response.JoinStorytrackResponse;
 import back.fcz.domain.storytrack.service.StorytrackService;
 import back.fcz.global.dto.InServerMemberResponse;
-import back.fcz.global.exception.BusinessException;
-import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,18 +21,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-public class StorytrackControllerTest {
+class StorytrackControllerTest {
 
     private MockMvc mockMvc;
 
@@ -49,7 +49,6 @@ public class StorytrackControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(storytrackController)
-                // .setHandlerExceptionResolvers(new DefaultHandlerExceptionResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -60,15 +59,14 @@ public class StorytrackControllerTest {
         given(currentUserContext.getCurrentUser()).willReturn(user);
     }
 
-    // 삭제 통합 테스트
     @Test
     @DisplayName("스토리트랙 작성자 삭제 성공")
     void deleteStorytrack_success() throws Exception {
         // given
         Long storytrackId = 1L;
-        Long loginMember = 1L;
+        Long loginMemberId = 1L;
 
-        mockLoginUser(loginMember);
+        mockLoginUser(loginMemberId);
 
         DeleteStorytrackResponse response =
                 new DeleteStorytrackResponse(
@@ -76,7 +74,7 @@ public class StorytrackControllerTest {
                         "1번 스토리트랙이 삭제 되었습니다."
                 );
 
-        given(storytrackService.deleteStorytrack(loginMember, storytrackId))
+        given(storytrackService.deleteStorytrack(loginMemberId, storytrackId))
                 .willReturn(response);
 
         // when & then
@@ -84,151 +82,128 @@ public class StorytrackControllerTest {
                         .param("storytrackId", storytrackId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.data.storytrackId").value(storytrackId))
+                .andExpect(jsonPath("$.data.storytrackId").value(1))
                 .andExpect(jsonPath("$.data.message").value("1번 스토리트랙이 삭제 되었습니다."));
 
-
-        verify(storytrackService).deleteStorytrack(loginMember, storytrackId);
+        verify(storytrackService).deleteStorytrack(loginMemberId, storytrackId);
     }
 
     @Test
-    @DisplayName("스토리트랙 참여자 참여 종료 성공")
-    void deleteParticipant_success() throws Exception {
+    @DisplayName("스토리트랙 생성 성공")
+    void createStorytrack_success() throws Exception {
         // given
-        Long storytrackId = 1L;
-        Long loginMember = 2L;
+        Long loginMemberId = 1L;
+        mockLoginUser(loginMemberId);
 
-        mockLoginUser(loginMember);
+        CreateStorytrackResponse response =
+                new CreateStorytrackResponse(
+                        10L,
+                        "title",
+                        "desc",
+                        "SEQUENTIAL",
+                        1,
+                        0,
+                        3,
+                        List.of(100L, 200L, 300L)
+                );
 
-        DeleteParticipantResponse response =
-                new DeleteParticipantResponse("스토리트랙 참여를 종료했습니다.");
-
-        given(storytrackService.deleteParticipant(loginMember, storytrackId))
+        given(storytrackService.createStorytrack(any(), eq(loginMemberId)))
                 .willReturn(response);
 
         // when & then
-        mockMvc.perform(delete("/api/v1/storytrack/delete/participant")
-                        .param("storytrackId", storytrackId.toString()))
+        mockMvc.perform(post("/api/v1/storytrack/creat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "title",
+                          "description": "desc",
+                          "trackType": "SEQUENTIAL",
+                          "isPublic": 1,
+                          "price": 0,
+                          "capsuleList": [1,2,3]
+                        }
+                    """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.data.message").value("스토리트랙 참여를 종료했습니다."));
+                .andExpect(jsonPath("$.data.title").value("title"));
 
-
-        verify(storytrackService).deleteParticipant(loginMember, storytrackId);
+        verify(storytrackService)
+                .createStorytrack(any(CreateStorytrackRequest.class), eq(loginMemberId));
     }
 
     @Test
-    @DisplayName("스토리트랙 작성자가 아니면 삭제 실패")
-    void deleteStorytrack_notCreator() throws Exception {
+    @DisplayName("스토리트랙 참여 성공")
+    void joinStorytrack_success() throws Exception {
         // given
-        Long loginMember = 1L;
-        Long storytrackId = 10L;
+        Long loginMemberId = 1L;
+        mockLoginUser(loginMemberId);
 
-        mockLoginUser(loginMember);
+        JoinStorytrackResponse response =
+                new JoinStorytrackResponse(
+                        "title",
+                        "desc",
+                        "SEQUENTIAL",
+                        0,
+                        5,
+                        "creator",
+                        0,
+                        0,
+                        LocalDateTime.now()
+                );
 
-        given(storytrackService.deleteStorytrack(loginMember, storytrackId))
-                .willThrow(new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER));
+        given(storytrackService.joinParticipant(any(), eq(loginMemberId)))
+                .willReturn(response);
 
         // when & then
-        mockMvc.perform(delete("/api/v1/storytrack/delete")
-                        .param("storytrackId", "10"))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/storytrack/creat/participant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "storytrackId": 10
+                        }
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("title"))
+                .andExpect(jsonPath("$.data.completedSteps").value(0));
     }
 
     @Test
-    @DisplayName("storytrackId 파라미터 없으면 400 에러")
-    void deleteStorytrack_missingParam() throws Exception {
-        mockMvc.perform(delete("/api/v1/storytrack/delete"))
-                .andExpect(status().isInternalServerError());
-    }
-
-    // 수정 통합 테스트
-    @Test
-    @DisplayName("스토리트랙 경로 수정 성공")
-    void updatePath_success() throws Exception {
+    @DisplayName("스토리트랙 캡슐 오픈 성공")
+    void openCapsule_success() throws Exception {
         // given
-        Long stepId = 1L;
-        Long loginMemberId = 10L;
+        Long loginMemberId = 1L;
+        Long storytrackId = 10L;
 
         mockLoginUser(loginMemberId);
 
-        UpdatePathResponse response = mock(UpdatePathResponse.class);
+        CapsuleConditionResponseDTO response = mock(CapsuleConditionResponseDTO.class);
 
-        given(storytrackService.updatePath(
-                any(UpdatePathRequest.class),
-                eq(stepId),
-                eq(loginMemberId)
+        willDoNothing().given(storytrackService)
+                .validateParticipant(loginMemberId, storytrackId);
+
+        willDoNothing().given(storytrackService)
+                .validateStepAccess(eq(loginMemberId), eq(storytrackId), anyLong());
+
+        given(storytrackService.openCapsuleAndUpdateProgress(
+                eq(loginMemberId),
+                eq(storytrackId),
+                any()
         )).willReturn(response);
 
         // when & then
-        mockMvc.perform(put("/api/v1/storytrack/update")
-                        .param("storytrackStepId", stepId.toString())
+        mockMvc.perform(post("/api/v1/storytrack/participant/capsuleOpen")
+                        .param("storytrackId", storytrackId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                          "stepOrderId": 1,
-                          "updatedCapsuleId": 100
+                          "capsuleId": 20,
+                          "unlockAt": "2025-12-20T23:00:10"
                         }
                     """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200"));
+                .andExpect(status().isOk());
 
-        verify(storytrackService)
-                .updatePath(any(UpdatePathRequest.class), eq(stepId), eq(loginMemberId));
+        verify(storytrackService).validateParticipant(loginMemberId, storytrackId);
+        verify(storytrackService).validateStepAccess(loginMemberId, storytrackId, 20L);
     }
-
-
-    @Test
-    @DisplayName("스토리트랙 작성자가 아니면 경로 수정 실패")
-    void updatePath_notCreator() throws Exception {
-        // given
-        Long stepId = 1L;
-        Long loginMemberId = 99L;
-
-        mockLoginUser(loginMemberId);
-
-        UpdatePathRequest request =
-                new UpdatePathRequest(1, 100L);
-
-        given(storytrackService.updatePath(any(), eq(stepId), eq(loginMemberId)))
-                .willThrow(new BusinessException(ErrorCode.NOT_STORYTRACK_CREATER));
-
-        // when & then
-        mockMvc.perform(put("/api/v1/storytrack/update")
-                        .param("storytrackStepId", stepId.toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                        {
-                          "stepOrderId": 1,
-                          "updatedCapsuleId": 100
-                        }
-                    """))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("storytrackStepId 파라미터 누락 시 400 에러")
-    void updatePath_missingParam() throws Exception {
-
-        mockMvc.perform(put("/api/v1/storytrack/update")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                        {
-                          "stepOrderId": 1,
-                          "updatedCapsuleId": 100
-                        }
-                    """))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    @DisplayName("요청 바디가 없으면 400 에러")
-    void updatePath_missingBody() throws Exception {
-
-        mockMvc.perform(put("/api/v1/storytrack/update")
-                        .param("storytrackStepId", "1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError());
-    }
-
 }
+
