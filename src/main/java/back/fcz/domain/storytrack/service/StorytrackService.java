@@ -304,4 +304,30 @@ public class StorytrackService {
             throw new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND);
         }
     }
+
+    // 스토리트랙 단계 검증
+    public void validateStepAccess(
+            Long memberId,
+            Long storytrackId,
+            Long capsuleId
+    ) {
+        // 진행 정보 조회
+        StorytrackProgress progress = storytrackProgressRepository
+                .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
+
+        // 캡슐이 속한 스텝 조회
+        StorytrackStep step = storytrackStepRepository
+                .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(capsuleId, storytrackId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STEP_NOT_FOUND));
+
+        // 스토리트랙 타입에 따른 검증 -> FREE 타입이면 통과
+        if (progress.getStorytrack().getTrackType().equals("SEQUENTIAL")) {
+            int expectedStepOrder = progress.getLastCompletedStep() + 1;
+
+            if (step.getStepOrder() != expectedStepOrder) {
+                throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
+            }
+        }
+    }
 }

@@ -23,4 +23,6 @@ public interface StorytrackStepRepository extends JpaRepository<StorytrackStep, 
     List<StorytrackStep> findStepsWithCapsule(
             @Param("storytrackId") Long storytrackId
     );
+
+    Optional<StorytrackStep> findByCapsule_CapsuleIdAndStorytrack_StorytrackId(Long capsuleId, Long storytrackId);
 }

@@ -110,6 +110,14 @@ public class StorytrackController {
     }
 
     // 스토리트랙 참여자 생성
+    @Operation(summary = "스토리트랙 참여", description = "회원이 스토리트랙에 참여할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.PARTICIPANT_NOT_FOUND,
+            ErrorCode.STORYTRACK_NOT_FOUND,
+            ErrorCode.STORYTRACK_NOT_PUBLIC
+    })
     @PostMapping("/creat/participant")
     public ResponseEntity<ApiResponse<JoinStorytrackResponse>> joinStorytrack(
             @RequestBody JoinStorytrackRequest request
@@ -123,6 +131,8 @@ public class StorytrackController {
 
     // 조회
     // 전체 스토리트랙 조회
+    @Operation(summary = "공개 스토리트랙 목록 조회", description = "PUBLIC 상태인 스토리트랙 목록을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({})
     @GetMapping("/List")
     public ResponseEntity<ApiResponse<Page<TotalStorytrackResponse>>> readStorytrackList (
             @RequestParam(defaultValue ="0") int page,
@@ -134,6 +144,10 @@ public class StorytrackController {
     }
 
     // 스토리트랙 상세 조회
+    @Operation(summary = "스토리트랙 상세 조회", description = "한 스토리트랙에 대한 자세한 내용을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.STORYTRACK_NOT_FOUND
+    })
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<StorytrackDashBoardResponse>> dashboard(
             @RequestParam Long storytrackId
@@ -145,6 +159,10 @@ public class StorytrackController {
 
 
     // 스토리트랙 경로 조회
+    @Operation(summary = "스토리트랙 경로 조회", description = "스토리트랙의 캡슐 순서와 해당 캡슐의 간단한 내용을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.STORYTRACK_NOT_FOUND
+    })
     @GetMapping("/path")
     public ResponseEntity<ApiResponse<StorytrackPathResponse>> storytrackPath(
             @RequestParam Long storytrackId
@@ -155,6 +173,11 @@ public class StorytrackController {
     }
 
     // 생성자 : 생성한 스토리트랙 목록 조회
+    @Operation(summary = "생성한 스토리트랙 조회", description = "본인이 생성한 스토리트랙을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE
+    })
     @GetMapping("/creater/storytrackList")
     public ResponseEntity<ApiResponse<List<CreaterStorytrackListResponse>>> createdStorytrackList(){
         Long loginMember = currentUserContext.getCurrentUser().memberId();
@@ -165,6 +188,11 @@ public class StorytrackController {
     }
 
     // 참여자 : 참여한 스토리트랙 목록 조회
+    @Operation(summary = "참여한 스토리트랙 조회", description = "본인이 참여한 스토리트랙을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE
+    })
     @GetMapping("/participant/joinedList")
     public ResponseEntity<ApiResponse<List<ParticipantStorytrackListResponse>>> joinedStorytrackList(){
         Long loginMember = currentUserContext.getCurrentUser().memberId();
@@ -175,6 +203,11 @@ public class StorytrackController {
     }
 
     // 참여자 : 스토리트랙 진행 상세 조회
+    @Operation(summary = "스토리트랙 진행 상세 조회", description = "참여한 스토리트랙의 진행상황을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE
+    })
     @GetMapping("/participant/progress")
     public ResponseEntity<ApiResponse<ParticipantProgressResponse>> sotyrtrackProgress (
             @RequestParam Long storytrackId
@@ -187,6 +220,18 @@ public class StorytrackController {
     }
 
     // 스토리트랙 캡슐 오픈
+    @Operation(summary = "스토리트랙 진행 상세 조회", description = "참여한 스토리트랙의 진행상황을 조회할 수 있습니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.PARTICIPANT_NOT_FOUND,
+            ErrorCode.NOT_OPENED_CAPSULE,
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.NOT_OPENED_CAPSULE,
+            ErrorCode.PARTICIPANT_NOT_FOUND,
+            ErrorCode.STEP_NOT_FOUND,
+            ErrorCode.INVALID_STEP_ORDER
+    })
     @GetMapping("/participant/capsuleOpen")
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> storytrackCapsuleOpen (
             @RequestParam Long storytrackId,
@@ -196,6 +241,13 @@ public class StorytrackController {
 
         // 참여자 확인
         storytrackService.validateParticipant(loginMember, storytrackId);
+
+        // 스토리트랙 캡슐 단계 확인
+        storytrackService.validateStepAccess(
+                loginMember,
+                storytrackId,
+                capsuleConditionRequestDto.capsuleId()
+        );
 
         // 캡슐 오픈
         CapsuleConditionResponseDTO response = capsuleReadService.conditionAndRead(capsuleConditionRequestDto);
