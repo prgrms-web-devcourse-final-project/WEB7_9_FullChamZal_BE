@@ -30,7 +30,7 @@ public class NearbyOpenCapsuleService {
     @Transactional
     public List<NearbyOpenCapsuleResponse> getNearbyOpenCapsules(long memberId, NearbyOpenCapsuleRequest request) {
 
-        LocalDateTime currentTime = request.currentTime();
+        LocalDateTime currentTime = LocalDateTime.now();
         double currentLat = request.currentLatitude();
         double currentLng = request.currentLongitude();
         int searchRadiusM = (request.radius() == null) ? DEFAULT_RADIUS_M : request.radius();

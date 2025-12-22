@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,9 +31,6 @@ public class NearbyOpenCapsuleServiceTest {
         unlockService = mock(UnlockService.class);
         nearbyOpenCapsuleService = new NearbyOpenCapsuleService(publicCapsuleRecipientRepository, capsuleRepository, unlockService);
     }
-
-    // 테스트에 사용할 사용자 시간
-    private LocalDateTime userTime = LocalDateTime.now();
 
     // 테스트에 사용할 사용자 위치. 서울 시청 위도, 경도
     private double userLat = 37.5665;
@@ -64,7 +60,7 @@ public class NearbyOpenCapsuleServiceTest {
                 .thenReturn(2000.0);
 
         // Request DTO 생성 (반경 1000m 설정)
-        NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userTime, userLat, userLng, 1000);
+        NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, 1000);
 
         // when
         List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(memberId, request);
@@ -95,7 +91,7 @@ public class NearbyOpenCapsuleServiceTest {
                 .thenReturn(500.0);
 
         // Request DTO 생성 (반경 null 설정)
-        NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userTime, userLat, userLng, null);
+        NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, null);
 
         // when
         List<NearbyOpenCapsuleResponse> result = nearbyOpenCapsuleService.getNearbyOpenCapsules(memberId, request);
