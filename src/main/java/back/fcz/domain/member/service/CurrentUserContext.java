@@ -53,4 +53,11 @@ public class CurrentUserContext {
 
         return (Long) principal;
     }
+
+    public boolean isAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof Long;
+    }
 }

@@ -24,6 +24,9 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     // uuid로 캡슐 찾기
     Optional<Capsule> findByUuid(String uuid);
 
+    // capsuleId로 캡슐 찾기
+    Optional<Capsule> findByCapsuleId(Long capsuleId);
+
     // 선착순
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

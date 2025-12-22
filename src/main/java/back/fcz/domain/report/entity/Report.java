@@ -29,9 +29,6 @@ public class Report {
     @JoinColumn(name = "reporter_id")
     private Member reporter;                 // 신고자(회원일 경우)
 
-    @Column(name = "reporter_phone", length = 255)
-    private String reporterPhone;            // 비회원 신고자 전화번호(암호화)
-
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_type", length = 30, nullable = false)
     private ReportReasonType reasonType;     // 신고 유형
@@ -59,7 +56,6 @@ public class Report {
     private Report(
             Capsule capsule,
             Member reporter,
-            String reporterPhone,
             ReportReasonType reasonType,
             String reasonDetail,
             ReportStatus status,
@@ -70,7 +66,6 @@ public class Report {
     ) {
         this.capsule = capsule;
         this.reporter = reporter;
-        this.reporterPhone = reporterPhone;
         this.reasonType = reasonType;
         this.reasonDetail = reasonDetail;
         this.status = status != null ? status : ReportStatus.PENDING;
