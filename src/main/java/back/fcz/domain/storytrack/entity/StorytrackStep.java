@@ -17,11 +17,11 @@ public class StorytrackStep extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "capsule_id")
+    @JoinColumn(name = "capsule_id", nullable = false)
     private Capsule capsule;
 
     @ManyToOne
-    @JoinColumn(name = "storytrack_id")
+    @JoinColumn(name = "storytrack_id", nullable = false)
     private Storytrack storytrack;
 
     @Column(name = "step_order")
@@ -30,4 +30,9 @@ public class StorytrackStep extends BaseEntity {
     public void setCapsule(Capsule updateCapsule) {
         this.capsule = updateCapsule;
     }
+
+    public void setStorytrack(Storytrack storytrack) {
+        this.storytrack = storytrack;
+    }
+
 }

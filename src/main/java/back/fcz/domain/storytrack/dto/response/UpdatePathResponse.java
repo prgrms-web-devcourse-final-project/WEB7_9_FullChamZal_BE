@@ -14,6 +14,7 @@ public record UpdatePathResponse(
     public static UpdatePathResponse from(Capsule updateCapsule, StorytrackStep storytrack) {
         CapsuleResponse capsuleResponse = new CapsuleResponse(
                 updateCapsule.getCapsuleId(),
+                updateCapsule.getNickname(),
                 updateCapsule.getTitle(),
                 updateCapsule.getContent(),
                 updateCapsule.getUnlockType(),
