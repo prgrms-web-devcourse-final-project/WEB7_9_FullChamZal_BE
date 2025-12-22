@@ -18,6 +18,7 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.openai.moderation.entity.ModerationActionType;
 import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
+import back.fcz.domain.sms.service.SmsNotificaationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -39,6 +40,7 @@ public class CapsuleCreateService {
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
     private final PublicCapsuleRecipientRepository publicRecipientRepository;
+    private final SmsNotificaationService smsNotificaationService;
 
     // ✅ moderation
     private final CapsuleModerationService capsuleModerationService;
@@ -206,6 +208,7 @@ public class CapsuleCreateService {
             recipientRepository.save(recipientRecord);
 
             String url = domain + "/" + saved.getUuid();
+            smsNotificaationService.sendCapsuleCreatedNotification(receiveTel,member.getName(),capsule.getTitle());
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
         } else { // 비회원 수신자
