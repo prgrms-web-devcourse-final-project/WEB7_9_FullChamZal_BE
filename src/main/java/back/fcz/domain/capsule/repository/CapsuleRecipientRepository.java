@@ -15,6 +15,8 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
 
     Optional<CapsuleRecipient> findByCapsuleId_CapsuleId(Long capsuleId);
 
+    boolean existsByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String recipientPhoneHash);
+
     boolean existsByCapsuleId_CapsuleId(Long capsuleId);
 
     // 회원 탈퇴 시
@@ -28,7 +30,8 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
             pcr.recipientPhoneHash = CONCAT('DELETED_', pcr.id)
         WHERE pcr.recipientPhoneHash = :phoneHash
     """)
-    void anonymizeByRecipientPhoneHash(@Param("phoneHash") String phoneHash);
+    void anonymizeByRecipientPhoneHash(@Param("phoneHash") String phoneHash,
+                                       @Param("memberId") Long memberId);
 
     Optional<CapsuleRecipient> findByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String phoneHash);
     // phoneHash를 가지는 수신자 리스트 조회. JOIN을 이용하여 Capsule 테이블도 같이 조회

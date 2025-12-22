@@ -73,6 +73,8 @@ dependencies {
     // 9. openai api (컨텐츠 필터링용)
     implementation 'com.openai:openai-java:4.3.0'
 
+    // 10. OAuth (OAuth 로그인)
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 // CI 테스트 제외

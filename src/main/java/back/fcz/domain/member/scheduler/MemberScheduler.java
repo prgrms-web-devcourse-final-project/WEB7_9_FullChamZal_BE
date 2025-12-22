@@ -28,7 +28,7 @@ public class MemberScheduler {
     // 매일 새벽 3시, 탈퇴 후 30일이 지난 회원의 개인정보 익명화
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
-    public void analymizeDeletedMembers() {
+    public void anonymizeDeletedMembers() {
         LocalDateTime targetDate = LocalDateTime.now()
                 .minusDays(ANONYMIZE_DAYS_AFTER_DELETION);
 
@@ -44,10 +44,11 @@ public class MemberScheduler {
         for (Member member : membersToAnonymize) {
             // 1. Member 테이블 익명화
             String originalPhoneHash = member.getPhoneHash();
+            Long memberId = member.getMemberId();
             member.anonymize();
 
             // 2. 개인 캡슐 수신자 정보 테이블 익명화
-            anonymizeRecipientInfo(originalPhoneHash);
+            anonymizeRecipientInfo(originalPhoneHash, memberId);
 
             count++;
             log.info("회원 개인정보 익명화 완료 - memberId: {}", member.getMemberId());
@@ -55,7 +56,7 @@ public class MemberScheduler {
     }
 
     // 해당 전화번호 해시로 받은 모든 캡슐의 수신자 정보 익명화
-    private void anonymizeRecipientInfo(String originalPhoneHash) {
-        recipientRepository.anonymizeByRecipientPhoneHash(originalPhoneHash);
+    private void anonymizeRecipientInfo(String originalPhoneHash, Long memberId) {
+        recipientRepository.anonymizeByRecipientPhoneHash(originalPhoneHash, memberId);
     }
 }

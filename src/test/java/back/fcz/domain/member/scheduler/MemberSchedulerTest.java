@@ -46,10 +46,11 @@ class MemberSchedulerTest {
                 any(LocalDateTime.class)
         )).thenReturn(List.of(m1));
 
-        memberScheduler.analymizeDeletedMembers();
+        Long memberid = m1.getMemberId();
+        memberScheduler.anonymizeDeletedMembers();
 
         verify(m1).anonymize();
-        verify(recipientRepository).anonymizeByRecipientPhoneHash("HASH1");
+        verify(recipientRepository).anonymizeByRecipientPhoneHash("HASH1", memberid);
     }
 
     @Test
@@ -60,9 +61,9 @@ class MemberSchedulerTest {
                 any(LocalDateTime.class)
         )).thenReturn(List.of());
 
-        memberScheduler.analymizeDeletedMembers();
+        memberScheduler.anonymizeDeletedMembers();
 
         verify(recipientRepository, never())
-                .anonymizeByRecipientPhoneHash(any());
+                .anonymizeByRecipientPhoneHash(any(), anyLong());
     }
 }
