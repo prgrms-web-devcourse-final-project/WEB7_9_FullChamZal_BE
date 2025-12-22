@@ -43,7 +43,6 @@ public class SecurityConfig {
             "/api/v1/capsule/readCapsule",
             "/api/v1/capsule/save",
             "/api/v1/phone-verification/**",
-            "/api/v1/storytrack/**",
             "/api/v1/report/**"
     };
 
