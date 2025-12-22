@@ -247,7 +247,6 @@ public class BaseInitData implements CommandLineRunner {
             Report r = Report.builder()
                     .capsule(target)
                     .reporter(reporter)
-                    .reporterPhone(null)
                     .reasonType(ReportReasonType.SPAM)
                     .reasonDetail("광고/홍보성 내용이 포함되어 있어요.")
                     .status(ReportStatus.PENDING)
@@ -269,7 +268,6 @@ public class BaseInitData implements CommandLineRunner {
             Report r = Report.builder()
                     .capsule(target)
                     .reporter(null)
-                    .reporterPhone(encryptedGuestPhone)
                     .reasonType(ReportReasonType.OBSCENITY)
                     .reasonDetail("음란/선정적 표현이 포함된 것 같습니다.")
                     .status(ReportStatus.REVIEWING)
@@ -289,7 +287,6 @@ public class BaseInitData implements CommandLineRunner {
             Report r = Report.builder()
                     .capsule(target)
                     .reporter(reporter)
-                    .reporterPhone(null)
                     .reasonType(ReportReasonType.HATE)
                     .reasonDetail("혐오/비하 표현이 포함되어 있습니다.")
                     .status(ReportStatus.ACCEPTED)
@@ -311,7 +308,6 @@ public class BaseInitData implements CommandLineRunner {
             Report r = Report.builder()
                     .capsule(target)
                     .reporter(null)
-                    .reporterPhone(encryptedGuestPhone)
                     .reasonType(ReportReasonType.ETC)
                     .reasonDetail("그냥 기분이 나빠요.")
                     .status(ReportStatus.REJECTED)
@@ -698,7 +694,7 @@ public class BaseInitData implements CommandLineRunner {
     private void createFirstComeTestMembers() {
 
         // 이미 생성되어 있으면 다시 만들지 않음
-        boolean exists = memberRepository.existsByUserId("testuser1");
+        boolean exists = memberRepository.existsByUserId("testuser");
         if (exists) {
             return;
         }

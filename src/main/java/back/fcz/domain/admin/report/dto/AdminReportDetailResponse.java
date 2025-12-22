@@ -53,7 +53,6 @@ public class AdminReportDetailResponse {
                 .reasonDetail(report.getReasonDetail())
                 .reporterId(reporterId)
                 .reporterNickname(reporterNickname)
-                .reporterPhone(report.getReporterPhone())
                 .processedBy(report.getProcessedBy())
                 .processedAt(report.getProcessedAt())
                 .adminMemo(report.getAdminMemo())
