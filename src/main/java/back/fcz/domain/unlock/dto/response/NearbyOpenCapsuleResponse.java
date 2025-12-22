@@ -15,9 +15,10 @@ public record NearbyOpenCapsuleResponse(
         double capsuleLatitude,
         double capsuleLongitude,
         double distanceToCapsule,  // 현재 사용자 위치에서 캡슐까지 남은 거리
-        boolean isViewed           // 캡슐 열람 여부 (열람: true, 미열람: false)
+        boolean isViewed,          // 캡슐 열람 여부 (열람: true, 미열람: false)
+        boolean isUnlockable       // 캡슐 열람 가능 여부 (가능: true, 불가능: false)
 ) {
-    public NearbyOpenCapsuleResponse(Capsule capsule, double distanceToCapsule, boolean isViewed) {
+    public NearbyOpenCapsuleResponse(Capsule capsule, double distanceToCapsule, boolean isViewed, boolean isUnlockable) {
         this(
                 capsule.getCapsuleId(),
                 capsule.getLocationName(),
@@ -29,7 +30,8 @@ public record NearbyOpenCapsuleResponse(
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
                 distanceToCapsule,
-                isViewed
+                isViewed,
+                isUnlockable
         );
     }
 }
