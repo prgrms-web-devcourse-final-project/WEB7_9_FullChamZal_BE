@@ -12,9 +12,12 @@ import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
+import back.fcz.domain.sms.service.SmsNotificaationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.dto.InServerMemberResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +34,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -63,6 +70,13 @@ class CapsuleCreateControllerTest {
     // 인증 컨텍스트만 Mock
     @MockitoBean
     CurrentUserContext currentUserContext;
+
+    @MockitoBean
+    CapsuleModerationService capsuleModerationService;
+
+    @MockitoBean
+    SmsNotificaationService smsNotificaationService;
+
 
     // =========================
     // 공개 캡슐 생성
@@ -456,4 +470,16 @@ class CapsuleCreateControllerTest {
                 .andExpect(jsonPath("$.data.capsuleId").value(capsule.getCapsuleId()));
 
     }
+    @BeforeEach
+    void mockExternalDeps() {
+        // ✅ OpenAI moderation은 테스트에서 외부 호출 금지 → 무조건 PASS 처리
+        when(capsuleModerationService.validateCapsuleText(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(null);
+        doNothing().when(capsuleModerationService).attachCapsuleId(any(), any());
+
+        // ✅ SMS 발송도 외부 호출 금지 → 아무것도 안 하게
+        doNothing().when(smsNotificaationService).sendCapsuleCreatedNotification(any(), any(), any());
+    }
+
+
 }
