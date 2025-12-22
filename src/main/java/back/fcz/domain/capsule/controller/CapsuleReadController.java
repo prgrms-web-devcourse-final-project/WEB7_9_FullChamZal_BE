@@ -38,7 +38,8 @@ public class CapsuleReadController {
             description = "사용자가 보낸 캡슐의 내용을 조건 없이 보여줍니다. "
     )
     @ApiErrorCodeExample({
-
+            ErrorCode.CAPSULE_NOT_FOUND,
+            ErrorCode.NOT_SELF_CAPSULE
     })
     @GetMapping("/readSendCapsule")
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> readSendCapsule(
