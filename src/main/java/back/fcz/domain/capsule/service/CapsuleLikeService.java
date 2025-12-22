@@ -49,7 +49,7 @@ public class CapsuleLikeService {
         capsuleLikeRepository.save(capsuleLike);
         //해당 캡슐의 좋아요 값 +1
         capsuleRepository.incrementLikeCount(capsuleId);
-
+        capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
         return CapsuleLikeResponse.from(capsule.getLikeCount(), "좋아요 증가처리 성공");
     }
 

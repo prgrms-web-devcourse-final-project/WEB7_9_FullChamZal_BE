@@ -84,7 +84,7 @@ public enum ErrorCode {
     CAPSULE_OPEN_LOG_NOT_FOUND("CP015", HttpStatus.INTERNAL_SERVER_ERROR, "열람 기록을 찾을 수 없습니다."),
     DUPLICATE_LIKE_REQUEST("CPS016", HttpStatus.BAD_REQUEST, "중복으로 좋아요를 누를수 없습니다."),
     SELF_LIKE_NOT_ALLOWED("CPS017", HttpStatus.BAD_REQUEST, "자신의 캡슐에 좋아요를 누를수 없습니다."),
-    LIKE_DECREASED_FAIL("CPS018", HttpStatus.BAD_REQUEST, "좋아요를 해제할 수 없습니다."),
+    LIKE_DECREASED_FAIL("CPS018", HttpStatus.BAD_REQUEST, "좋아요를 누른적이 없어서 좋아요를 해제할 수 없습니다."),
     NOT_SELF_CAPSULE("CPS019", HttpStatus.BAD_REQUEST, "자신이 작성한 캡슐이 아닙니다."),
 
 

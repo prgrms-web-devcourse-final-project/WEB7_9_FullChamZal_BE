@@ -31,7 +31,7 @@ public class CapsuleLikeController {
     })
     @GetMapping("/readLike")
     public ResponseEntity<ApiResponse<CapsuleLikeResponse>> readLike(
-            @RequestParam(name = "capsuleId") Long capsuleId
+            @RequestParam Long capsuleId
     ){
         return ResponseEntity.ok(ApiResponse.success(capsuleLikeService.readLike(capsuleId)));
     }
@@ -60,7 +60,7 @@ public class CapsuleLikeController {
             ErrorCode.LIKE_DECREASED_FAIL,
             ErrorCode.CAPSULE_NOT_FOUND
     })
-    @DeleteMapping("/likeDown")
+    @PostMapping("/likeDown")
     public ResponseEntity<ApiResponse<CapsuleLikeResponse>> likeDown(
             @RequestBody CapsuleLikeRequest capsuleLikeRequest
     ){
