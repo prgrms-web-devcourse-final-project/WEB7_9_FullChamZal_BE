@@ -81,6 +81,8 @@ public enum ErrorCode {
     CAPSULE_ALREADY_SAVED("CP013", HttpStatus.CONFLICT, "이미 저장된 캡슐입니다."),
     PUBLIC_CAPSULE_CANNOT_BE_SAVED("CP014", HttpStatus.BAD_REQUEST, "공개 캡슐은 저장할 수 없습니다."),
     CAPSULE_OPEN_LOG_NOT_FOUND("CP015", HttpStatus.INTERNAL_SERVER_ERROR, "열람 기록을 찾을 수 없습니다."),
+    NICKNAME_REQUIRED("CP016", HttpStatus.BAD_REQUEST, "캡슐 생성에 발신자 닉네임이 필요합니다."),
+    PHONENUMBER_REQUIRED("CP017", HttpStatus.BAD_REQUEST, "캡슐 생성에 전화번호가 필요합니다."),
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
