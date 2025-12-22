@@ -18,6 +18,7 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.openai.moderation.entity.ModerationActionType;
 import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
+import back.fcz.domain.sms.service.SmsNotificaationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -29,6 +30,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
+import static io.micrometer.common.util.StringUtils.isBlank;
+
 @Service
 @RequiredArgsConstructor
 public class CapsuleCreateService {
@@ -39,6 +42,7 @@ public class CapsuleCreateService {
     private final MemberRepository memberRepository;
     private final PhoneCrypto phoneCrypto;
     private final PublicCapsuleRecipientRepository publicRecipientRepository;
+    private final SmsNotificaationService smsNotificaationService;
 
     // ✅ moderation
     private final CapsuleModerationService capsuleModerationService;
@@ -57,6 +61,22 @@ public class CapsuleCreateService {
         Random random = new Random();
         int number = random.nextInt(9000) + 1000;
         return String.valueOf(number);
+    }
+
+    public void isCapsuleProfileIncomplete(Capsule capsule){
+        // 닉네임 존재 확인
+        // "" 공백 닉네임도 허용
+        if(capsule.getNickname() == null){
+            throw new BusinessException(ErrorCode.NICKNAME_REQUIRED);
+        }
+
+        // phone 존재 확인
+        // 휴대전화가 null이거나 공백일 때
+        if(capsule.getMemberId().getPhoneNumber() == null || isBlank(capsule.getMemberId().getPhoneNumber())
+        || capsule.getMemberId().getPhoneHash() == null || isBlank(capsule.getMemberId().getPhoneHash())
+        ){
+            throw new BusinessException(ErrorCode.PHONENUMBER_REQUIRED);
+        }
     }
 
     /**
@@ -81,6 +101,9 @@ public class CapsuleCreateService {
         );
 
         capsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(capsule);
+
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
 
@@ -124,7 +147,7 @@ public class CapsuleCreateService {
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
-        // 닉네임 null 방지 ("" 허용)
+        // 수신자 닉네임 null 방지 ("" 허용)
         if (secretCapsule.getReceiverNickname() == null) {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
@@ -143,6 +166,8 @@ public class CapsuleCreateService {
         secretCapsule.setUuid(setUUID());
         secretCapsule.setCapPassword(phoneCrypto.hash(password));
         secretCapsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(secretCapsule);
 
         // URL+비밀번호 방식은 보호=0
         secretCapsule.setProtected(0);
@@ -189,6 +214,9 @@ public class CapsuleCreateService {
         if (isRecipientMember) { // 회원 수신자
 
             capsule.setMemberId(member);
+
+            isCapsuleProfileIncomplete(capsule);
+
             capsule.setProtected(1); // ✅ 보호=1
             Capsule saved = capsuleRepository.save(capsule);
 
@@ -206,6 +234,7 @@ public class CapsuleCreateService {
             recipientRepository.save(recipientRecord);
 
             String url = domain + "/" + saved.getUuid();
+            smsNotificaationService.sendCapsuleCreatedNotification(receiveTel,member.getName(),capsule.getTitle());
             return SecretCapsuleCreateResponseDTO.from(saved, url, null);
 
         } else { // 비회원 수신자
@@ -213,6 +242,8 @@ public class CapsuleCreateService {
             String capsulePW = generatePassword();
             capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
+
+            isCapsuleProfileIncomplete(capsule);
 
             capsule.setProtected(0); // ✅ 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
@@ -252,6 +283,8 @@ public class CapsuleCreateService {
         capsule.setProtected(1);
         capsule.setUuid(setUUID());
         capsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(capsule);
 
         Capsule saved = capsuleRepository.save(capsule);
 

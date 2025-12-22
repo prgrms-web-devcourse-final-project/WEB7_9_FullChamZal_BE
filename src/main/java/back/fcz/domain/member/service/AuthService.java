@@ -1,8 +1,10 @@
 package back.fcz.domain.member.service;
 
+import back.fcz.domain.member.dto.request.MemberLoginPwRequest;
 import back.fcz.domain.member.dto.request.MemberLoginRequest;
 import back.fcz.domain.member.dto.request.MemberSignupRequest;
 import back.fcz.domain.member.dto.response.LoginTokensResponse;
+import back.fcz.domain.member.dto.response.MemberLoginIdResponse;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
@@ -116,5 +118,46 @@ public class AuthService {
         );
 
         return new LoginTokensResponse(accessToken, refreshToken);
+    }
+
+    public MemberLoginIdResponse findUserId(String phoneNumber) {
+        // TODO: 번호 인증 확인
+//        boolean verification =
+//                phoneVerificationService.isPhoneVerified(
+//                        phoneNumber,
+//                        PhoneVerificationPurpose.FIND_ID
+//                );
+//
+//        if(!verification) {
+//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+//        }
+
+        Member member = memberRepository.findByPhoneHash(phoneCrypto.hash(phoneNumber))
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        return new MemberLoginIdResponse(member.getUserId());
+    }
+
+    @Transactional
+    public void findPassword(MemberLoginPwRequest memberLoginPwRequest) {
+        // TODO: 번호 인증 확인
+//        boolean verification =
+//                phoneVerificationService.isPhoneVerified(
+//                        memberLoginPwRequest.phoneNum(),
+//                        PhoneVerificationPurpose.FIND_PW
+//                );
+//
+//        if(!verification) {
+//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+//        }
+
+        String phoneHash = phoneCrypto.hash(memberLoginPwRequest.phoneNum());
+
+        Member member = memberRepository.findByPhoneHash(phoneHash)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String newPasswordHash = passwordEncoder.encode(memberLoginPwRequest.password());
+
+        member.updatePassword(newPasswordHash);
     }
 }
