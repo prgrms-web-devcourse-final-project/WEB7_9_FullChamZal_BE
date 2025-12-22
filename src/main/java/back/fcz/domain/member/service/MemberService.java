@@ -54,8 +54,13 @@ public class MemberService {
         Member member = memberRepository.findById(user.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        String decryptedPhone = phoneCrypto.decrypt(member.getPhoneNumber());
-        String maskedPhone = PhoneMaskingUtil.mask(decryptedPhone);
+        // OAuth 로그인 회원의 경우, 첫 로그인 시 PhoneNumber == null
+        String maskedPhone = null;
+
+        if (member.getPhoneNumber() != null) {
+            String decryptedPhone = phoneCrypto.decrypt(member.getPhoneNumber());
+            maskedPhone = PhoneMaskingUtil.mask(decryptedPhone);
+        }
 
         return MemberInfoResponse.of(member, maskedPhone);
     }

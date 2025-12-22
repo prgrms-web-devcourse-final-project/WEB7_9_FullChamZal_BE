@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,7 @@ public class NearbyOpenCapsuleService {
     @Transactional
     public List<NearbyOpenCapsuleResponse> getNearbyOpenCapsules(long memberId, NearbyOpenCapsuleRequest request) {
 
+        LocalDateTime currentTime = request.currentTime();
         double currentLat = request.currentLatitude();
         double currentLng = request.currentLongitude();
         int searchRadiusM = (request.radius() == null) ? DEFAULT_RADIUS_M : request.radius();
@@ -59,8 +61,13 @@ public class NearbyOpenCapsuleService {
                     // 사용자가 해당 캡슐을 열람한 적 있는 지, 확인 (열람했다면 true, 미열람이라면 false)
                     boolean isViewed = viewedCapsuleIds.contains(capsule.getCapsuleId());
 
+                    // 사용자의 위치에서 해당 캡슐을 열람할 수 있는 지, 확인 (열람할 수 있다면 true, 열람 불가하다면 false)
+                    boolean isUnlockable = unlockService.validateTimeAndLocationConditions(
+                            capsule, currentTime, currentLat, currentLng
+                    );
+
                     // 응답 DTO로 매핑
-                    return new NearbyOpenCapsuleResponse(capsule, distance, isViewed);
+                    return new NearbyOpenCapsuleResponse(capsule, distance, isViewed, isUnlockable);
                 })
                 // distance > searchRadiusM인 항목 제거
                 .filter(response -> response != null)

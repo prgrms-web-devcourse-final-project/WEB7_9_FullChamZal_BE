@@ -79,7 +79,6 @@ public record CapsuleConditionResponseDTO(
     }
 
     //공개 캡슐의 경우(수신자 없음)
-    //공개 캡슐은 조회 여부를 capsule.getCurrentViewCount() > 0 으로 하면 안됨
     public static CapsuleConditionResponseDTO from(Capsule capsule, boolean viewStatus) {
         return new CapsuleConditionResponseDTO(
                 // 캡슐 정보

@@ -45,24 +45,30 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException ex) {
         ErrorCode errorCode = ex.getErrorCode();
 
         // HTTP 상태 코드에 따라 로깅 레벨 구분
         if (errorCode.getStatus().is5xxServerError()) {
             // 5xx: 서버 오류 - error 레벨 (스택 트레이스 포함)
             log.error("Business exception occurred: code={}, message={}",
-                    errorCode.getCode(),
-                    errorCode.getMessage(),
-                    ex);
+                    errorCode.getCode(), ex.getMessage(), ex);
         } else {
             // 4xx: 클라이언트 오류 - warn 레벨 (스택 트레이스 제외)
             log.warn("Business exception occurred: code={}, message={}",
-                    errorCode.getCode(),
-                    errorCode.getMessage());
+                    errorCode.getCode(), ex.getMessage());
         }
 
-        ApiResponse<Void> response = ApiResponse.error(errorCode);
+        // ✅ message는 예외 message(오버라이드 가능)를 우선 사용
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : errorCode.getMessage();
+
+        ApiResponse<Object> response = new ApiResponse<>(
+                errorCode.getCode(),
+                message,
+                ex.getData() // ✅ 여기로 moderation 결과(어떤 필드/카테고리) 내려줌
+        );
 
         return new ResponseEntity<>(response, errorCode.getStatus());
     }

@@ -23,7 +23,7 @@ public abstract class BaseEntity {
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    protected LocalDateTime deletedAt;
 
     // soft delete 시 markDeleted() 호출 시, 삭제 시간 기록
     public void markDeleted() {

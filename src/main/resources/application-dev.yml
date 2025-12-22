@@ -48,3 +48,12 @@ coolsms:
   api-secret: ${COOLSMS_API_SECRET}
   from-number: ${COOLSMS_FROM_NUMBER}
 
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+
+  moderation:
+    model: omni-moderation-2024-09-26
+    block-on-flagged: false   # true면 flagged 시 저장 막음
+    fail-closed: false        # true면 OpenAI 장애 시 저장 막음
+

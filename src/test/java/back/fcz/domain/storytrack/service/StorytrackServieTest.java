@@ -1,12 +1,16 @@
 package back.fcz.domain.storytrack.service;
 
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.member.entity.Member;
-import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
-import back.fcz.domain.storytrack.dto.response.DeleteParticipantResponse;
-import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
-import back.fcz.domain.storytrack.dto.response.UpdatePathResponse;
+import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
+import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
+import back.fcz.domain.storytrack.dto.response.CreateStorytrackResponse;
+import back.fcz.domain.storytrack.dto.response.JoinStorytrackResponse;
 import back.fcz.domain.storytrack.entity.Storytrack;
 import back.fcz.domain.storytrack.entity.StorytrackProgress;
 import back.fcz.domain.storytrack.entity.StorytrackStep;
@@ -21,326 +25,221 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class StorytrackServieTest {
+class StorytrackServiceTest {
+
     @InjectMocks
     private StorytrackService storytrackService;
 
-    @Mock
-    private StorytrackRepository storytrackRepository;
-
+    @Mock private StorytrackRepository storytrackRepository;
     @Mock
     private StorytrackProgressRepository storytrackProgressRepository;
+    @Mock private StorytrackStepRepository storytrackStepRepository;
+    @Mock private CapsuleRepository capsuleRepository;
+    @Mock private MemberRepository memberRepository;
+    @Mock private CapsuleReadService capsuleReadService;
 
-    @Mock
-    private StorytrackStepRepository storytrackStepRepository;
-
-    @Mock
-    private CapsuleRepository capsuleRepository;
-
-    // 삭제 서비스 테스트
     @Test
-    @DisplayName("스토리트랙 생성자가 삭제 성공")
-    void deleteStorytrack_success() {
+    @DisplayName("스토리트랙 생성 성공")
+    void createStorytrack_success() {
         // given
         Long memberId = 1L;
-        Long storytrackId = 10L;
 
-        Member member = Member.builder().build();
-        ReflectionTestUtils.setField(member, "memberId", memberId);
-
-        Storytrack storytrack = Storytrack.builder()
-                .storytrackId(storytrackId)
-                .member(member)
+        Member member = Member.builder()
                 .build();
 
-        StorytrackStep step1 = mock(StorytrackStep.class);
-        StorytrackStep step2 = mock(StorytrackStep.class);
+        Capsule capsule = Capsule.builder()
+                .capsuleId(10L)
+                .visibility("PUBLIC")
+                .build();
 
-        given(storytrackRepository.findById(storytrackId))
-                .willReturn(Optional.of(storytrack));
+        CreateStorytrackRequest request = new CreateStorytrackRequest(
+                "title",
+                "desc",
+                "SEQUENTIAL",
+                1,
+                0,
+                List.of(10L)
+        );
 
-        given(storytrackProgressRepository.countActiveParticipants(storytrackId))
-                .willReturn(0L);
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(member));
 
-        given(storytrackStepRepository.findAllByStorytrack_StorytrackId(storytrackId))
-                .willReturn(List.of(step1, step2));
+        given(capsuleRepository.findById(10L))
+                .willReturn(Optional.of(capsule));
+
+        given(storytrackRepository.save(any()))
+                .willAnswer(inv -> inv.getArgument(0));
 
         // when
-        DeleteStorytrackResponse response =
-                storytrackService.deleteStorytrack(memberId, storytrackId);
+        CreateStorytrackResponse response =
+                storytrackService.createStorytrack(request, memberId);
 
         // then
-        assertThat(response.storytrackId()).isEqualTo(storytrackId);
-        verify(storytrackRepository).save(storytrack);
-        verify(step1).markDeleted();
-        verify(step2).markDeleted();
+        assertThat(response.title()).isEqualTo("title");
     }
 
     @Test
-    @DisplayName("스토리트랙이 없으면 예외 발생")
-    void deleteStorytrack_notFound() {
-        // given
-        given(storytrackRepository.findById(anyLong()))
-                .willReturn(Optional.empty());
-
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.deleteStorytrack(1L, 1L)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.STORYTRACK_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("스토리트랙 생성자가 아니면 삭제 불가")
-    void deleteStorytrack_notCreator() {
-        // given
-        Member creator = Member.builder().build();
-        ReflectionTestUtils.setField(creator, "memberId", 1L);
-
-        Storytrack storytrack = Storytrack.builder()
-                .storytrackId(10L)
-                .member(creator)
-                .build();
-
-        given(storytrackRepository.findById(10L))
-                .willReturn(Optional.of(storytrack));
-
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.deleteStorytrack(2L, 10L)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.NOT_STORYTRACK_CREATER);
-    }
-
-    @Test
-    @DisplayName("참여자가 존재하면 삭제 불가")
-    void deleteStorytrack_participantExists() {
+    @DisplayName("스토리트랙 참여 성공")
+    void joinStorytrack_success() {
         // given
         Long memberId = 1L;
-        Long storytrackId = 10L;
+        Long storytrackId = 100L;
 
-        Member member = Member.builder().build();
-        ReflectionTestUtils.setField(member, "memberId", memberId);
+        // 스토리트랙 생성자 (실제 객체)
+        Member creator = Member.builder()
+                .nickname("생성자닉네임")
+                .build();
+
+        // 참여자 (로그인 유저)
+        Member member = Member.builder()
+                .build();
 
         Storytrack storytrack = Storytrack.builder()
-                .storytrackId(storytrackId)
-                .member(member)
+                .member(creator)
+                .title("title")
+                .description("desc")
+                .trackType("SEQUENTIAL")
+                .price(0)
+                .totalSteps(3)
+                .isPublic(1)
                 .build();
+
+        JoinStorytrackRequest request =
+                new JoinStorytrackRequest(storytrackId);
+
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(member));
 
         given(storytrackRepository.findById(storytrackId))
                 .willReturn(Optional.of(storytrack));
 
-        given(storytrackProgressRepository.countActiveParticipants(storytrackId))
-                .willReturn(2L);
+        // when
+        JoinStorytrackResponse response =
+                storytrackService.joinParticipant(request, memberId);
 
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.deleteStorytrack(memberId, storytrackId)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.PARTICIPANT_EXISTS);
+        // then
+        assertThat(response.title()).isEqualTo("title");
+        assertThat(response.storytrackType()).isEqualTo("SEQUENTIAL");
+        assertThat(response.completedSteps()).isEqualTo(0);
     }
 
     @Test
-    @DisplayName("스토리트랙 참여자 삭제 성공")
-    void deleteParticipant_success() {
+    @DisplayName("참여자 검증 실패")
+    void validateParticipant_fail() {
         // given
-        Long memberId = 1L;
-        Long storytrackId = 10L;
+        given(storytrackProgressRepository
+                .existsByMember_MemberIdAndStorytrack_StorytrackId(1L, 10L))
+                .willReturn(false);
 
-        StorytrackProgress progress = mock(StorytrackProgress.class);
+        // when & then
+        assertThatThrownBy(() ->
+                storytrackService.validateParticipant(1L, 10L)
+        ).isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.PARTICIPANT_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("FREE 타입은 단계 검증 없이 통과")
+    void validateStepAccess_freeType() {
+        // given
+        Storytrack storytrack = Storytrack.builder()
+                .trackType("FREE")
+                .build();
+
+        StorytrackProgress progress = StorytrackProgress.builder()
+                .storytrack(storytrack)
+                .build();
 
         given(storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId))
+                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 10L))
                 .willReturn(Optional.of(progress));
 
-        // when
-        DeleteParticipantResponse response =
-                storytrackService.deleteParticipant(memberId, storytrackId);
-
-        // then
-        verify(progress).markDeleted();
-        verify(storytrackProgressRepository).save(progress);
-        assertThat(response.message())
-                .isEqualTo("스토리트랙 참여를 종료했습니다.");
+        // when & then
+        assertThatCode(() ->
+                storytrackService.validateStepAccess(1L, 10L, 100L)
+        ).doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("참여자가 없으면 예외 발생")
-    void deleteParticipant_notFound() {
+    @DisplayName("순차 스토리트랙 단계 오류")
+    void validateStepAccess_invalidOrder() {
         // given
+        Storytrack storytrack = Storytrack.builder()
+                .trackType("SEQUENTIAL")
+                .build();
+
+        StorytrackProgress progress = StorytrackProgress.builder()
+                .storytrack(storytrack)
+                .lastCompletedStep(1)
+                .build();
+
+        StorytrackStep step = StorytrackStep.builder()
+                .stepOrder(3)
+                .build();
+
         given(storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(anyLong(), anyLong()))
-                .willReturn(Optional.empty());
+                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 10L))
+                .willReturn(Optional.of(progress));
 
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.deleteParticipant(1L, 1L)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.PARTICIPANT_NOT_FOUND);
-    }
-
-    // 수정 서비스 테스트
-    @Test
-    @DisplayName("스토리트랙 경로 수정 성공")
-    void updatePath_success() {
-        // given
-        Long stepId = 1L;
-        Long loginMemberId = 10L;
-        Long newCapsuleId = 100L;
-
-        UpdatePathRequest request = new UpdatePathRequest(1, newCapsuleId);
-
-        Member creator = Member.builder().build();
-        ReflectionTestUtils.setField(creator, "memberId", loginMemberId);
-
-        Storytrack storytrack = Storytrack.builder()
-                .member(creator)
-                .build();
-
-        Capsule oldCapsule = Capsule.builder()
-                .capsuleId(1L)
-                .build();
-
-        Capsule newCapsule = Capsule.builder()
-                .capsuleId(newCapsuleId)
-                .build();
-
-        StorytrackStep step = StorytrackStep.builder()
-                .storytrack(storytrack)
-                .capsule(oldCapsule)
-                .build();
-
-        given(storytrackStepRepository.findById(stepId))
+        given(storytrackStepRepository
+                .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(100L, 10L))
                 .willReturn(Optional.of(step));
 
-        given(capsuleRepository.findById(newCapsuleId))
-                .willReturn(Optional.of(newCapsule));
+        // when & then
+        assertThatThrownBy(() ->
+                storytrackService.validateStepAccess(1L, 10L, 100L)
+        ).isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.INVALID_STEP_ORDER.getMessage());
+    }
+
+    @Test
+    @DisplayName("캡슐 오픈 시 진행도 업데이트")
+    void openCapsuleAndUpdateProgress_success() {
+        // given
+        Storytrack storytrack = Storytrack.builder()
+                .totalSteps(3)
+                .build();
+
+        StorytrackProgress progress = spy(
+                StorytrackProgress.builder()
+                        .storytrack(storytrack)
+                        .completedSteps(0)
+                        .lastCompletedStep(0)
+                        .build()
+        );
+
+        StorytrackStep step = StorytrackStep.builder()
+                .stepOrder(1)
+                .build();
+
+        CapsuleConditionRequestDTO request =
+                new CapsuleConditionRequestDTO(10L, null, null, null, null);
+
+        given(storytrackProgressRepository
+                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 1L))
+                .willReturn(Optional.of(progress));
+
+        given(storytrackStepRepository
+                .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(10L, 1L))
+                .willReturn(Optional.of(step));
+
+        given(capsuleReadService.conditionAndRead(request))
+                .willReturn(mock(CapsuleConditionResponseDTO.class));
 
         // when
-        UpdatePathResponse response =
-                storytrackService.updatePath(request, stepId, loginMemberId);
+        storytrackService.openCapsuleAndUpdateProgress(1L, 1L, request);
 
         // then
-        assertThat(step.getCapsule()).isEqualTo(newCapsule);
-        verify(storytrackStepRepository).save(step);
+        verify(progress).completeStep(1, 3);
     }
-
-    @Test
-    @DisplayName("스토리트랙 경로가 없으면 수정 실패")
-    void updatePath_stepNotFound() {
-        // given
-        Long stepId = 1L;
-        UpdatePathRequest request = new UpdatePathRequest(1, 10L);
-
-        given(storytrackStepRepository.findById(stepId))
-                .willReturn(Optional.empty());
-
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.updatePath(request, stepId, 1L)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.STORYTRACK_PAHT_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("스토리트랙 작성자가 아니면 경로 수정 실패")
-    void updatePath_notCreator() {
-        // given
-        Long stepId = 1L;
-        Long creatorId = 1L;
-        Long loginMemberId = 99L; // ✅ 작성자와 다르게!
-        Long newCapsuleId = 100L;
-
-        UpdatePathRequest request = new UpdatePathRequest(1, newCapsuleId);
-
-        Member creator = Member.builder().build();
-        ReflectionTestUtils.setField(creator, "memberId", creatorId);
-
-        Storytrack storytrack = Storytrack.builder().member(creator).build();
-
-        StorytrackStep step = StorytrackStep.builder()
-                .storytrack(storytrack)
-                .build();
-
-        given(storytrackStepRepository.findById(stepId))
-                .willReturn(Optional.of(step));
-
-        // when
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.updatePath(request, stepId, loginMemberId)
-        );
-
-        // then
-        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.NOT_STORYTRACK_CREATER);
-
-        verify(capsuleRepository, never()).findById(anyLong());
-        verify(storytrackStepRepository, never()).save(any(StorytrackStep.class));
-    }
-
-
-    @Test
-    @DisplayName("수정할 캡슐이 없으면 경로 수정 실패")
-    void updatePath_capsuleNotFound() {
-        // given
-        Long stepId = 1L;
-        Long loginMemberId = 1L;
-        Long newCapsuleId = 99L;
-
-        Member creator = Member.builder().build();
-        ReflectionTestUtils.setField(creator, "memberId", loginMemberId);
-
-        Storytrack storytrack = Storytrack.builder()
-                .member(creator)
-                .build();
-
-        StorytrackStep step = StorytrackStep.builder()
-                .storytrack(storytrack)
-                .build();
-
-        given(storytrackStepRepository.findById(stepId))
-                .willReturn(Optional.of(step));
-
-        given(capsuleRepository.findById(newCapsuleId))
-                .willReturn(Optional.empty());
-
-        UpdatePathRequest request = new UpdatePathRequest(1, newCapsuleId);
-
-        // when & then
-        BusinessException ex = assertThrows(
-                BusinessException.class,
-                () -> storytrackService.updatePath(request, stepId, loginMemberId)
-        );
-
-        assertThat(ex.getErrorCode())
-                .isEqualTo(ErrorCode.CAPSULE_NOT_FOUND);
-    }
-
 }

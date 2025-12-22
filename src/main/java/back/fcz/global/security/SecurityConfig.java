@@ -1,6 +1,8 @@
 package back.fcz.global.security;
 
+import back.fcz.domain.member.service.GoogleOAuth2Service;
 import back.fcz.global.security.jwt.filter.JwtAuthenticationFilter;
+import back.fcz.global.security.oauth.GoogleOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +21,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final GoogleOAuth2Service googleOAuth2Service;
+    private final GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
@@ -77,6 +81,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
+
+                // google OAuth 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(googleOAuth2Service))
+                        .successHandler(googleOAuth2SuccessHandler)
+                )
+
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

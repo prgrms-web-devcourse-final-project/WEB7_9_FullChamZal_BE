@@ -27,11 +27,6 @@ public class CapsuleDashBoardService {
     public List<CapsuleDashBoardResponse> readSendCapsuleList(Long memberId) {
         List<Capsule> capsules = capsuleRepository.findActiveCapsulesByMemberId(memberId);
 
-        for(Capsule capsule : capsules){
-            System.out.println("capsuleId : " + capsule.getCapsuleId());
-            System.out.println("수신자 : " + capsule.getReceiverNickname());
-        }
-
         List<CapsuleDashBoardResponse> response = capsules.stream()
                 .map(capsule -> {
                     // 캡슐의 수신자 조회

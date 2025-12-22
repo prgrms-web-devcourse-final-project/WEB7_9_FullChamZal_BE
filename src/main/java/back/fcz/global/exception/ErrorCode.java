@@ -76,13 +76,15 @@ public enum ErrorCode {
     CAPSULE_RECIPIENT_NOT_FOUND("CPS008", HttpStatus.NOT_FOUND, "캡슐 수신자를 찾을 수 없습니다."),
     RECIPIENT_NOT_FOUND("CPS009", HttpStatus.NOT_FOUND, "수신자 정보를 찾을수 없습니다."),
     RECEIVERNICKNAME_IS_REQUIRED("CP010", HttpStatus.BAD_REQUEST, "수신자 닉네임을 입력해주세요."),
-    CAPSULE_PASSWORD_REQUIRED("CP011", HttpStatus.BAD_REQUEST, "캡슐 비밀번호 입력이 필요합니다."),
-    CAPSULE_ALREADY_SAVED("CP012", HttpStatus.CONFLICT, "이미 저장된 캡슐입니다."),
-    PUBLIC_CAPSULE_CANNOT_BE_SAVED("CP013", HttpStatus.BAD_REQUEST, "공개 캡슐은 저장할 수 없습니다."),
-    CAPSULE_OPEN_LOG_NOT_FOUND("CP014", HttpStatus.INTERNAL_SERVER_ERROR, "열람 기록을 찾을 수 없습니다."),
-    DUPLICATE_LIKE_REQUEST("CPS015", HttpStatus.BAD_REQUEST, "중복으로 좋아요를 누를수 없습니다."),
-    SELF_LIKE_NOT_ALLOWED("CPS016", HttpStatus.BAD_REQUEST, "자신의 캡슐에 좋아요를 누를수 없습니다."),
-    LIKE_DECREASED_FAIL("CPS017", HttpStatus.BAD_REQUEST, "좋아요를 해제할 수 없습니다."),
+
+    CAPSULE_CONTENT_BLOCKED("CPS011", HttpStatus.BAD_REQUEST, "유해한 내용이 감지되어 캡슐을 저장할 수 없습니다."),
+    CAPSULE_PASSWORD_REQUIRED("CP012", HttpStatus.BAD_REQUEST, "캡슐 비밀번호 입력이 필요합니다."),
+    CAPSULE_ALREADY_SAVED("CP013", HttpStatus.CONFLICT, "이미 저장된 캡슐입니다."),
+    PUBLIC_CAPSULE_CANNOT_BE_SAVED("CP014", HttpStatus.BAD_REQUEST, "공개 캡슐은 저장할 수 없습니다."),
+    CAPSULE_OPEN_LOG_NOT_FOUND("CP015", HttpStatus.INTERNAL_SERVER_ERROR, "열람 기록을 찾을 수 없습니다."),
+    DUPLICATE_LIKE_REQUEST("CPS016", HttpStatus.BAD_REQUEST, "중복으로 좋아요를 누를수 없습니다."),
+    SELF_LIKE_NOT_ALLOWED("CPS017", HttpStatus.BAD_REQUEST, "자신의 캡슐에 좋아요를 누를수 없습니다."),
+    LIKE_DECREASED_FAIL("CPS018", HttpStatus.BAD_REQUEST, "좋아요를 해제할 수 없습니다."),
 
 
     // ========== 북마크 에러 ==========
@@ -113,6 +115,7 @@ public enum ErrorCode {
     ADMIN_INVALID_CAPSULE_STATUS_CHANGE("ADM007", HttpStatus.BAD_REQUEST, "유효하지 않은 캡슐 상태 변경입니다."),
     ADMIN_INVALID_REPORT_STATUS_CHANGE("ADM008", HttpStatus.BAD_REQUEST, "유효하지 않은 신고 상태 변경입니다."),
     ADMIN_PHONE_VERIFICATION_NOT_FOUND("ADM009", HttpStatus.NOT_FOUND, "존재하지 않는 전화번호 인증 내역입니다."),
+    ADMIN_MODERATION_LOG_NOT_FOUND("ADM010", HttpStatus.NOT_FOUND, "존재하지 않는 AI 검증 로그입니다."),
     // ADMIN_CAPSULE_INVALID_STATUS_CHANGE("ADM00y", HttpStatus.BAD_REQUEST, "잘못된 캡슐 상태 변경 요청입니다."),
 
     // ============ 스토리트랙 에러 =============
@@ -120,8 +123,14 @@ public enum ErrorCode {
     PARTICIPANT_NOT_FOUND("ST002", HttpStatus.BAD_REQUEST, "존재하지 않는 참여자 입니다."),
     NOT_STORYTRACK_CREATER("ST003", HttpStatus.FORBIDDEN, "로그인한 사용자는 스토리트랙 생성자가 아닙니다."),
     STORYTRACK_PAHT_NOT_FOUND("ST004", HttpStatus.BAD_REQUEST, "존재하지 않는 스토리트랙 경로입니다."),
-    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다.");
+    PARTICIPANT_EXISTS("ST005", HttpStatus.BAD_REQUEST, "스토리트랙 참여자가 존재합니다."),
+    CAPSULE_NOT_PUBLIC("ST006", HttpStatus.BAD_REQUEST, "PUBLIC 상태의 캡슐만 스토리트랙에 추가할 수 있습니다."),
+    STORYTRACK_NOT_PUBLIC("ST007", HttpStatus.BAD_REQUEST, "PUBLIC 상태의 스토리트랙에만 참여자가 참여할 수 있습니다."),
+    STEP_NOT_FOUND("ST008", HttpStatus.BAD_REQUEST, "존재하지 않는 단계입니다."),
+    INVALID_STEP_ORDER("ST009", HttpStatus.BAD_REQUEST, "현재 단계의 캡슐이 아닙니다."),
 
+    // ========== AI(OpenAI) / Moderation ==========
+    OPENAI_MODERATION_FAILED("AI001", HttpStatus.SERVICE_UNAVAILABLE, "콘텐츠 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
 
 
     private final String code;

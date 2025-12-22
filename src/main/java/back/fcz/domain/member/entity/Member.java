@@ -31,19 +31,19 @@ public class Member extends BaseEntity {
     @Column(name = "user_id", nullable = false, unique = true, length = 100)
     private String userId;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
 
-    @Column(name = "nickname", nullable = false, length = 20)
+    @Column(name = "nickname", length = 20)
     private String nickname;
 
-    @Column(name = "phone_number", nullable = false, length = 500)
+    @Column(name = "phone_number", length = 500)
     private String phoneNumber; // AES-256 암호화된 전화번호 (IV 포함)
 
-    @Column(name = "phone_hash", nullable = false, unique = true, length = 64)
+    @Column(name = "phone_hash", unique = true, length = 64)
     private String phoneHash; // SHA-256 해시 (검색용)
 
     @Enumerated(EnumType.STRING)
@@ -93,6 +93,23 @@ public class Member extends BaseEntity {
                 MemberRole.USER,
                 null,
                 null
+        );
+
+        return member;
+    }
+
+    public static Member createOAuth(String userId, String name, String oauthId) {
+        Member member = new Member(
+                userId,
+                null,
+                name,
+                null,
+                null,
+                null,
+                MemberStatus.ACTIVE,
+                MemberRole.USER,
+                OAuthProvider.GOOGLE,
+                oauthId
         );
 
         return member;
