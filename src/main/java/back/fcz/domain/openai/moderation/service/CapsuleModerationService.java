@@ -7,7 +7,6 @@ import back.fcz.domain.openai.moderation.dto.OpenAiModerationResult;
 import back.fcz.domain.openai.moderation.entity.ModerationActionType;
 import back.fcz.domain.openai.moderation.entity.ModerationAuditLog;
 import back.fcz.domain.openai.moderation.entity.ModerationDecision;
-import back.fcz.domain.openai.moderation.repository.ModerationAuditLogRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +19,10 @@ import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,11 +31,11 @@ import java.util.stream.Collectors;
 public class CapsuleModerationService {
 
     private final OpenAiModerationClient openAiModerationClient;
-    private final ModerationAuditLogRepository auditLogRepository;
+    private final ModerationAuditLogWriter auditLogWriter; // ✅ 실패 로그만 별도 트랜잭션으로 저장
     private final ObjectMapper objectMapper;
 
     /**
-     * @return auditId (PASS/SKIPPED일 때 attach 위해 반환)
+     * @return auditId (FLAGGED/ERROR일 때만 저장 후 반환, PASS/SKIPPED는 null)
      */
     @Transactional
     public Long validateCapsuleText(
@@ -55,35 +57,18 @@ public class CapsuleModerationService {
         String combinedInput = buildCombinedInput(fields);
         String inputHash = sha256Hex(combinedInput);
 
-        // 입력이 사실상 없으면 SKIPPED
+        // ✅ 입력이 사실상 없으면 SKIPPED (DB 저장 안 함)
         if (combinedInput.isBlank()) {
-            ModerationAuditLog logEntity = ModerationAuditLog.skipped(
-                    actorMemberId,
-                    actionType,
-                    null,
-                    openAiModerationClient.getModel(),
-                    inputHash,
-                    "empty input"
-            );
-            return auditLogRepository.save(logEntity).getId();
+            return null;
         }
 
         try {
             // 1) 전체 검사
             OpenAiModerationResult overall = openAiModerationClient.moderateText(combinedInput);
 
+            // ✅ PASS면 DB 저장 안 함
             if (!overall.flagged()) {
-                ModerationAuditLog logEntity = ModerationAuditLog.success(
-                        actorMemberId,
-                        actionType,
-                        null,
-                        openAiModerationClient.getModel(),
-                        false,
-                        ModerationDecision.PASS,
-                        inputHash,
-                        openAiModerationClient.toRawJson(overall.raw())
-                );
-                return auditLogRepository.save(logEntity).getId();
+                return null;
             }
 
             // 2) flagged → 필드별 재검사(어느 필드가 문제인지)
@@ -119,6 +104,7 @@ public class CapsuleModerationService {
                         .build());
             }
 
+            // ✅ FLAGGED만 DB 저장(예외로 롤백돼도 남도록 REQUIRES_NEW로 저장)
             ModerationAuditLog logEntity = ModerationAuditLog.success(
                     actorMemberId,
                     actionType,
@@ -129,7 +115,7 @@ public class CapsuleModerationService {
                     inputHash,
                     openAiModerationClient.toRawJson(combinedRaw)
             );
-            Long auditId = auditLogRepository.save(logEntity).getId();
+            Long auditId = auditLogWriter.saveAndReturnId(logEntity);
 
             CapsuleModerationBlockedPayload payload = CapsuleModerationBlockedPayload.builder()
                     .auditId(auditId)
@@ -140,6 +126,7 @@ public class CapsuleModerationService {
             throw new BusinessException(ErrorCode.CAPSULE_CONTENT_BLOCKED, message, payload);
 
         } catch (RestClientException e) {
+            // ✅ ERROR만 DB 저장(예외로 롤백돼도 남도록 REQUIRES_NEW로 저장)
             ModerationAuditLog logEntity = ModerationAuditLog.error(
                     actorMemberId,
                     actionType,
@@ -148,7 +135,7 @@ public class CapsuleModerationService {
                     inputHash,
                     e.getMessage()
             );
-            Long auditId = auditLogRepository.save(logEntity).getId();
+            Long auditId = auditLogWriter.saveAndReturnId(logEntity);
 
             Map<String, Object> payload = Map.of(
                     "auditId", auditId,
@@ -160,8 +147,7 @@ public class CapsuleModerationService {
 
     @Transactional
     public void attachCapsuleId(Long auditId, Long capsuleId) {
-        if (auditId == null || capsuleId == null) return;
-        auditLogRepository.attachCapsuleId(auditId, capsuleId);
+        auditLogWriter.attachCapsuleId(auditId, capsuleId);
     }
 
     private String buildBlockedMessage(List<CapsuleModerationBlockedPayload.Violation> violations) {
@@ -178,7 +164,7 @@ public class CapsuleModerationService {
             String v = normalize(e.getValue());
             if (v.isBlank()) continue;
 
-            if (!sb.isEmpty()) sb.append("\n");
+            if (sb.length() > 0) sb.append("\n");
             sb.append(e.getKey().name()).append(": ").append(v);
         }
         return sb.toString();

@@ -16,6 +16,7 @@ import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.openai.moderation.dto.CapsuleModerationBlockedPayload;
 import back.fcz.domain.openai.moderation.entity.ModerationActionType;
 import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
 import back.fcz.domain.sms.service.SmsNotificaationService;
@@ -26,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -52,7 +54,7 @@ public class CapsuleCreateService {
     private String domain;
 
     // UUID 생성
-    public String setUUID(){
+    public String setUUID() {
         return UUID.randomUUID().toString();
     }
 
@@ -82,6 +84,7 @@ public class CapsuleCreateService {
     /**
      * 공개 캡슐 생성
      * - moderation flagged이면 생성 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌 (CapsuleModerationService에서 처리)
+     * - ✅ PASS/SKIPPED는 로그 저장 안 함, 실패만 저장
      */
     public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate) {
         Capsule capsule = capsuleCreate.toEntity();
@@ -89,8 +92,8 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ 저장 직전 moderation 검사 (flagged면 서비스에서 예외 던짐)
-        Long auditId = capsuleModerationService.validateCapsuleText(
+        // ✅ 저장 직전 moderation 검사 (flagged면 서비스에서 예외 던짐 / PASS는 아무것도 저장 안 함)
+        capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
                 capsule.getTitle(),
@@ -106,9 +109,6 @@ public class CapsuleCreateService {
 
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
-
-        // ✅ 생성 후 audit log에 capsuleId attach
-        capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
         return CapsuleCreateResponseDTO.from(saved);
     }
@@ -152,8 +152,8 @@ public class CapsuleCreateService {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
 
-        // ✅ moderation (저장 직전 / flagged면 예외)
-        Long auditId = capsuleModerationService.validateCapsuleText(
+        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
                 secretCapsule.getTitle(),
@@ -173,9 +173,6 @@ public class CapsuleCreateService {
         secretCapsule.setProtected(0);
 
         Capsule saved = capsuleRepository.save(secretCapsule);
-
-        // ✅ attach
-        capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
         String url = domain + "/" + saved.getUuid();
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
@@ -198,8 +195,8 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ moderation (저장 직전 / flagged면 예외)
-        Long auditId = capsuleModerationService.validateCapsuleText(
+        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
                 capsule.getTitle(),
@@ -219,9 +216,6 @@ public class CapsuleCreateService {
 
             capsule.setProtected(1); // ✅ 보호=1
             Capsule saved = capsuleRepository.save(capsule);
-
-            // ✅ attach
-            capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
             CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                     .capsuleId(saved)
@@ -248,9 +242,6 @@ public class CapsuleCreateService {
             capsule.setProtected(0); // ✅ 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
 
-            // ✅ attach
-            capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
-
             String url = domain + "/" + saved.getUuid();
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
         }
@@ -269,8 +260,8 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(requestDTO.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ moderation (저장 직전 / flagged면 예외)
-        Long auditId = capsuleModerationService.validateCapsuleText(
+        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
                 capsule.getTitle(),
@@ -287,9 +278,6 @@ public class CapsuleCreateService {
         isCapsuleProfileIncomplete(capsule);
 
         Capsule saved = capsuleRepository.save(capsule);
-
-        // ✅ attach
-        capsuleModerationService.attachCapsuleId(auditId, saved.getCapsuleId());
 
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
@@ -308,6 +296,9 @@ public class CapsuleCreateService {
      * 캡슐 수정
      * - 열람 전(조회수=0)만 수정 가능
      * - moderation flagged이면 수정 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌
+     *
+     * ✅ 수정은 capsuleId가 이미 있으므로,
+     *    실패(예외) 때 payload의 auditId를 뽑아서 attach해두면 관리자 추적이 좋아짐
      */
     public CapsuleUpdateResponseDTO updateCapsule(Long capsuleId, CapsuleUpdateRequestDTO updateDTO) {
 
@@ -326,18 +317,23 @@ public class CapsuleCreateService {
             actorId = targetCapsule.getMemberId().getMemberId();
         }
 
-        // ✅ 수정 저장 전 moderation (flagged면 예외)
-        // ✅ moderation (업데이트 전 검사) + auditId 얻고 capsuleId attach까지
-        Long auditId = capsuleModerationService.validateCapsuleText(
-                actorId,
-                ModerationActionType.CAPSULE_UPDATE,
-                nextTitle,
-                nextContent,
-                targetCapsule.getReceiverNickname(),
-                targetCapsule.getLocationName(),
-                targetCapsule.getAddress()
-        );
-        capsuleModerationService.attachCapsuleId(auditId, targetCapsule.getCapsuleId());
+        // ✅ 수정 저장 전 moderation (flagged/error면 예외)
+        try {
+            capsuleModerationService.validateCapsuleText(
+                    actorId,
+                    ModerationActionType.CAPSULE_UPDATE,
+                    nextTitle,
+                    nextContent,
+                    targetCapsule.getReceiverNickname(),
+                    targetCapsule.getLocationName(),
+                    targetCapsule.getAddress()
+            );
+        } catch (BusinessException e) {
+            // 실패 로그(FLAGGED/ERROR)는 이미 저장되었으니, auditId를 뽑아서 capsuleId만 붙여준다
+            Long auditId = extractAuditId(e.getData());
+            capsuleModerationService.attachCapsuleId(auditId, targetCapsule.getCapsuleId());
+            throw e;
+        }
 
         if (updateDTO.title() != null) {
             targetCapsule.setTitle(updateDTO.title());
@@ -406,5 +402,25 @@ public class CapsuleCreateService {
                 capsuleId,
                 capsuleId + "번 캡슐이 삭제 되었습니다."
         );
+    }
+
+    /**
+     * BusinessException payload에서 auditId 뽑기
+     * - FLAGGED: CapsuleModerationBlockedPayload
+     * - ERROR : Map payload { auditId, reason }
+     */
+    private Long extractAuditId(Object data) {
+        if (data == null) return null;
+
+        if (data instanceof CapsuleModerationBlockedPayload payload) {
+            return payload.getAuditId();
+        }
+
+        if (data instanceof Map<?, ?> map) {
+            Object v = map.get("auditId");
+            if (v instanceof Number n) return n.longValue();
+        }
+
+        return null;
     }
 }
