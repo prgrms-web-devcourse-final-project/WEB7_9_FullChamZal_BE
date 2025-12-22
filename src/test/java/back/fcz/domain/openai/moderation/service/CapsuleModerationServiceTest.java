@@ -42,7 +42,7 @@ class CapsuleModerationServiceTest {
     @BeforeEach
     void setUp() {
         service = new CapsuleModerationService(openAiModerationClient, auditLogWriter, objectMapper);
-        when(openAiModerationClient.getModel()).thenReturn("omni-moderation-2024-09-26");
+        lenient().when(openAiModerationClient.getModel()).thenReturn("omni-moderation-2024-09-26");
     }
 
     @Test
