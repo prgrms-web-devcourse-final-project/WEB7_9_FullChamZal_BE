@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
+import static io.micrometer.common.util.StringUtils.isBlank;
+
 @Service
 @RequiredArgsConstructor
 public class CapsuleCreateService {
@@ -61,6 +63,22 @@ public class CapsuleCreateService {
         return String.valueOf(number);
     }
 
+    public void isCapsuleProfileIncomplete(Capsule capsule){
+        // 닉네임 존재 확인
+        // "" 공백 닉네임도 허용
+        if(capsule.getNickname() == null){
+            throw new BusinessException(ErrorCode.NICKNAME_REQUIRED);
+        }
+
+        // phone 존재 확인
+        // 휴대전화가 null이거나 공백일 때
+        if(capsule.getMemberId().getPhoneNumber() == null || isBlank(capsule.getMemberId().getPhoneNumber())
+        || capsule.getMemberId().getPhoneHash() == null || isBlank(capsule.getMemberId().getPhoneHash())
+        ){
+            throw new BusinessException(ErrorCode.PHONENUMBER_REQUIRED);
+        }
+    }
+
     /**
      * 공개 캡슐 생성
      * - moderation flagged이면 생성 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌 (CapsuleModerationService에서 처리)
@@ -83,6 +101,9 @@ public class CapsuleCreateService {
         );
 
         capsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(capsule);
+
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
 
@@ -126,7 +147,7 @@ public class CapsuleCreateService {
 
         Capsule secretCapsule = capsuleCreate.toEntity();
 
-        // 닉네임 null 방지 ("" 허용)
+        // 수신자 닉네임 null 방지 ("" 허용)
         if (secretCapsule.getReceiverNickname() == null) {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
@@ -145,6 +166,8 @@ public class CapsuleCreateService {
         secretCapsule.setUuid(setUUID());
         secretCapsule.setCapPassword(phoneCrypto.hash(password));
         secretCapsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(secretCapsule);
 
         // URL+비밀번호 방식은 보호=0
         secretCapsule.setProtected(0);
@@ -191,6 +214,9 @@ public class CapsuleCreateService {
         if (isRecipientMember) { // 회원 수신자
 
             capsule.setMemberId(member);
+
+            isCapsuleProfileIncomplete(capsule);
+
             capsule.setProtected(1); // ✅ 보호=1
             Capsule saved = capsuleRepository.save(capsule);
 
@@ -216,6 +242,8 @@ public class CapsuleCreateService {
             String capsulePW = generatePassword();
             capsule.setCapPassword(phoneCrypto.hash(capsulePW));
             capsule.setMemberId(member);
+
+            isCapsuleProfileIncomplete(capsule);
 
             capsule.setProtected(0); // ✅ 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
@@ -255,6 +283,8 @@ public class CapsuleCreateService {
         capsule.setProtected(1);
         capsule.setUuid(setUUID());
         capsule.setMemberId(member);
+
+        isCapsuleProfileIncomplete(capsule);
 
         Capsule saved = capsuleRepository.save(capsule);
 

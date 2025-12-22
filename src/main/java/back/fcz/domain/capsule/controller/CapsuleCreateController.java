@@ -33,13 +33,14 @@ public class CapsuleCreateController {
     @Operation(summary = "공개 캡슐 생성", description = "공개 캡슐을 생성합니다.")
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_CREATE,
-            ErrorCode.MEMBER_NOT_FOUND
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.NICKNAME_REQUIRED,
+            ErrorCode.PHONENUMBER_REQUIRED
     })
     @PostMapping("/create/public")
     public ResponseEntity<ApiResponse<CapsuleCreateResponseDTO>> createPublicCapsule(
             @RequestBody CapsuleCreateRequestDTO requestDTO
             ){
-
         CapsuleCreateResponseDTO response = capsuleCreateService.publicCapsuleCreate(requestDTO);
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -50,7 +51,9 @@ public class CapsuleCreateController {
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_CREATE,
             ErrorCode.MEMBER_NOT_FOUND,
-            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED
+            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED,
+            ErrorCode.NICKNAME_REQUIRED,
+            ErrorCode.PHONENUMBER_REQUIRED
     })
     @PostMapping("/create/private")
     public ResponseEntity<ApiResponse<SecretCapsuleCreateResponseDTO>> createPrivateCapsule(
@@ -64,7 +67,9 @@ public class CapsuleCreateController {
     @Operation(summary = "비공개 캡슐 생성", description = "나에게 보내는 캡슐 생성입니다.")
     @ApiErrorCodeExample({
             ErrorCode.MEMBER_NOT_FOUND,
-            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED
+            ErrorCode.RECEIVERNICKNAME_IS_REQUIRED,
+            ErrorCode.NICKNAME_REQUIRED,
+            ErrorCode.PHONENUMBER_REQUIRED
     })
     @PostMapping("/create/me")
     public ResponseEntity
@@ -72,6 +77,7 @@ public class CapsuleCreateController {
             @RequestBody SecretCapsuleCreateRequestDTO requestDTO
     ){
         InServerMemberResponse currentUser = currentUserContext.getCurrentUser();
+
         SecretCapsuleCreateResponseDTO response = capsuleCreateService.capsuleToMe(requestDTO, currentUser.phoneNumber(), currentUser.phoneHash());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
