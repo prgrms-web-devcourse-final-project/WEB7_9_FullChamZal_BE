@@ -1,6 +1,7 @@
 package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.repository.CapsuleLikeRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.unlock.dto.request.NearbyOpenCapsuleRequest;
@@ -22,14 +23,16 @@ public class NearbyOpenCapsuleServiceTest {
     private NearbyOpenCapsuleService nearbyOpenCapsuleService;
     private PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private CapsuleRepository capsuleRepository;
+    private CapsuleLikeRepository capsuleLikeRepository;
     private UnlockService unlockService;
 
     @BeforeEach
     void setUp() {
         publicCapsuleRecipientRepository = mock(PublicCapsuleRecipientRepository.class);
         capsuleRepository = mock(CapsuleRepository.class);
+        capsuleLikeRepository = mock(CapsuleLikeRepository.class);
         unlockService = mock(UnlockService.class);
-        nearbyOpenCapsuleService = new NearbyOpenCapsuleService(publicCapsuleRecipientRepository, capsuleRepository, unlockService);
+        nearbyOpenCapsuleService = new NearbyOpenCapsuleService(publicCapsuleRecipientRepository, capsuleRepository, capsuleLikeRepository, unlockService);
     }
 
     // 테스트에 사용할 사용자 위치. 서울 시청 위도, 경도

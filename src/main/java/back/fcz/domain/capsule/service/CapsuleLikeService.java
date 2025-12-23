@@ -26,6 +26,11 @@ public class CapsuleLikeService {
 
     public CapsuleLikeResponse likeUp(Long capsuleId) {
         Long memberId = currentUserContext.getCurrentMemberId();
+        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+        if(!capsule.getVisibility().equals("PUBLIC")){
+            throw new BusinessException(ErrorCode.NOT_PUBLIC);
+        }
 
         //중복된 요청인지 체크
         //같은 사용자가 같은 캡슐에 좋아요를 계속 누르는 것을 방지
@@ -34,7 +39,6 @@ public class CapsuleLikeService {
         }
 
         //자신의 캡슐에 자신이 좋아요 누르는 것을 방지
-        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
         if(capsule.getMemberId().getMemberId().equals(memberId)){
             throw new BusinessException(ErrorCode.SELF_LIKE_NOT_ALLOWED);
         }
@@ -55,6 +59,12 @@ public class CapsuleLikeService {
 
 
     public CapsuleLikeResponse likeDown(Long capsuleId) {
+        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        //공개캡슐만 좋아요기능이 가능
+        if(!capsule.getVisibility().equals("PUBLIC")){
+            throw new BusinessException(ErrorCode.NOT_PUBLIC);
+        }
+
         Long memberId = currentUserContext.getCurrentMemberId();
         //좋아요를 누른적이 없는데 좋아요 감소 요청을 하는 경우
         if(!capsuleLikeRepository.existsByCapsuleIdMemberId(capsuleId, memberId)){
@@ -67,7 +77,7 @@ public class CapsuleLikeService {
         //해당 캡슐의 좋아요 값 -1
         capsuleRepository.decrementLikeCount(capsuleId);
 
-        Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+        capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
         return CapsuleLikeResponse.from(capsule.getLikeCount(), "좋아요 감소처리 성공");
     }
 

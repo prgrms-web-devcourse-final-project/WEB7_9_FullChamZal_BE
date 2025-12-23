@@ -16,6 +16,8 @@ import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
+import back.fcz.domain.sms.service.SmsNotificaationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+
 @ExtendWith(MockitoExtension.class)
 class CapsuleCreateServiceTest {
 
@@ -53,6 +56,11 @@ class CapsuleCreateServiceTest {
     PhoneCrypto phoneCrypto;
     @Mock
     CapsuleOpenLogRepository capsuleOpenLogRepository;
+    @Mock
+    CapsuleModerationService capsuleModerationService;
+    @Mock
+    SmsNotificaationService smsNotificaationService;
+
 
     @InjectMocks
     CapsuleCreateService capsuleCreateService;
@@ -63,6 +71,12 @@ class CapsuleCreateServiceTest {
     @BeforeEach
     void setup() {
         member = Member.testMember(1L, "testUser", "Test User");
+
+        // ✅ 모든 테스트에서 moderation이 반드시 호출되진 않아서 lenient로 처리
+        lenient().when(capsuleModerationService.validateCapsuleText(
+                any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(null);
+
     }
 
     // ==================

@@ -1,6 +1,7 @@
 package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.repository.CapsuleLikeRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.unlock.dto.request.NearbyOpenCapsuleRequest;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class NearbyOpenCapsuleService {
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final CapsuleRepository capsuleRepository;
+    private final CapsuleLikeRepository capsuleLikeRepository;
     private final UnlockService unlockService;
 
     private final int DEFAULT_RADIUS_M = 1000;  // 기본 반경 값 1km
@@ -46,6 +48,9 @@ public class NearbyOpenCapsuleService {
         // 사용자가 열람한 공개 캡슐의 ID 목록 조회
         Set<Long> viewedCapsuleIds = publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId);
 
+        // 사용자가 좋아요를 누른 캡슐 ID 목록 조회
+        Set<Long> likedCapsuleIds = capsuleLikeRepository.findAllLikedCapsuleIdsByMemberId(memberId);
+
         return capsules.stream()
                 .map(capsule -> {
                     // 캡슐 위치와 사용자 위치 간 거리 계산
@@ -61,13 +66,16 @@ public class NearbyOpenCapsuleService {
                     // 사용자가 해당 캡슐을 열람한 적 있는 지, 확인 (열람했다면 true, 미열람이라면 false)
                     boolean isViewed = viewedCapsuleIds.contains(capsule.getCapsuleId());
 
-                    // 사용자의 위치에서 해당 캡슐을 열람할 수 있는 지, 확인 (열람할 수 있다면 true, 열람 불가하다면 false)
+                    // 사용자가 해당 캡슐을 열람할 수 있는 지, 확인 (열람할 수 있다면 true, 열람 불가하다면 false)
                     boolean isUnlockable = unlockService.validateTimeAndLocationConditions(
                             capsule, currentTime, currentLat, currentLng
                     );
 
+                    // 사용자가 해당 캡슐에 좋아요를 눌렀는 지, 확인 (좋아요 했다면 true, 좋아요 안했다면 false)
+                    boolean isLiked = likedCapsuleIds.contains(capsule.getCapsuleId());
+
                     // 응답 DTO로 매핑
-                    return new NearbyOpenCapsuleResponse(capsule, distance, isViewed, isUnlockable);
+                    return new NearbyOpenCapsuleResponse(capsule, distance, isViewed, isUnlockable, isLiked);
                 })
                 // distance > searchRadiusM인 항목 제거
                 .filter(response -> response != null)

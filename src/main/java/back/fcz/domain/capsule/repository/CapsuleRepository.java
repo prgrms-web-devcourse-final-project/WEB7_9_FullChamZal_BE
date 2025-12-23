@@ -150,7 +150,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     @Query("UPDATE Capsule c SET c.likeCount = c.likeCount + 1 WHERE c.capsuleId = :id")
     void incrementLikeCount(@Param("id") Long id);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Capsule c SET c.likeCount = c.likeCount - 1 WHERE c.capsuleId = :id AND c.likeCount > 0")
     void decrementLikeCount(@Param("id") Long id);
 }

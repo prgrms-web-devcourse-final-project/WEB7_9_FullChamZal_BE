@@ -23,6 +23,7 @@ public record CapsuleConditionResponseDTO(
         String locationName,       // 장소 이름(별명)
         Double locationLat,        // 해제 세부 조건(위도) : 위치 기반 해제 일시
         Double locationLng,         // 해제 세부 조건(경도) : 위치 기반 해제 일시
+        int locationRadiusM,
 
         String result // 해제 성공 여부
 ) {
@@ -47,6 +48,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
+                capsule.getLocationRadiusM(),
 
                 "SUCCESS"
         );
@@ -73,6 +75,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
+                capsule.getLocationRadiusM(),
 
                 "SUCCESS"
         );
@@ -99,6 +102,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
+                capsule.getLocationRadiusM(),
 
                 "SUCCESS"
         );
@@ -123,6 +127,7 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationName(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
+                capsule.getLocationRadiusM(),
 
                 "FAIL"
         );

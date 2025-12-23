@@ -88,6 +88,7 @@ public enum ErrorCode {
     NOT_SELF_CAPSULE("CPS019", HttpStatus.BAD_REQUEST, "자신이 작성한 캡슐이 아닙니다."),
     NICKNAME_REQUIRED("CP020", HttpStatus.BAD_REQUEST, "캡슐 생성에 발신자 닉네임이 필요합니다."),
     PHONENUMBER_REQUIRED("CP021", HttpStatus.BAD_REQUEST, "캡슐 생성에 전화번호가 필요합니다."),
+    NOT_PUBLIC("CPS022", HttpStatus.BAD_REQUEST, "공개 캡슐이 아닙니다."),
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
