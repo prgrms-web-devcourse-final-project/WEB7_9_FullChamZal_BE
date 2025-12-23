@@ -26,10 +26,12 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
         c.content,
         b.createdAt
     )
-    FROM Bookmark b
-    JOIN Capsule c ON b.capsuleId = c.capsuleId
-    WHERE b.memberId = :memberId
+    FROM Bookmark b, Capsule c
+    WHERE b.capsuleId = c.capsuleId
+    AND b.memberId = :memberId
     AND b.deletedAt IS NULL
     AND c.isDeleted = 0
+    ORDER BY b.createdAt DESC
     """)
-    Page<BookmarkWithCapsule> findBookmarksWithCapsuleInfo(@Param("memberId") Long memberId, Pageable pageable);}
+    Page<BookmarkWithCapsule> findBookmarksWithCapsuleInfo(@Param("memberId") Long memberId, Pageable pageable);
+}
