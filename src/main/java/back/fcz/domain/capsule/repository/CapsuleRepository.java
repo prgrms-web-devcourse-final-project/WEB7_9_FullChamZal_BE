@@ -153,4 +153,18 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Capsule c SET c.likeCount = c.likeCount - 1 WHERE c.capsuleId = :id AND c.likeCount > 0")
     void decrementLikeCount(@Param("id") Long id);
+
+    @Query("""
+    SELECT c FROM Capsule c
+    WHERE c.memberId.memberId = :memberId
+      AND c.visibility = :isPublic
+      AND (c.unlockType = :type1 OR c.unlockType = :type2)
+""")
+    Page<Capsule> findMyCapsulesLocationType(
+            @Param("memberId") Long memberId,
+            @Param("isPublic") String isPublic,
+            @Param("type1") String type1,
+            @Param("type2") String type2,
+            Pageable pageable
+    );
 }

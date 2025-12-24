@@ -7,6 +7,7 @@ import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.global.dto.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,13 +15,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CapsuleDashBoardServiceTest {
@@ -180,4 +185,68 @@ public class CapsuleDashBoardServiceTest {
         // then
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("스토리트랙용 공개 장소 기반 캡슐 조회 성공")
+    void myPublicLocationCapsule_success() {
+        // given
+        Long memberId = 1L;
+        int page = 0;
+        int size = 2;
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "capsuleId")
+        );
+
+        Capsule capsule1 = Capsule.builder()
+                .capsuleId(1L)
+                .title("캡슐1")
+                .unlockType("LOCATION")
+                .build();
+
+        Capsule capsule2 = Capsule.builder()
+                .capsuleId(2L)
+                .title("캡슐2")
+                .unlockType("TIME_AND_LOCATION")
+                .build();
+
+        Page<Capsule> capsulePage =
+                new PageImpl<>(List.of(capsule1, capsule2), pageable, 2);
+
+        given(capsuleRepository.findMyCapsulesLocationType(
+                eq(memberId),
+                eq("PUBLIC"),
+                eq("LOCATION"),
+                eq("TIME_AND_LOCATION"),
+                any(Pageable.class)
+        )).willReturn(capsulePage);
+
+        // when
+        PageResponse<CapsuleDashBoardResponse> response =
+                capsuleDashBoardService.myPublicLocationCapsule(memberId, page, size);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+
+        CapsuleDashBoardResponse dto1 = response.getContent().get(0);
+        assertThat(dto1.capsuleId()).isEqualTo(1L);
+        assertThat(dto1.unlockType()).isEqualTo("LOCATION");
+
+        CapsuleDashBoardResponse dto2 = response.getContent().get(1);
+        assertThat(dto2.capsuleId()).isEqualTo(2L);
+        assertThat(dto2.unlockType()).isEqualTo("TIME_AND_LOCATION");
+
+        verify(capsuleRepository, times(1))
+                .findMyCapsulesLocationType(
+                        eq(memberId),
+                        eq("PUBLIC"),
+                        eq("LOCATION"),
+                        eq("TIME_AND_LOCATION"),
+                        any(Pageable.class)
+                );
+    }
+
 }

@@ -6,9 +6,14 @@ import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +38,7 @@ public class CapsuleDashBoardService {
                     CapsuleRecipient recipient = capsuleRecipientRepository.findByCapsuleId_CapsuleId(capsule.getCapsuleId())
                             .orElse(null);
 
-                    return new CapsuleDashBoardResponse(capsule, recipient);
+                    return new CapsuleDashBoardResponse(capsule);
                 })
                 .collect(Collectors.toList());
 
@@ -54,10 +59,32 @@ public class CapsuleDashBoardService {
                 .map(recipient -> {
                     Capsule capsule = recipient.getCapsuleId();
 
-                    return new CapsuleDashBoardResponse(capsule, recipient);
+                    return new CapsuleDashBoardResponse(capsule);
                 })
                 .collect(Collectors.toList());
 
         return response;
+    }
+
+    private Pageable createPageable(int page, int size, Sort sort) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 50); // max 50
+
+        return PageRequest.of(safePage, safeSize, sort);
+    }
+
+    // 스토리트랙용 캡슐 목록 조회(내가 만든 캡슐, 공개 ,장소 기반)
+    public PageResponse<CapsuleDashBoardResponse> myPublicLocationCapsule (Long memberId, int page, int size){
+        Pageable pageable = createPageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "capsuleId")
+        );
+
+        Page<Capsule> capsulePage = capsuleRepository.findMyCapsulesLocationType(memberId, "PUBLIC", "LOCATION", "TIME_AND_LOCATION",pageable);
+
+        Page<CapsuleDashBoardResponse> responsePage = capsulePage.map(CapsuleDashBoardResponse::new);
+
+        return new PageResponse<>(responsePage);
     }
 }
