@@ -84,6 +84,28 @@ public class BaseInitData implements CommandLineRunner {
     }
 
     private void createTestMembers() {
+        // 시스템 관리자 (memberId = 1로 가장 먼저 생성)
+        createMember(
+                "SYSTEM",
+                UUID.randomUUID().toString(), // 랜덤 비밀번호 (로그인 불가)
+                "시스템",
+                "SYSTEM",
+                "00000000000",
+                MemberStatus.ACTIVE,
+                MemberRole.ADMIN
+        );
+
+        // 관리자
+        createMember(
+                "admin",
+                "admin123",
+                "관리자",
+                "어드민",
+                "00000000001",
+                MemberStatus.ACTIVE,
+                MemberRole.ADMIN
+        );
+
         // 일반 회원 1
         createMember(
                 "testuser",
@@ -104,17 +126,6 @@ public class BaseInitData implements CommandLineRunner {
                 "01023456789",
                 MemberStatus.ACTIVE,
                 MemberRole.USER
-        );
-
-        // 관리자
-        createMember(
-                "admin",
-                "admin123",
-                "관리자",
-                "어드민",
-                "01099999999",
-                MemberStatus.ACTIVE,
-                MemberRole.ADMIN
         );
 
         // 정지 회원

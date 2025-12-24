@@ -14,7 +14,14 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "capsule_openLog")
+@Table(
+        name = "capsule_openLog",
+        indexes = {
+                @Index(name = "idx_col_member_time", columnList = "member_id, opened_at"),
+                @Index(name = "idx_col_ip_time", columnList = "ip_address, opened_at"),
+                @Index(name = "idx_col_status", columnList = "status")
+        }
+)
 public class CapsuleOpenLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,4 +53,21 @@ public class CapsuleOpenLog {
 
     @Column(name = "ip_address")
     private String ipAddress;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private CapsuleOpenStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "anomaly_type", length = 50)
+    private AnomalyType anomalyType;
+
+    public void updateStatus(CapsuleOpenStatus status) {
+        this.status = status;
+    }
+
+    public void markAsAnomaly(AnomalyType anomalyType) {
+        this.anomalyType = anomalyType;
+        this.status = CapsuleOpenStatus.SUSPICIOUS;
+    }
 }
