@@ -2,6 +2,8 @@ package back.fcz.domain.storytrack.controller;
 
 
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
+import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.response.CreateStorytrackResponse;
@@ -9,6 +11,7 @@ import back.fcz.domain.storytrack.dto.response.DeleteStorytrackResponse;
 import back.fcz.domain.storytrack.dto.response.JoinStorytrackResponse;
 import back.fcz.domain.storytrack.service.StorytrackService;
 import back.fcz.global.dto.InServerMemberResponse;
+import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -26,8 +32,7 @@ import java.util.List;
 
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,6 +46,9 @@ class StorytrackControllerTest {
 
     @Mock
     private CurrentUserContext currentUserContext;
+
+    @Mock
+    private CapsuleDashBoardService capsuleDashBoardService;
 
     @InjectMocks
     private StorytrackController storytrackController;
@@ -205,5 +213,59 @@ class StorytrackControllerTest {
         verify(storytrackService).validateParticipant(loginMemberId, storytrackId);
         verify(storytrackService).validateStepAccess(loginMemberId, storytrackId, 20L);
     }
+
+    @Test
+    @DisplayName("스토리트랙 생성용 - 내가 만든 공개 장소 기반 캡슐 목록 조회 성공")
+    void findMyLocationCapsuleList_success() throws Exception {
+        // given
+        Long memberId = 1L;
+
+        InServerMemberResponse loginUser = mock(InServerMemberResponse.class);
+        given(loginUser.memberId()).willReturn(memberId);
+        given(currentUserContext.getCurrentUser()).willReturn(loginUser);
+
+        CapsuleDashBoardResponse dto1 = new CapsuleDashBoardResponse(
+                1L,
+                "red",
+                "white",
+                "receiver1",
+                "sender1",
+                "title1",
+                "content1",
+                LocalDateTime.now(),
+                false,
+                "LOCATION",
+                null,
+                "서울",
+                37.1,
+                127.1
+        );
+
+        Page<CapsuleDashBoardResponse> page =
+                new PageImpl<>(List.of(dto1), PageRequest.of(0, 10), 1);
+
+        PageResponse<CapsuleDashBoardResponse> pageResponse =
+                new PageResponse<>(page);
+
+        given(capsuleDashBoardService.myPublicLocationCapsule(
+                eq(memberId),
+                eq(0),
+                eq(10)
+        )).willReturn(pageResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/storytrack/creater/capsuleList")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].capsuleId").value(1L))
+                .andExpect(jsonPath("$.data.content[0].unlockType").value("LOCATION"));
+
+        verify(capsuleDashBoardService, times(1))
+                .myPublicLocationCapsule(memberId, 0, 10);
+    }
+
 }
 

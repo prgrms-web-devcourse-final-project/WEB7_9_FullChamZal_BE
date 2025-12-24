@@ -210,7 +210,11 @@ public class StorytrackService {
     // 전체 스토리 트랙 목록 조회
     public PageResponse<TotalStorytrackResponse> readTotalStorytrack(int page, int size) {
 
-        Pageable pageable = createPageable(page, size, null);
+        Pageable pageable = createPageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "storytrackId") // 생성한 순서대로 조회
+        );
 
         Page<Storytrack> storytrackPage =
                 storytrackRepository.findByIsPublic(1, pageable);
@@ -298,7 +302,11 @@ public class StorytrackService {
             int size
     ) {
 
-        Pageable pageable = createPageable(page, size, null);
+        Pageable pageable = createPageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "storytrackId") // 생성한 순서대로 조회
+        );
 
         Page<Storytrack> storytracks =
                 storytrackRepository.findByMember_MemberId(memberId, pageable);
@@ -316,7 +324,10 @@ public class StorytrackService {
             int size
     ) {
 
-        Pageable pageable = createPageable(page, size, null
+        Pageable pageable = createPageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "id") // 참여한 순서대로 조회
         );
 
         Page<StorytrackProgress> progresses =

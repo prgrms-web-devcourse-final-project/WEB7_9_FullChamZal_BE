@@ -24,6 +24,16 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 # 아래 key 값들은 실제로 사용하는 키 값이 아닌 테스트용 더미 값입니다.
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: dummy-google-client-id
+            client-secret: dummy-google-client-secret
+            scope:
+              - profile
+              - email
 
 security:
   encryption:

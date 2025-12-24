@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -84,15 +85,18 @@ public class BookmarkController {
             ErrorCode.TOKEN_INVALID
     })
     public ResponseEntity<PageResponse<BookmarkListItemResponse>> getBookmarks(
-            @PageableDefault(
-                    size = 20,
-                    sort = "createdAt",
-                    direction = Sort.Direction.DESC
-            ) Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable
     ) {
         Long memberId = currentUserContext.getCurrentMemberId();
+
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "id")
+        );
+
         Page<BookmarkListItemResponse> bookmarkPage =
-                bookmarkService.getBookmarks(memberId, pageable);
+                bookmarkService.getBookmarks(memberId, sortedPageable);
 
         return ResponseEntity.ok(new PageResponse<>(bookmarkPage));
     }
