@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.DTO.response;
 
 import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.entity.CapsuleRecipient;
 
 import java.time.LocalDateTime;
 
@@ -22,7 +21,7 @@ public record CapsuleDashBoardResponse(
         Double locationLat,
         Double locationLng
 ) {
-    public CapsuleDashBoardResponse (Capsule capsule, CapsuleRecipient capsuleRecipient) {
+    public CapsuleDashBoardResponse (Capsule capsule) {
         this(
                 capsule.getCapsuleId(),
                 capsule.getCapsuleColor(),
