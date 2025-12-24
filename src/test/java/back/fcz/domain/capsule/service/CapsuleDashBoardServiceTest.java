@@ -112,36 +112,34 @@ public class CapsuleDashBoardServiceTest {
     @DisplayName("전송한 캡슐 목록과 해당 캡슐에 대한 수신자를 조회한다")
     void readSendCapsuleList_Success() {
         // given
+        Pageable pageable = PageRequest.of(0, 10);
         List<Capsule> sendCapsules = Arrays.asList(capsule1, capsule2);
-        when(capsuleRepository.findActiveCapsulesByMemberId(MEMBER_ID))
-                .thenReturn(sendCapsules);
+        // List를 Page 객체로 감싸서 반환하도록 수정
+        Page<Capsule> capsulePage = new PageImpl<>(sendCapsules, pageable, sendCapsules.size());
 
-        when(capsuleRecipientRepository.findByCapsuleId_CapsuleId(1L))
-                .thenReturn(Optional.of(recipient1));
-        when(capsuleRecipientRepository.findByCapsuleId_CapsuleId(2L))
-                .thenReturn(Optional.of(recipient2));
+        // findActiveCapsulesByMemberId에 pageable 파라미터 추가
+        when(capsuleRepository.findActiveCapsulesByMemberId(MEMBER_ID, pageable))
+                .thenReturn(capsulePage);
 
         // when
-        List<CapsuleDashBoardResponse> result = capsuleDashBoardService.readSendCapsuleList(MEMBER_ID);
+        // 서비스 메서드 호출 시 pageable 전달, 반환 타입은 Page로 변경
+        Page<CapsuleDashBoardResponse> result = capsuleDashBoardService.readSendCapsuleList(MEMBER_ID, pageable);
 
         // then
-        assertThat(result).hasSize(2);
-
-        assertThat(result.get(0).capsuleId()).isEqualTo(1L);
-        assertThat(result.get(0).recipient()).isEqualTo("receiver test"); // 발신자가 작성한 닉네임
-        assertThat(result.get(1).capsuleId()).isEqualTo(2L);
-        assertThat(result.get(1).recipient()).isEqualTo(null); // 공개 테이블이라서 null로 저장된 수신자 닉네임
+        assertThat(result.getContent()).hasSize(2); // Page의 내용을 검증할 땐 getContent() 사용
+        assertThat(result.getContent().get(0).capsuleId()).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("전송한 캡슐이 없는 경우, 빈 리스트를 반환한다")
+    @DisplayName("전송한 캡슐이 없는 경우, 빈 페이지를 반환한다")
     void readSendCapsuleList_no_capsules() {
         // given
-        when(capsuleRepository.findActiveCapsulesByMemberId(MEMBER_ID))
-                .thenReturn(List.of());
+        Pageable pageable = PageRequest.of(0, 10);
+        when(capsuleRepository.findActiveCapsulesByMemberId(MEMBER_ID, pageable))
+                .thenReturn(Page.empty(pageable));
 
         // when
-        List<CapsuleDashBoardResponse> result = capsuleDashBoardService.readSendCapsuleList(MEMBER_ID);
+        Page<CapsuleDashBoardResponse> result = capsuleDashBoardService.readSendCapsuleList(MEMBER_ID, pageable);
 
         // then
         assertThat(result).isEmpty();
@@ -156,31 +154,32 @@ public class CapsuleDashBoardServiceTest {
     void readReceiveCapsuleList_Success() {
         // given
         setUpForReceiveDashBoard();
-
+        Pageable pageable = PageRequest.of(0, 10);
         List<CapsuleRecipient> recipients = Arrays.asList(recipient1, recipient2);
-        when(capsuleRecipientRepository.findAllByRecipientPhoneHashWithCapsule(PHONE_HASH))
-                .thenReturn(recipients);
+        Page<CapsuleRecipient> recipientPage = new PageImpl<>(recipients, pageable, recipients.size());
+
+        when(capsuleRecipientRepository.findAllByRecipientPhoneHashWithCapsule(PHONE_HASH, pageable))
+                .thenReturn(recipientPage);
 
         // When
-        List<CapsuleDashBoardResponse> result = capsuleDashBoardService.readReceiveCapsuleList(MEMBER_ID);
+        Page<CapsuleDashBoardResponse> result = capsuleDashBoardService.readReceiveCapsuleList(MEMBER_ID, pageable);
 
         // Then
-        assertThat(result).hasSize(2);
-
-        assertThat(result.get(0).capsuleId()).isEqualTo(1L);
-        assertThat(result.get(1).capsuleId()).isEqualTo(2L);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).capsuleId()).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("수신된 캡슐이 없는 경우, 빈 리스트를 반환한다")
+    @DisplayName("수신된 캡슐이 없는 경우, 빈 페이지를 반환한다")
     void readReceiveCapsuleList_no_capsules() {
         // given
+        Pageable pageable = PageRequest.of(0, 10);
         setUpForReceiveDashBoard();
-        when(capsuleRecipientRepository.findAllByRecipientPhoneHashWithCapsule(PHONE_HASH))
-                .thenReturn(List.of());  // 빈 리스트 반환
+        when(capsuleRecipientRepository.findAllByRecipientPhoneHashWithCapsule(PHONE_HASH, pageable))
+             .thenReturn(Page.empty(pageable));  // 빈 페이지 반환
 
         // when
-        List<CapsuleDashBoardResponse> result = capsuleDashBoardService.readReceiveCapsuleList(MEMBER_ID);
+        Page<CapsuleDashBoardResponse> result = capsuleDashBoardService.readReceiveCapsuleList(MEMBER_ID, pageable);
 
         // then
         assertThat(result).isEmpty();

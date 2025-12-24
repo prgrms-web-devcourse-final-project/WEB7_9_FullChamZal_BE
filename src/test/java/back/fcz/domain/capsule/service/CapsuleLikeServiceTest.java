@@ -90,17 +90,30 @@ public class CapsuleLikeServiceTest {
         // given
         Long capsuleId = 100L;
         Long memberId = 1L;
+
+        // 1. 좋아요 객체 생성 (findBy 결과로 반환할 객체)
+        CapsuleLike mockLike = CapsuleLike.builder()
+                .capsuleId(capsule)
+                .memberId(member)
+                .build();
+
+        // 2. Mock 설정
         when(currentUserContext.getCurrentMemberId()).thenReturn(memberId);
-        when(capsuleLikeRepository.existsByCapsuleIdMemberId(capsuleId, memberId)).thenReturn(true);
-        // findById 호출 시 감소된 상태의 캡슐을 반환하도록 설정 (테스트용)
         when(capsuleRepository.findById(capsuleId)).thenReturn(Optional.of(capsule));
+
+        // existsBy가 아니라 findBy를 사용하도록 수정
+        when(capsuleLikeRepository.findByCapsuleId_CapsuleIdAndMemberId_MemberId(capsuleId, memberId))
+                .thenReturn(Optional.of(mockLike));
 
         // when
         CapsuleLikeResponse response = capsuleLikeService.likeDown(capsuleId);
 
         // then
-        verify(capsuleLikeRepository, times(1)).deleteByCapsuleId_CapsuleIdAndMemberId_MemberId(capsuleId, memberId);
+        // delete(entity) 호출 확인
+        verify(capsuleLikeRepository, times(1)).delete(any(CapsuleLike.class));
+        verify(capsuleLikeRepository, times(1)).flush();
         verify(capsuleRepository, times(1)).decrementLikeCount(capsuleId);
+
         assertThat(response.message()).isEqualTo("좋아요 감소처리 성공");
     }
 }

@@ -2,15 +2,17 @@ package back.fcz.domain.capsule.controller;
 
 
 import back.fcz.domain.capsule.DTO.request.CapsuleLikeRequest;
+import back.fcz.domain.capsule.DTO.response.CapsuleLikeReadResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleLikeResponse;
 import back.fcz.domain.capsule.service.CapsuleLikeService;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
@@ -30,10 +32,11 @@ public class CapsuleLikeController {
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @GetMapping("/readLike")
-    public ResponseEntity<ApiResponse<CapsuleLikeResponse>> readLike(
+    public ResponseEntity<ApiResponse<CapsuleLikeReadResponse>> readLike(
+            @AuthenticationPrincipal Long memberId,
             @RequestParam Long capsuleId
     ){
-        return ResponseEntity.ok(ApiResponse.success(capsuleLikeService.readLike(capsuleId)));
+        return ResponseEntity.ok(ApiResponse.success(capsuleLikeService.readLike(capsuleId, memberId)));
     }
 
 

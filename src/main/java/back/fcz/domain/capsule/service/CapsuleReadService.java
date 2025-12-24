@@ -50,25 +50,18 @@ public class CapsuleReadService {
         //자신이 작성한 캡슐이면 검증 없이 읽기
         Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
         Long currentMemberId = currentUserContext.getCurrentMemberId();
+
         //본인이 작성한 캡슐인지 확인
-        System.out.println("currentMemberId : " + currentMemberId);
-        System.out.println("capsule.getMemberId().getMemberId() : " + capsule.getMemberId().getMemberId());
-
-
         if(!currentMemberId.equals(capsule.getMemberId().getMemberId())){
-            System.out.println("본인이 작성한 캡슐이 아님");
             throw new BusinessException(ErrorCode.NOT_SELF_CAPSULE);
         }
 
         if(capsule.getVisibility().equals("PUBLIC")){
-            System.out.println("공개 캡슐임");
             boolean viewStatus = publicCapsuleRecipientRepository
                     .existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId);
 
             return CapsuleConditionResponseDTO.from(capsule, viewStatus, false);
         }else{
-            System.out.println("비공개 캡슐임");
-
             return CapsuleConditionResponseDTO.from(capsule);
         }
     }
@@ -85,7 +78,6 @@ public class CapsuleReadService {
             return publicCapsuleLogic(capsule, requestDto);
         }else{
             // PRIVATE와 SELF 모두 개인 캡슐 로직으로 동일하게 처리
-            System.out.println("개인 캡슐 로직");
             return privateCapsuleLogic(capsule, requestDto);
         }
     }

@@ -2,10 +2,7 @@ package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleSaveButtonRequest;
-import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
-import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleSaveButtonResponse;
+import back.fcz.domain.capsule.DTO.response.*;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
@@ -15,6 +12,11 @@ import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -106,10 +108,11 @@ public class CapsuleReadController {
             ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND
     })
     @GetMapping("/send/dashboard")
-    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> sentCapsuleDash(
-            @AuthenticationPrincipal Long memberId
+    public ResponseEntity<ApiResponse<Page<CapsuleDashBoardResponse>>> sentCapsuleDash(
+            @AuthenticationPrincipal Long memberId,
+            @ParameterObject @PageableDefault(size =10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readSendCapsuleList(memberId);
+        Page<CapsuleDashBoardResponse> response = capsuleDashBoardService.readSendCapsuleList(memberId, pageable);
 
         return  ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -119,11 +122,42 @@ public class CapsuleReadController {
             ErrorCode.MEMBER_NOT_FOUND
     })
     @GetMapping("/receive/dashboard")
-    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> receivedCapsuleDash(
-            @AuthenticationPrincipal Long memberId
+    public ResponseEntity<ApiResponse<Page<CapsuleDashBoardResponse>>> receivedCapsuleDash(
+            @AuthenticationPrincipal Long memberId,
+            @ParameterObject @PageableDefault(size =10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readReceiveCapsuleList(memberId);
+        Page<CapsuleDashBoardResponse> response = capsuleDashBoardService.readReceiveCapsuleList(memberId, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @Operation(summary = "연간 송수신 캡슐 조회",
+            description = "사용자가 연간 송수신 한 캡슐들의 수를 조회합니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND
+    })
+    @GetMapping("/showYearlyCapsule")
+    public ResponseEntity<ApiResponse<YearlyCapsuleResponse>> showYearlyCapsule(
+            @AuthenticationPrincipal Long memberId,
+            @RequestParam int year
+    ) {
+        List<MonthlyCapsuleStat> yearlyCapsule = capsuleDashBoardService.readYearlyCapsule(memberId, year);
+        YearlyCapsuleResponse response = new YearlyCapsuleResponse(yearlyCapsule);
+        return  ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "오늘 해제 될 캡슐 조회",
+            description = "사용자가 받은 캡슐 중 오늘 해제될 캡슐들을 반환합니다.")
+    @ApiErrorCodeExample({
+
+    })
+    @GetMapping("/dailyUnlockedCapsule")
+    public ResponseEntity<ApiResponse<DailyUnlockedCapsuleResponse>> dailyUnlockedCapsule(
+            @AuthenticationPrincipal Long memberId
+    ) {
+        DailyUnlockedCapsuleResponse response= capsuleDashBoardService.dailyUnlockedCapsule(memberId);
+        return  ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
 }
