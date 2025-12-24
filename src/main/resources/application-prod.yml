@@ -33,6 +33,18 @@ spring:
         use_sql_comments: false
     show-sql: false
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_OAUTH_ID}
+            client-secret: ${GOOGLE_OAUTH_SECRET}
+            redirect-uri: ${GOOGLE_OAUTH_REDIRECT}
+            scope:
+              - profile
+              - email
+
 logging:
   level:
     root: INFO
@@ -73,18 +85,6 @@ coolsms:
   api-key: ${COOLSMS_API_KEY}
   api-secret: ${COOLSMS_API_SECRET}
   from-number: ${COOLSMS_FROM_NUMBER}
-
-Security:
-  oauth2:
-    client:
-      registration:
-        google:
-          client-id: ${GOOGLE_OAUTH_ID}
-          client-secret: ${GOOGLE_OAUTH_SECRET}
-          redirect-uri: ${GOOGLE_OAUTH_REDIRECT}
-          scope:
-            - profile
-            - email
 
 openai:
   api:
