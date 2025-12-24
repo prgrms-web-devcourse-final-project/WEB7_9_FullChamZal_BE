@@ -156,9 +156,9 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
 
     @Query("""
     SELECT c FROM Capsule c
-    WHERE c.member.memberId = :memberId
-      AND c.isPublic = :isPublic
-      AND (c.capsuleType = :type1 OR c.capsuleType = :type2)
+    WHERE c.memberId.memberId = :memberId
+      AND c.visibility = :isPublic
+      AND (c.unlockType = :type1 OR c.unlockType = :type2)
 """)
     Page<Capsule> findMyCapsulesLocationType(
             @Param("memberId") Long memberId,
