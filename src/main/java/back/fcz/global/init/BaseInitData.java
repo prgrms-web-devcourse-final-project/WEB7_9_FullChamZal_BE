@@ -81,6 +81,11 @@ public class BaseInitData implements CommandLineRunner {
         }
 
         createFirstComeTestCapsule();
+
+        Member member1 = memberRepository.findByUserId("testuser")
+                .orElseThrow(() -> new IllegalStateException("testuser 없음"));
+
+        createHardDeleteCandidates(member1);
     }
 
     private void createTestMembers() {
@@ -854,6 +859,53 @@ public class BaseInitData implements CommandLineRunner {
         );
     }
 
+
+    // BaseInitData.java 내부에 메서드 추가 (필요한 repo는 이미 주입돼있다고 가정)
+    private void createHardDeleteCandidates(Member member) {
+        // TIME 기반 후보 (unlockAt 과거)
+        Capsule c1 = Capsule.builder()
+                .memberId(member)
+                .uuid(UUID.randomUUID().toString())
+                .nickname("삭제후보-TIME")
+                .title("hard-delete-time")
+                .content("삭제 테스트")
+                .capsuleColor("PINK")
+                .capsulePackingColor("RED")
+                .visibility("PRIVATE")
+                .capPassword("testpw")
+                .unlockType("TIME")
+                .unlockAt(LocalDateTime.now().minusDays(1))
+                .unlockUntil(null)
+                .isDeleted(1)
+                .isProtected(0)
+                .currentViewCount(0)
+                .build();
+        c1.markDeleted();
+        capsuleRepository.save(c1);
+
+        // LOCATION 기반 후보 (createdAt 기준이라 소프트삭제면 바로 후보)
+        Capsule c2 = Capsule.builder()
+                .memberId(member)
+                .uuid(UUID.randomUUID().toString())
+                .nickname("삭제후보-LOC")
+                .title("hard-delete-loc")
+                .content("삭제 테스트")
+                .capsuleColor("GREEN")
+                .capsulePackingColor("BLACK")
+                .visibility("PRIVATE")
+                .capPassword("testpw")
+                .unlockType("LOCATION")
+                .locationName("테스트장소")
+                .locationLat(37.5665)
+                .locationLng(126.9780)
+                .locationRadiusM(100)
+                .isDeleted(1)
+                .isProtected(0)
+                .currentViewCount(0)
+                .build();
+        c2.markDeleted();
+        capsuleRepository.save(c2);
+    }
 
 
 }
