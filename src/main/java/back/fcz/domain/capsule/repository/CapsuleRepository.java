@@ -153,4 +153,11 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Capsule c SET c.likeCount = c.likeCount - 1 WHERE c.capsuleId = :id AND c.likeCount > 0")
     void decrementLikeCount(@Param("id") Long id);
+
+    // 송신 캡슐 월별 카운트
+    @Query("SELECT month(c.createdAt), count(c) " +
+            "FROM Capsule c " +
+            "WHERE c.memberId.memberId = :memberId AND year(c.createdAt) = :year " +
+            "GROUP BY month(c.createdAt)")
+    List<Object[]> countMonthlySendCapsules(@Param("memberId") Long memberId, @Param("year") int year);
 }

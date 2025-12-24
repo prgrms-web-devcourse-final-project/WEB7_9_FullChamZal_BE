@@ -2,10 +2,7 @@ package back.fcz.domain.capsule.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.request.CapsuleSaveButtonRequest;
-import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
-import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleSaveButtonResponse;
+import back.fcz.domain.capsule.DTO.response.*;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
@@ -23,6 +20,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -131,4 +130,21 @@ public class CapsuleReadController {
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @Operation(summary = "연간 송수신 캡슐 조회",
+            description = "사용자가 연간 송수신 한 캡슐들의 수를 조회합니다.")
+    @ApiErrorCodeExample({
+
+    })
+    @GetMapping("/showYearlyCapsule/")
+    public ResponseEntity<ApiResponse<YearlyCapsuleResponse>> showYearlyCapsule(
+            @AuthenticationPrincipal Long memberId,
+            @RequestParam int year
+    ) {
+        List<MonthlyCapsuleStat> yearlyCapsule = capsuleDashBoardService.readYearlyCapsule(memberId, year);
+        YearlyCapsuleResponse response = new YearlyCapsuleResponse(yearlyCapsule);
+        return  ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
 }

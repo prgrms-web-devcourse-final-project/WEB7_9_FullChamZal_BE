@@ -1,6 +1,7 @@
 package back.fcz.domain.capsule.service;
 
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
+import back.fcz.domain.capsule.DTO.response.MonthlyCapsuleStat;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
@@ -13,6 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -48,4 +52,35 @@ public class CapsuleDashBoardService {
     }
 
 
+    public List<MonthlyCapsuleStat> readYearlyCapsule(Long memberId, int year) {
+        String phoneHash = memberRepository.findById(memberId).orElseThrow(() ->
+                new BusinessException(ErrorCode.MEMBER_NOT_FOUND)).getPhoneHash();  // 사용자의 해시된 폰 번호
+
+        // 1. 1월~12월까지 0으로 초기화된 리스트 생성
+        List<MonthlyCapsuleStat> stats = new ArrayList<>();
+        for (int i = 1; i <= 12; i++) {
+            stats.add(new MonthlyCapsuleStat(i + "월", 0, 0));
+        }
+
+        // 2. DB 데이터 가져오기 (List<Object[]>)
+        List<Object[]> sendData = capsuleRepository.countMonthlySendCapsules(memberId, year);
+        List<Object[]> receiveData = capsuleRecipientRepository.countMonthlyReceiveCapsules(phoneHash, year);
+
+        // 3. 송신 데이터 채우기 (row[0]은 월, row[1]은 개수)
+        for (Object[] row : sendData) {
+            int month = ((Number) row[0]).intValue();
+            long count = ((Number) row[1]).longValue();
+            stats.get(month - 1).setSend(count); // 리스트 인덱스는 0부터 시작하므로 month - 1
+        }
+
+        // 4. 수신 데이터 채우기
+        for (Object[] row : receiveData) {
+            int month = ((Number) row[0]).intValue();
+            long count = ((Number) row[1]).longValue();
+            stats.get(month - 1).setReceive(count);
+        }
+
+        return stats;
+
+    }
 }

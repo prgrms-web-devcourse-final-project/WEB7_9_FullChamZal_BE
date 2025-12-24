@@ -46,4 +46,13 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
         where cr.capsuleId.capsuleId in :capsuleIds
     """)
     List<CapsuleRecipient> findAllByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
+
+    // 수신 캡슐 월별 카운트
+    @Query("SELECT month(cr.createdAt), count(cr) " +
+            "FROM CapsuleRecipient cr " +
+            "WHERE cr.recipientPhoneHash = :phoneHash " + // 수신자 식별 (해시된 폰번호)
+            "AND year(cr.createdAt) = :year " +
+            "AND cr.deletedAt IS NULL " +                // 삭제되지 않은 것만
+            "GROUP BY month(cr.createdAt)")
+    List<Object[]> countMonthlyReceiveCapsules(@Param("phoneHash") String phoneHash, @Param("year") int year);
 }
