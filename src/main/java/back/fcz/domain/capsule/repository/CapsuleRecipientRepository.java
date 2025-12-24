@@ -1,6 +1,8 @@
 package back.fcz.domain.capsule.repository;
 
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -35,8 +37,8 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
 
     Optional<CapsuleRecipient> findByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String phoneHash);
     // phoneHash를 가지는 수신자 리스트 조회. JOIN을 이용하여 Capsule 테이블도 같이 조회
-    @Query("SELECT cr FROM CapsuleRecipient cr JOIN FETCH cr.capsuleId c WHERE cr.recipientPhoneHash = :phoneHash")
-    List<CapsuleRecipient> findAllByRecipientPhoneHashWithCapsule(@Param("phoneHash") String phoneHash);
+    @Query("SELECT cr FROM CapsuleRecipient cr JOIN FETCH cr.capsuleId c WHERE cr.recipientPhoneHash = :phoneHash AND cr.deletedAt IS NULL")
+    Page<CapsuleRecipient> findAllByRecipientPhoneHashWithCapsule(@Param("phoneHash") String phoneHash, Pageable pageable);
 
     @Query("""
         select cr

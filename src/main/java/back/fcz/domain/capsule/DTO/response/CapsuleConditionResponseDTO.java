@@ -12,7 +12,7 @@ public record CapsuleConditionResponseDTO(
         String senderNickname,               // 송신자 이름
         String title,                // 제목
         String content,              // 내용 // 내용은 일정 글자수 넘어가면 ...으로 처리
-        LocalDateTime createAt,      // 보낸 날짜
+        LocalDateTime createdAt,      // 보낸 날짜
         boolean viewStatus,          // 조회 여부
 
         String unlockType,        // 해제 조건

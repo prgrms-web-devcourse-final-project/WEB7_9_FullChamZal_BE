@@ -15,11 +15,14 @@ import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -106,10 +109,11 @@ public class CapsuleReadController {
             ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND
     })
     @GetMapping("/send/dashboard")
-    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> sentCapsuleDash(
-            @AuthenticationPrincipal Long memberId
+    public ResponseEntity<ApiResponse<Page<CapsuleDashBoardResponse>>> sentCapsuleDash(
+            @AuthenticationPrincipal Long memberId,
+            @ParameterObject @PageableDefault(size =10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readSendCapsuleList(memberId);
+        Page<CapsuleDashBoardResponse> response = capsuleDashBoardService.readSendCapsuleList(memberId, pageable);
 
         return  ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -119,10 +123,11 @@ public class CapsuleReadController {
             ErrorCode.MEMBER_NOT_FOUND
     })
     @GetMapping("/receive/dashboard")
-    public ResponseEntity<ApiResponse<List<CapsuleDashBoardResponse>>> receivedCapsuleDash(
-            @AuthenticationPrincipal Long memberId
+    public ResponseEntity<ApiResponse<Page<CapsuleDashBoardResponse>>> receivedCapsuleDash(
+            @AuthenticationPrincipal Long memberId,
+            @ParameterObject @PageableDefault(size =10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<CapsuleDashBoardResponse> response = capsuleDashBoardService.readReceiveCapsuleList(memberId);
+        Page<CapsuleDashBoardResponse> response = capsuleDashBoardService.readReceiveCapsuleList(memberId, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

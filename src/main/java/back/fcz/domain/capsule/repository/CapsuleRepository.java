@@ -47,7 +47,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
 
     //memberId와 isDeleted=0 조건을 만족하는 Capsule 목록 조회
     @Query("SELECT c FROM Capsule c WHERE c.memberId.memberId = :memberId AND c.isDeleted = 0")
-    List<Capsule> findActiveCapsulesByMemberId(@Param("memberId") Long memberId);
+    Page<Capsule> findActiveCapsulesByMemberId(@Param("memberId") Long memberId, Pageable pageable);
 
     Optional<Capsule> findByCapsuleIdAndMemberId_MemberId(Long capsuleId, Long memberId);
 
