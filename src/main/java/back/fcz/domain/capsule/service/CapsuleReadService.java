@@ -419,6 +419,8 @@ public class CapsuleReadService {
         }
     }
 
+
+    // 캡슐 첨부파일 Presigned URL 생성
     private List<CapsuleAttachmentViewResponse> buildAttachmentViews(Long capsuleId) {
         var list = capsuleAttachmentRepository
                 .findAllByCapsule_CapsuleIdAndStatus(capsuleId, CapsuleAttachmentStatus.USED);
