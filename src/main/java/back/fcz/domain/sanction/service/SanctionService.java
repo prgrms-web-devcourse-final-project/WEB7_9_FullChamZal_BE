@@ -32,82 +32,61 @@ public class SanctionService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if (member.getStatus() == MemberStatus.STOP) {
-            log.warn("이미 정지된 회원: {}", memberId);
-            return;
-        }
-
-        MemberStatus beforeStatus = member.getStatus();
-
-        member.updateStatus(MemberStatus.STOP);
-        memberRepository.save(member);
-
+        MemberStatus before = member.getStatus();
+        MemberStatus after = MemberStatus.STOP;
         LocalDateTime sanctionUntil = LocalDateTime.now().plusDays(days);
 
-        recordAutoSanction(memberId, SanctionType.STOP, beforeStatus, reason, sanctionUntil);
+        // 회원 상태 변경
+        member.updateStatus(after);
 
-        log.info("자동 정지 처리 완료: 회원 {} → {}일 정지 (해제 일시: {})",
-                memberId, days, sanctionUntil);
-    }
+        log.warn("자동 정지 처리: memberId={}, 사유={}, 기간={}일, 해제일시={}",
+                memberId, reason, days, sanctionUntil);
 
-    // 자동 제재 이력 기록
-    @Transactional
-    public void recordAutoSanction(
-            Long memberId,
-            SanctionType sanctionType,
-            MemberStatus beforeStatus,
-            String reason,
-            LocalDateTime sanctionUntil) {
-        Long systemAdminId = sanctionConstants.getSystemAdminId();
-
-        String fullReason = SanctionConstants.AUTO_SANCTION_REASON_PREFIX + reason;
-
-        MemberStatus afterStatus = (sanctionType == SanctionType.STOP)
-                ? MemberStatus.STOP
-                : MemberStatus.ACTIVE;
+        // 시스템 관리자 ID 조회 후 제재 이력 저장
+        Long systemAdminId = SanctionConstants.getSystemAdminId(memberRepository);
+        String fullReason = SanctionConstants.buildAutoSanctionReason(reason);
 
         MemberSanctionHistory history = MemberSanctionHistory.create(
-                memberId,
-                systemAdminId,
-                sanctionType,
-                beforeStatus,
-                afterStatus,
-                fullReason,
-                sanctionUntil
+                memberId,                               // 제재 대상 회원
+                systemAdminId,                          // 제재한 관리자 (시스템)
+                SanctionType.AUTO_TEMPORARY_SUSPENSION,  // 자동 임시 정지
+                before,                                 // 변경 전 상태
+                after,                                  // 변경 후 상태 (STOP)
+                fullReason,                             // 제재 사유
+                sanctionUntil                           // 제재 해제 예정 일시
         );
 
         sanctionHistoryRepository.save(history);
-
-        log.info("자동 제재 이력 기록 완료: 회원 {} (유형: {}, 사유: {})",
-                memberId, sanctionType, reason);
     }
 
-    // 임시 정지 해제
+    // 자동 정지 해제
     @Transactional
     public void restoreSuspension(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        if (member.getStatus() != MemberStatus.STOP) {
-            log.warn("정지 상태가 아닌 회원입니다: {}", memberId);
-            return;
-        }
+        MemberStatus before = member.getStatus();
+        MemberStatus after = MemberStatus.ACTIVE;
 
-        MemberStatus beforeStatus = member.getStatus();
+        // 회원 상태 변경
+        member.updateStatus(after);
 
-        member.updateStatus(MemberStatus.ACTIVE);
+        // 시스템 관리자 ID 조회
+        Long systemAdminId = SanctionConstants.getSystemAdminId(memberRepository);
 
-        member.updateStatus(MemberStatus.ACTIVE);
-        memberRepository.save(member);
-
-        recordAutoSanction(
+        // 복구 이력 저장
+        MemberSanctionHistory history = MemberSanctionHistory.create(
                 memberId,
-                SanctionType.RESTORE,
-                beforeStatus,
-                "정지 기간 만료로 자동 복구",
-                null
+                systemAdminId,
+                SanctionType.RESTORE,  // 복구
+                before,
+                after,
+                "자동 제재 기간 만료로 인한 복구",
+                null  // 복구이므로 sanctionUntil은 null
         );
 
-        log.info("정지 해제 완료: 회원 {}", memberId);
+        sanctionHistoryRepository.save(history);
+
+        log.info("자동 정지 해제: memberId={}", memberId);
     }
 }

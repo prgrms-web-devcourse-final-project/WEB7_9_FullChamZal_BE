@@ -4,6 +4,7 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.global.crypto.PhoneCrypto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
-import java.util.UUID;
-
+// 시스템 관리자 계정 자동 생성
 @Slf4j
 @Component
 @Configuration
@@ -29,13 +28,16 @@ public class SystemAdminInit implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        // SYSTEM 계정이 없으면 생성
-        if (!memberRepository.existsById(0L)) {
-            createSystemAdmin();
-            log.info("✅ 시스템 관리자 계정 생성 완료 (자동 제재용)");
-        } else {
-            log.info("ℹ️ 시스템 관리자 계정이 이미 존재합니다");
+        // 이미 존재하면 생성하지 않음
+        if (memberRepository.existsByUserId(SanctionConstants.SYSTEM_ADMIN_USER_ID)) {
+            log.info("시스템 관리자 계정이 이미 존재합니다. (userId={})",
+                    SanctionConstants.SYSTEM_ADMIN_USER_ID);
+            return;
         }
+
+        createSystemAdmin();
+        log.info("시스템 관리자 계정 생성 완료 (userId={})",
+                SanctionConstants.SYSTEM_ADMIN_USER_ID);
     }
 
     private void createSystemAdmin() {
@@ -44,25 +46,17 @@ public class SystemAdminInit implements CommandLineRunner {
         String hash = phoneCrypto.hash(systemPhone);
 
         Member systemAdmin = Member.builder()
-                .userId("SYSTEM")
-                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .userId(SanctionConstants.SYSTEM_ADMIN_USER_ID)
+                .passwordHash(passwordEncoder.encode("SYSTEM_AUTO_GENERATED_" + System.currentTimeMillis()))
                 .name("시스템")
-                .nickname("SYSTEM")
+                .nickname("시스템")
                 .phoneNumber(encrypted)
                 .phoneHash(hash)
                 .status(MemberStatus.ACTIVE)
                 .role(MemberRole.ADMIN)
+                .oauthProvider(null)
+                .oauthId(null)
                 .build();
-
-        // Reflection을 사용해 memberId를 0으로 강제 설정
-        try {
-            Field memberIdField = Member.class.getDeclaredField("memberId");
-            memberIdField.setAccessible(true);
-            memberIdField.set(systemAdmin, 0L);
-        } catch (Exception e) {
-            log.error("SYSTEM 계정 ID 설정 실패", e);
-            throw new RuntimeException("시스템 관리자 계정 초기화 실패", e);
-        }
 
         memberRepository.save(systemAdmin);
     }
