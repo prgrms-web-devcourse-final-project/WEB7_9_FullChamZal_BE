@@ -52,9 +52,10 @@ public class BackupController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "구글 -> 백엔드 서버 리다이렉트 api",
-            description = "사용자가 구글 드라이브 연동을 마치면, 구글에서 해당 api로 연동 정보를 보내줍니다. " +
-                    "백엔드 서버는 연동 정보를 DB에 저장한 뒤, 대시보드 페이지로 리다이렉트 합니다.")
+    @Operation(summary = "구글 드라이브 OAuth 콜백 API",
+            description = "프론트엔드에서 직접 호출하지 않는 API입니다.\n\n" +
+                    "사용자가 구글 드라이브 연동을 마치면, 구글에서 해당 api로 인가 코드를 보내줍니다. " +
+                    "백엔드 서버는 인가 코드를 이용해 연동 토큰을 DB에 저장한 뒤, 프론트엔드 대시보드 페이지로 리다이렉트 합니다.")
     @GetMapping("/connect/callback")
     public void callback(
             @RequestParam String code,
