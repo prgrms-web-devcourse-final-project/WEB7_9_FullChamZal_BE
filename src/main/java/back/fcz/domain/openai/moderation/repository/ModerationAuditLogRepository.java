@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ModerationAuditLogRepository extends JpaRepository<ModerationAuditLog, Long> {
 
@@ -39,4 +40,8 @@ public interface ModerationAuditLogRepository extends JpaRepository<ModerationAu
             @Param("to") LocalDateTime to,
             Pageable pageable
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from ModerationAuditLog m where m.capsuleId in :capsuleIds")
+    int deleteByCapsuleIdIn(@Param("capsuleIds") List<Long> capsuleIds);
 }

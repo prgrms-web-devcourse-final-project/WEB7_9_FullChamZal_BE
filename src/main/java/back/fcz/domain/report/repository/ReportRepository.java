@@ -5,6 +5,7 @@ import back.fcz.domain.report.entity.ReportStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,6 +29,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("to") LocalDateTime to,
             Pageable pageable
     );
+    // ✅ 테스트/서비스에서 쓰기 편한 별칭: countByCapsuleId(Long capsuleId)
+    @Query("select count(r) from Report r where r.capsule.capsuleId = :capsuleId")
+    long countByCapsuleId(@Param("capsuleId") Long capsuleId);
 
     long countByReporter_MemberId(Long memberId);
 
@@ -66,5 +70,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
         where r.capsule.memberId.memberId = :memberId
     """)
     long countReportedByMemberId(@Param("memberId") Long memberId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Report r where r.capsule.capsuleId in :capsuleIds")
+    int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 
 }

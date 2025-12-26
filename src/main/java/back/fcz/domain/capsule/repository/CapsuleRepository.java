@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -154,6 +155,35 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     @Query("UPDATE Capsule c SET c.likeCount = c.likeCount - 1 WHERE c.capsuleId = :id AND c.likeCount > 0")
     void decrementLikeCount(@Param("id") Long id);
 
+
+    /**
+     * 하드 딜리트 후보 조회
+     * - PRIVATE + isProtected=0(비회원/비밀번호) + isDeleted=1(소프트삭제)
+     * - TIME 포함: unlockAt 기준
+     * - LOCATION만: createdAt 기준
+     * - 1회 실행당 limit(최대 100) 적용을 위해 Pageable 사용
+     */
+    @Query("""
+            select c.capsuleId
+            from Capsule c
+            where c.visibility = 'PRIVATE'
+              and c.isProtected = 0
+              and c.isDeleted = 1
+              and c.deletedAt is not null
+              and (
+                   (c.unlockType in ('TIME', 'TIME_AND_LOCATION')
+                        and c.unlockAt is not null
+                        and c.unlockAt <= :now)
+                or (c.unlockType = 'LOCATION'
+                        and c.createdAt <= :now)
+              )
+            order by c.capsuleId asc
+            """)
+    List<Long> findHardDeleteCandidateIds(@Param("now") LocalDateTime now, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Capsule c where c.capsuleId in :capsuleIds")
+    int hardDeleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
     // 송신 캡슐 월별 카운트
     @Query("SELECT month(c.createdAt), count(c) " +
             "FROM Capsule c " +
