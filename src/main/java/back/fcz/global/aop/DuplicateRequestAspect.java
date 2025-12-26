@@ -33,7 +33,7 @@ public class DuplicateRequestAspect {
 
     public Optional<InServerMemberResponse> tryGetCurrentUser() {
         try {
-            return Optional.of(currentUserContext.getCurrentUser());
+            return Optional.ofNullable(currentUserContext.getCurrentUser());
         } catch (BusinessException e) {
             return Optional.empty();
         }
