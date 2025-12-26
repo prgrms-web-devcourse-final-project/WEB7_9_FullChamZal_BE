@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 public record StorytrackDashBoardResponse(
         Long storytrackId,
+        String createrNickname,
         String title,
         String storytrackType,
         int isPublic,
@@ -26,6 +27,7 @@ public record StorytrackDashBoardResponse(
     ) {
         return new StorytrackDashBoardResponse(
                 storytrack.getStorytrackId(),
+                storytrack.getMember().getNickname(),
                 storytrack.getTitle(),
                 storytrack.getTrackType(),
                 storytrack.getIsPublic(),
