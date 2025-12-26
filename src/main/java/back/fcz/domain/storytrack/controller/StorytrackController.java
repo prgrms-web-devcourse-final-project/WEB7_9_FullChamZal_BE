@@ -2,6 +2,8 @@ package back.fcz.domain.storytrack.controller;
 
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
+import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
+import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
@@ -29,6 +31,9 @@ public class StorytrackController {
 
     // 스토리트랙 서비스
     private final StorytrackService storytrackService;
+
+    // 캡슐 대시보드
+    private final CapsuleDashBoardService capsuleDashBoardService;
 
     //삭제
     // 작성자 - 스토리트랙 삭제
@@ -167,6 +172,24 @@ public class StorytrackController {
     ){
         StorytrackPathResponse response = storytrackService.storytrackPath(storytrackId, page, size);
 
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 생성자 : 스토리트랙 생성 시, 스토리트랙에 사용할 수 있는 캡슐 목록 조회
+    @Operation(summary = "내가 만든 장소 기반 공개 캡슐 조회(스토리트랙 생성용 캡슐 조회)",
+            description = "장소 기반(LOCATION), 장소+시간 기반(TIME_AND_LOCATION) 공개 캡슐이 조회됩니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE
+    })
+    @GetMapping("/creater/capsuleList")
+    public ResponseEntity<ApiResponse<PageResponse<CapsuleDashBoardResponse>>> findMyLocationCalsuleList (
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        PageResponse<CapsuleDashBoardResponse> response = capsuleDashBoardService.myPublicLocationCapsule(loginMember, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

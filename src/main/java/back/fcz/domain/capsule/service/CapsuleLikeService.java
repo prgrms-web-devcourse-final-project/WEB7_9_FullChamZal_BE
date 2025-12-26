@@ -1,6 +1,7 @@
 package back.fcz.domain.capsule.service;
 
 
+import back.fcz.domain.capsule.DTO.response.CapsuleLikeReadResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleLikeResponse;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleLike;
@@ -66,13 +67,15 @@ public class CapsuleLikeService {
         }
 
         Long memberId = currentUserContext.getCurrentMemberId();
+
+
         //좋아요를 누른적이 없는데 좋아요 감소 요청을 하는 경우
-        if(!capsuleLikeRepository.existsByCapsuleIdMemberId(capsuleId, memberId)){
-            throw new BusinessException(ErrorCode.LIKE_DECREASED_FAIL);
-        }
+        CapsuleLike capsuleLike = capsuleLikeRepository.findByCapsuleId_CapsuleIdAndMemberId_MemberId(capsuleId, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LIKE_DECREASED_FAIL));
 
         //좋아요 객체 삭제
-        capsuleLikeRepository.deleteByCapsuleId_CapsuleIdAndMemberId_MemberId(capsuleId, memberId);
+        capsuleLikeRepository.delete(capsuleLike);
+        capsuleLikeRepository.flush();
 
         //해당 캡슐의 좋아요 값 -1
         capsuleRepository.decrementLikeCount(capsuleId);
@@ -81,8 +84,13 @@ public class CapsuleLikeService {
         return CapsuleLikeResponse.from(capsule.getLikeCount(), "좋아요 감소처리 성공");
     }
 
-    public CapsuleLikeResponse readLike(Long capsuleId) {
+    public CapsuleLikeReadResponse readLike(Long capsuleId, Long memberId) {
         Capsule capsule = capsuleRepository.findById(capsuleId).orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-        return CapsuleLikeResponse.from(capsule.getLikeCount(), "좋아요 수 읽기 성공");
+
+        if(capsuleLikeRepository.existsByCapsuleIdMemberId(capsuleId, memberId)){
+            return CapsuleLikeReadResponse.from(capsule.getLikeCount(), "좋아요 수 읽기 성공", true);
+        }
+
+        return CapsuleLikeReadResponse.from(capsule.getLikeCount(), "좋아요 수 읽기 성공", false);
     }
 }

@@ -79,3 +79,9 @@ google:
     client-id: ${GOOGLE_OAUTH_ID}
     client-secret: ${GOOGLE_OAUTH_SECRET}
     redirect-uri: ${GOOGLE_DRIVE_LOCAL_REDIRECT}
+    
+# 삭제 테스트 하고 싶으면 아래 주석 해제하세요
+# 매 10초마다 하드 삭제 크론 실행입니다
+#capsule:
+#  hard-delete:
+#    cron: "*/10 * * * * *"

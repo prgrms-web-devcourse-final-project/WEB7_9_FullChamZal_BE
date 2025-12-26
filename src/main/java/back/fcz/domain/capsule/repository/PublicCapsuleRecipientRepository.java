@@ -2,9 +2,11 @@ package back.fcz.domain.capsule.repository;
 
 import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,4 +37,8 @@ public interface PublicCapsuleRecipientRepository extends JpaRepository<PublicCa
     // 사용자가 열람한 공개 캡슐의 ID 목록 조회
     @Query("SELECT p.capsuleId.capsuleId FROM PublicCapsuleRecipient p WHERE p.memberId = :memberId")
     Set<Long> findViewedCapsuleIdsByMemberId(Long memberId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from PublicCapsuleRecipient pcr where pcr.capsuleId.capsuleId in :capsuleIds")
+    int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 }
