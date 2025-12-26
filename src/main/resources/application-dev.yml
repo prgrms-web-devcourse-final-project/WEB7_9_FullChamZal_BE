@@ -42,6 +42,11 @@ spring:
             scope:
               - profile
               - email
+              - https://www.googleapis.com/auth/drive.file
+        provider:
+          google:
+            # google 인증 시, refresh 토큰도 발급하도록 access_type=offline 설정
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
@@ -68,6 +73,13 @@ openai:
     block-on-flagged: false   # true면 flagged 시 저장 막음
     fail-closed: false        # true면 OpenAI 장애 시 저장 막음
 
+
+google:
+  drive:
+    client-id: ${GOOGLE_OAUTH_ID}
+    client-secret: ${GOOGLE_OAUTH_SECRET}
+    redirect-uri: ${GOOGLE_DRIVE_LOCAL_REDIRECT}
+    
 # 삭제 테스트 하고 싶으면 아래 주석 해제하세요
 # 매 10초마다 하드 삭제 크론 실행입니다
 #capsule:

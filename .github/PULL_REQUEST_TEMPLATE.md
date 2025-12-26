@@ -36,6 +36,7 @@
 - [ ] Notification
 - [ ] Report
 - [ ] Sanction
+- [ ] Backup
 
 ## 확인했나요?
 - [ ] 코드 컨벤션

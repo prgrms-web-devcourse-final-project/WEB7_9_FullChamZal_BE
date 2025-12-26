@@ -34,6 +34,10 @@ spring:
             scope:
               - profile
               - email
+              - dummy-uri
+        provider:
+          google:
+            authorization-uri: dummy-uri
 
 security:
   encryption:
@@ -67,3 +71,9 @@ openai:
     model: dummy
     block-on-flagged: false   # true면 flagged 시 저장 막음
     fail-closed: false        # true면 OpenAI 장애 시 저장 막음
+
+google:
+  drive:
+    client-id: dummy-google-client-id
+    client-secret: dummy-google-client-secret
+    redirect-uri: dummy-google-drive-redirect-uri
