@@ -3,7 +3,7 @@ package back.fcz.global.security.filter;
 import back.fcz.domain.sanction.service.IpBlockService;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
-import back.fcz.global.util.RequestInfoExtractor;
+import back.fcz.domain.sanction.util.RequestInfoExtractor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

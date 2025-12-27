@@ -1,4 +1,4 @@
-package back.fcz.global.util;
+package back.fcz.domain.sanction.util;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;

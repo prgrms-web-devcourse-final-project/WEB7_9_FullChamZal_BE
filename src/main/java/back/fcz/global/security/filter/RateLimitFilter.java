@@ -5,7 +5,7 @@ import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import back.fcz.global.security.jwt.JwtProvider;
 import back.fcz.global.security.jwt.util.CookieUtil;
-import back.fcz.global.util.RequestInfoExtractor;
+import back.fcz.domain.sanction.util.RequestInfoExtractor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

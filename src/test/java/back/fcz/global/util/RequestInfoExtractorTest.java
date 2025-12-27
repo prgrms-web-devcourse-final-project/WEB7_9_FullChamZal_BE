@@ -1,5 +1,6 @@
 package back.fcz.global.util;
 
+import back.fcz.domain.sanction.util.RequestInfoExtractor;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

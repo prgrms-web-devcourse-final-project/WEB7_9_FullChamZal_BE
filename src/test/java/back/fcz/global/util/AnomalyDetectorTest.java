@@ -1,5 +1,6 @@
 package back.fcz.global.util;
 
+import back.fcz.domain.sanction.util.AnomalyDetector;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
