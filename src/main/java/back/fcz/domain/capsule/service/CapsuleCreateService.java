@@ -26,6 +26,7 @@ import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,7 @@ import java.util.UUID;
 import static io.micrometer.common.util.StringUtils.isBlank;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class CapsuleCreateService {
 

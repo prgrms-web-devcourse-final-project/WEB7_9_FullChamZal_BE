@@ -1,5 +1,6 @@
 package back.fcz.domain.storytrack.repository;
 
+import back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResponse;
 import back.fcz.domain.storytrack.entity.StorytrackProgress;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,4 +41,34 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
     Optional<StorytrackProgress> findByStorytrack_StorytrackIdAndMember_MemberId(Long storytrackId, Long memberId);
 
     boolean existsByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
+
+    @Query("""
+SELECT new back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResponse(
+    m.memberId,
+    s.storytrackId,
+    s.title,
+    s.description,
+    s.trackType,
+    s.isPublic,
+    s.price,
+    s.totalSteps,
+    p.completedSteps,
+    p.lastCompletedStep,
+    p.startedAt,
+    p.completedAt,
+    s.createdAt,
+    COUNT(sp2)
+)
+FROM StorytrackProgress p
+JOIN p.member m
+JOIN p.storytrack s
+LEFT JOIN StorytrackProgress sp2
+    ON sp2.storytrack = s
+WHERE m.memberId = :memberId
+GROUP BY p, m, s
+""")
+    Page<ParticipantStorytrackListResponse> findJoinedStorytracksWithMemberCount(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
 }

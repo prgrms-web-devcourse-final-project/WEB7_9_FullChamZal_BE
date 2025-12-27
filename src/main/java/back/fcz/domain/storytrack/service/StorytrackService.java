@@ -35,6 +35,7 @@ import java.util.Objects;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class StorytrackService {
 
@@ -48,6 +49,7 @@ public class StorytrackService {
 
     // 삭제
     // 생성자 : 스토리트랙 삭제
+    @Transactional
     public DeleteStorytrackResponse deleteStorytrack(Long memberId, Long storytrackId) {
 
         // 삭제할 대상 스토리트랙 조회
@@ -83,6 +85,7 @@ public class StorytrackService {
     }
 
     // 참여자 : 참여자 삭제(참여 중지)
+    @Transactional
     public DeleteParticipantResponse deleteParticipant(Long memberId, Long storytrackId) {
 
         // 스토리트랙 참여자 조회
@@ -101,6 +104,7 @@ public class StorytrackService {
 
     // 수정
     // 스토리트랙 경로 수정
+    @Transactional
     public UpdatePathResponse updatePath(UpdatePathRequest request, Long loginMemberId) {
         // 스토리트랙 경로 조회
         StorytrackStep targetStep = (StorytrackStep) storytrackStepRepository.findByStorytrack_StorytrackIdAndStepOrder(request.storytrackId(), request.stepOrderId())
@@ -172,6 +176,7 @@ public class StorytrackService {
 
 
     // 스토리트랙 참여 회원 생성
+    @Transactional
     public JoinStorytrackResponse joinParticipant(JoinStorytrackRequest request, Long memberId) {
         // 멤버 존재 확인
         Member member = memberRepository.findById(memberId)
@@ -206,9 +211,9 @@ public class StorytrackService {
         return PageRequest.of(safePage, safeSize, sort);
     }
 
-    // 조회 -> 조회 페이징 필요!
+    // 조회
     // 전체 스토리 트랙 목록 조회
-    public PageResponse<TotalStorytrackResponse> readTotalStorytrack(int page, int size) {
+    public PageResponse<TotalStorytrackResponse> readTotalStorytrack(Long memberId, int page, int size) {
 
         Pageable pageable = createPageable(
                 page,
@@ -216,11 +221,8 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "storytrackId") // 생성한 순서대로 조회
         );
 
-        Page<Storytrack> storytrackPage =
-                storytrackRepository.findByIsPublic(1, pageable);
-
         Page<TotalStorytrackResponse> responsePage =
-                storytrackPage.map(TotalStorytrackResponse::from);
+                storytrackRepository.findPublicStorytracksWithMemberType(memberId, pageable);
 
         return new PageResponse<>(responsePage);
     }
@@ -308,11 +310,11 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "storytrackId") // 생성한 순서대로 조회
         );
 
-        Page<Storytrack> storytracks =
-                storytrackRepository.findByMember_MemberId(memberId, pageable);
-
         Page<CreaterStorytrackListResponse> responsePage =
-                storytracks.map(CreaterStorytrackListResponse::from);
+                storytrackRepository.findCreatedStorytracksWithMemberCount(
+                        memberId,
+                        pageable
+                );
 
         return new PageResponse<> (responsePage);
     }
@@ -330,15 +332,9 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "id") // 참여한 순서대로 조회
         );
 
-        Page<StorytrackProgress> progresses =
-                storytrackProgressRepository.findProgressesByMemberId(memberId, pageable);
-
         Page<ParticipantStorytrackListResponse> responsePage =
-                progresses.map(progress -> ParticipantStorytrackListResponse.from(
-                progress,
-                progress.getStorytrack()
-                        )
-                );
+                storytrackProgressRepository
+                        .findJoinedStorytracksWithMemberCount(memberId, pageable);
 
         return new PageResponse<> (responsePage);
     }
