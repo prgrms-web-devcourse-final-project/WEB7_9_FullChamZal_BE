@@ -1,11 +1,13 @@
 package back.fcz.domain.storytrack.repository;
 
+import back.fcz.domain.storytrack.dto.response.CreaterStorytrackListResponse;
 import back.fcz.domain.storytrack.dto.response.TotalStorytrackResponse;
 import back.fcz.domain.storytrack.entity.Storytrack;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -40,4 +42,29 @@ WHERE s.isPublic = 1
 GROUP BY s, m
 """)
     Page<TotalStorytrackResponse> findPublicStorytracksWithMemberCount(Pageable pageable);
+
+    // 내가 생성한 스토리트랙 조회 시, 참여자 수 포함
+    @Query("""
+    SELECT new back.fcz.domain.storytrack.dto.response.CreaterStorytrackListResponse(
+        s.storytrackId,
+        s.title,
+        s.description,
+        s.trackType,
+        s.isPublic,
+        s.price,
+        s.totalSteps,
+        s.createdAt,
+        COUNT(sp)
+    )
+    FROM Storytrack s
+    LEFT JOIN StorytrackProgress sp
+        ON sp.storytrack = s
+    WHERE s.member.memberId = :memberId
+      AND s.isDeleted = 0
+    GROUP BY s
+    """)
+    Page<CreaterStorytrackListResponse> findCreatedStorytracksWithMemberCount(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
 }

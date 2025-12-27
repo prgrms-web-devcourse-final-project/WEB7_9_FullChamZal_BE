@@ -212,13 +212,6 @@ public class StorytrackService {
     }
 
     // 조회
-    // 스토리트랙 전체 회원 수
-    public int findTotalMemberCount (Long storytrackId){
-        int totalMember = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
-
-        return totalMember;
-    }
-
     // 전체 스토리 트랙 목록 조회
     public PageResponse<TotalStorytrackResponse> readTotalStorytrack(int page, int size) {
 
@@ -317,11 +310,11 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "storytrackId") // 생성한 순서대로 조회
         );
 
-        Page<Storytrack> storytracks =
-                storytrackRepository.findByMember_MemberId(memberId, pageable);
-
         Page<CreaterStorytrackListResponse> responsePage =
-                storytracks.map(CreaterStorytrackListResponse::from);
+                storytrackRepository.findCreatedStorytracksWithMemberCount(
+                        memberId,
+                        pageable
+                );
 
         return new PageResponse<> (responsePage);
     }
