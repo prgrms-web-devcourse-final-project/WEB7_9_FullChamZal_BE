@@ -1,46 +1,81 @@
 package back.fcz.domain.unlock.service;
 
+import back.fcz.domain.capsule.entity.AnomalyType;
 import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.domain.capsule.entity.CapsuleOpenLog;
+import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.sanction.constant.SanctionConstants;
+import back.fcz.domain.sanction.util.AnomalyDetector;
+import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UnlockService {
     private static final double EARTH_RADIUS_M = 6371000; // 지구 반지름 (m)
     private final CapsuleRepository capsuleRepository;
-    private final FirstComeService firstComeService;
+    private final CapsuleOpenLogRepository capsuleOpenLogRepository;
 
     // 개인 캡슐
-    public boolean validateUnlockConditionsForPrivate(
+    public UnlockValidationResult validateUnlockConditionsForPrivate(
             Capsule capsule,
             LocalDateTime currentTime,
             Double currentLat,
-            Double currentLng
+            Double currentLng,
+            LocalDateTime clientTime,
+            Long memberId,
+            String ipAddress
     ) {
-        return validateTimeAndLocationConditions(capsule, currentTime, currentLat, currentLng);
+        return validateTimeAndLocationConditions(
+                capsule, currentTime, currentLat, currentLng, clientTime, memberId, ipAddress
+        );
     }
 
     // 시간/위치 조건만 검증 (선착순 제외)
-    public boolean validateTimeAndLocationConditions(
+    public UnlockValidationResult validateTimeAndLocationConditions(
             Capsule capsule,
             LocalDateTime currentTime,
             Double currentLat,
-            Double currentLng
+            Double currentLng,
+            LocalDateTime clientTime,
+            Long memberId,
+            String ipAddress
     ) {
         String unlockType = capsule.getUnlockType();
 
-        return switch (unlockType) {
+        // 1. 기본 조건 검증
+        boolean conditionMet = switch (unlockType) {
             case "TIME" -> isTimeConditionMet(capsule.getCapsuleId(), currentTime);
             case "LOCATION" -> isLocationConditionMet(capsule.getCapsuleId(), currentLat, currentLng);
             case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule.getCapsuleId(), currentTime, currentLat, currentLng);
             default -> throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
         };
+
+        // 2. 이상 활동 감지
+        AnomalyType anomalyType = detectAnomaly(
+                capsule, currentLat, currentLng, currentTime, clientTime, memberId, ipAddress  // ✅ ipAddress 추가
+        );
+
+        // 3. 의심 점수 계산
+        int suspicionScore = SanctionConstants.getScoreByAnomaly(anomalyType);
+
+        // 4. 결과 반환
+        if (anomalyType != AnomalyType.NONE) {
+            return UnlockValidationResult.anomalyDetected(conditionMet, anomalyType, suspicionScore);
+        }
+
+        if (conditionMet) {
+            return UnlockValidationResult.success();
+        }
+
+        return UnlockValidationResult.conditionFailed();
     }
 
     /*
@@ -119,5 +154,98 @@ public class UnlockService {
         double distance = 2 * EARTH_RADIUS_M * Math.atan2(Math.sqrt(squareRoot), Math.sqrt(1 - squareRoot));
 
         return distance;
+    }
+
+    // 이상 활동 감지 로직
+    private AnomalyType detectAnomaly(
+            Capsule capsule,
+            Double currentLat,
+            Double currentLng,
+            LocalDateTime serverTime,
+            LocalDateTime clientTime,
+            Long memberId,
+            String ipAddress
+    ) {
+        // 1. 좌표 유효성 검증 (위치 정보가 있는 경우만)
+        if (currentLat != null && currentLng != null) {
+            if (!AnomalyDetector.isValidCoordinate(currentLat, currentLng)) {
+                return AnomalyType.SUSPICIOUS_PATTERN;
+            }
+        }
+
+        // 2. 시간 조작 감지 (위치 정보 없어도 가능)
+        if (AnomalyDetector.isTimeManipulation(serverTime, clientTime)) {
+            return AnomalyType.TIME_MANIPULATION;
+        }
+
+        // 3. 이전 로그 조회 (회원/비회원 분기)
+        List<CapsuleOpenLog> recentLogs;
+
+        if (memberId != null) {
+            // 회원: memberId로 조회
+            recentLogs = capsuleOpenLogRepository
+                    .findTop10ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
+                            capsule.getCapsuleId(),
+                            memberId
+                    );
+        } else if (ipAddress != null && !ipAddress.equals("UNKNOWN")) {
+            // 비회원: IP로 조회
+            recentLogs = capsuleOpenLogRepository
+                    .findTop10ByCapsuleId_CapsuleIdAndIpAddressOrderByOpenedAtDesc(
+                            capsule.getCapsuleId(),
+                            ipAddress
+                    );
+        } else {
+            // IP도 없으면 로그 조회 불가
+            recentLogs = List.of();
+        }
+
+        // 첫 시도면 패턴 분석 불가
+        if (recentLogs.isEmpty()) {
+            return AnomalyType.NONE;
+        }
+
+        // 4. 불가능한 이동 감지 (위치 정보가 있는 경우만)
+        if (currentLat != null && currentLng != null) {
+            CapsuleOpenLog lastLog = recentLogs.get(0);
+            if (lastLog.getCurrentLat() != null && lastLog.getCurrentLng() != null) {
+                int movementLevel = AnomalyDetector.classifyMovementAnomaly(
+                        lastLog.getCurrentLat(), lastLog.getCurrentLng(),
+                        currentLat, currentLng,
+                        lastLog.getOpenedAt(), serverTime
+                );
+
+                if (movementLevel >= 3) {
+                    return AnomalyType.IMPOSSIBLE_MOVEMENT;
+                }
+
+                if (movementLevel >= 2) {
+                    return AnomalyType.SUSPICIOUS_PATTERN;
+                }
+            }
+        }
+
+        // 5. 짧은 시간 내 반복 시도 (위치 정보 없어도 가능)
+        long recentAttemptsCount = recentLogs.stream()
+                .filter(log -> log.getOpenedAt().isAfter(serverTime.minusMinutes(5)))
+                .count();
+
+        if (recentAttemptsCount >= 3) {
+            return AnomalyType.RAPID_RETRY;
+        }
+
+        // 6. 조건 반복 실패 (위치 정보 없어도 가능)
+        if (recentLogs.size() >= 5) {
+            long failedCount = recentLogs.stream()
+                    .limit(5)
+                    .filter(log -> "FAILED".equals(log.getStatus().name()))
+                    .count();
+
+            if (failedCount >= 5) {
+                return AnomalyType.LOCATION_RETRY;
+            }
+        }
+
+        return AnomalyType.NONE;
     }
 }

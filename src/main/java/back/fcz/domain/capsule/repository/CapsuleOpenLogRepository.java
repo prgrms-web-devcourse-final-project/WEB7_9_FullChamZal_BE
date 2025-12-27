@@ -18,4 +18,16 @@ public interface CapsuleOpenLogRepository extends JpaRepository<CapsuleOpenLog, 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from CapsuleOpenLog col where col.capsuleId.capsuleId in :capsuleIds")
     int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
+
+    // 특정 캡슐에 대한 특정 회원의 최근 로그 조회
+    List<CapsuleOpenLog> findTop10ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
+            Long capsuleId,
+            Long memberId
+    );
+
+    // 특정 IP 주소의 최근 로그 조회
+    List<CapsuleOpenLog> findTop10ByCapsuleId_CapsuleIdAndIpAddressOrderByOpenedAtDesc(
+            Long capsuleId,
+            String ipAddress
+    );
 }
