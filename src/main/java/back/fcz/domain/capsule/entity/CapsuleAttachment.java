@@ -66,7 +66,7 @@ public class CapsuleAttachment {
         attachment.mimeType = mimeType;
         attachment.status = CapsuleAttachmentStatus.TEMP;
         attachment.createdAt = LocalDateTime.now();
-        attachment.expiredAt = LocalDateTime.now().plusDays(1);
+        attachment.expiredAt = LocalDateTime.now().plusMinutes(15);
         return attachment;
     }
 

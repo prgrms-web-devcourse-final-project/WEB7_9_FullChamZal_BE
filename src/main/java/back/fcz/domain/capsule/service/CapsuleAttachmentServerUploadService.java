@@ -28,7 +28,7 @@ public class CapsuleAttachmentServerUploadService {
 
             // s3에 파일 업로드
             FileUploadCommand cmd = new FileUploadCommand(
-                    "capsules/temp/" + uploaderId,
+                    "capsules" + uploaderId,
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getInputStream(),
@@ -61,7 +61,7 @@ public class CapsuleAttachmentServerUploadService {
         String ext = "";
         int idx = fileName.lastIndexOf(".");
         if (idx > -1) ext = fileName.substring(idx).toLowerCase();
-        return "capsules/temp/" + uploaderId + "/" + UUID.randomUUID() + ext;
+        return "capsules/" + uploaderId + "/" + UUID.randomUUID() + ext;
     }
 }
 
