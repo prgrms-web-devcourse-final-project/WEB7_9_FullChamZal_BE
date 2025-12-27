@@ -137,7 +137,9 @@ public class StorytrackController {
             @RequestParam(defaultValue ="0") int page,
             @RequestParam(defaultValue = "10") int size
     ){
-        PageResponse<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(page, size);
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        PageResponse<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(loginMember, page, size);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

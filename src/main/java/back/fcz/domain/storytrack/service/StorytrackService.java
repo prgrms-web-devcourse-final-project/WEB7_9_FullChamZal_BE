@@ -213,7 +213,7 @@ public class StorytrackService {
 
     // 조회
     // 전체 스토리 트랙 목록 조회
-    public PageResponse<TotalStorytrackResponse> readTotalStorytrack(int page, int size) {
+    public PageResponse<TotalStorytrackResponse> readTotalStorytrack(Long memberId, int page, int size) {
 
         Pageable pageable = createPageable(
                 page,
@@ -222,7 +222,7 @@ public class StorytrackService {
         );
 
         Page<TotalStorytrackResponse> responsePage =
-                storytrackRepository.findPublicStorytracksWithMemberCount(pageable);
+                storytrackRepository.findPublicStorytracksWithMemberType(memberId, pageable);
 
         return new PageResponse<>(responsePage);
     }

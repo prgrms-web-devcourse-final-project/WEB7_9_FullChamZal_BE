@@ -31,17 +31,29 @@ SELECT new back.fcz.domain.storytrack.dto.response.TotalStorytrackResponse(
     s.price,
     s.totalSteps,
     s.createdAt,
-    COUNT(sp)
+    COUNT(spAll),
+    CASE
+        WHEN m.memberId = :loginMemberId THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.CREATOR
+        WHEN spMe.completedAt IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.COMPLETED
+        WHEN spMe.id IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.PARTICIPANT
+        ELSE back.fcz.domain.storytrack.dto.StorytrackMemberType.NOT_JOINED
+    END
 )
 FROM Storytrack s
 JOIN s.member m
-LEFT JOIN StorytrackProgress sp
-    ON sp.storytrack = s
+LEFT JOIN StorytrackProgress spAll
+    ON spAll.storytrack = s
+LEFT JOIN StorytrackProgress spMe
+    ON spMe.storytrack = s
+   AND spMe.member.memberId = :loginMemberId
 WHERE s.isPublic = 1
   AND s.isDeleted = 0
-GROUP BY s, m
+GROUP BY s, m, spMe
 """)
-    Page<TotalStorytrackResponse> findPublicStorytracksWithMemberCount(Pageable pageable);
+    Page<TotalStorytrackResponse> findPublicStorytracksWithMemberType(
+            @Param("loginMemberId") Long loginMemberId,
+            Pageable pageable
+    );
 
     // 내가 생성한 스토리트랙 조회 시, 참여자 수 포함
     @Query("""
