@@ -51,7 +51,6 @@ public class CapsuleHardDeleteService {
         storytrackStepRepository.deleteByCapsuleIds(capsuleIds);
 
         // capsule 연관
-        capsuleAttachmentRepository.deleteByCapsuleIds(capsuleIds);
         publicCapsuleRecipientRepository.deleteByCapsuleIds(capsuleIds);
         capsuleRecipientRepository.deleteByCapsuleIds(capsuleIds);
         capsuleOpenLogRepository.deleteByCapsuleIds(capsuleIds);
