@@ -332,15 +332,9 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "id") // 참여한 순서대로 조회
         );
 
-        Page<StorytrackProgress> progresses =
-                storytrackProgressRepository.findProgressesByMemberId(memberId, pageable);
-
         Page<ParticipantStorytrackListResponse> responsePage =
-                progresses.map(progress -> ParticipantStorytrackListResponse.from(
-                progress,
-                progress.getStorytrack()
-                        )
-                );
+                storytrackProgressRepository
+                        .findJoinedStorytracksWithMemberCount(memberId, pageable);
 
         return new PageResponse<> (responsePage);
     }
