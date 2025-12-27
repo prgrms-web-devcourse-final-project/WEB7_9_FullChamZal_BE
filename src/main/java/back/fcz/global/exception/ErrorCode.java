@@ -19,6 +19,9 @@ public enum ErrorCode {
     IP_BLOCKED("SEC001", HttpStatus.FORBIDDEN, "접근이 차단된 IP 주소입니다."),
     RATE_LIMIT_EXCEEDED("SEC002", HttpStatus.TOO_MANY_REQUESTS, "요청 횟수 제한을 초과했습니다."),
     RATE_LIMIT_COOLDOWN("SEC003", HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요."),
+    ANOMALY_DETECTED("SEC004", HttpStatus.FORBIDDEN, "비정상적인 접근이 감지되었습니다."),
+    GPS_SPOOFING_SUSPECTED("SEC005", HttpStatus.FORBIDDEN, "위치 정보 조작이 의심됩니다."),
+    SUSPICIOUS_ACCESS_PATTERN("SEC006", HttpStatus.FORBIDDEN, "의심스러운 접근 패턴이 감지되었습니다."),
 
     // ========== 암호화 에러 ==========
     ENCRYPTION_FAILED("CRY001", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 암호화에 실패했습니다."),
