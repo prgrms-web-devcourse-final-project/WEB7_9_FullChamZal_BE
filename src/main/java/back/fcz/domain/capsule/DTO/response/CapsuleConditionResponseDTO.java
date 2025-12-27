@@ -3,6 +3,7 @@ package back.fcz.domain.capsule.DTO.response;
 import back.fcz.domain.capsule.entity.Capsule;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CapsuleConditionResponseDTO(
         Long capsuleId,            // 캡슐 id
@@ -25,10 +26,12 @@ public record CapsuleConditionResponseDTO(
         int locationRadiusM,
 
         boolean isBookmarked, // 북마크 여부
-        String result // 해제 성공 여부
+        String result, // 해제 성공 여부
+
+        List<CapsuleAttachmentViewResponse> attachments // 첨부파일 목록
 ) {
     //개인 캡슐이며 수신자가 회원인 경우
-    public static CapsuleConditionResponseDTO from(Capsule capsule, boolean isBookmarked) {
+    public static CapsuleConditionResponseDTO from(Capsule capsule, boolean isBookmarked, List<CapsuleAttachmentViewResponse> attachments) {
         return new CapsuleConditionResponseDTO(
                 // 캡슐 정보
                 capsule.getCapsuleId(),
@@ -51,12 +54,13 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationRadiusM(),
 
                 isBookmarked,
-                "SUCCESS"
+                "SUCCESS",
+                attachments
         );
     }
 
     // 비공개 캡슐의 경우(phonenum)
-    public static CapsuleConditionResponseDTO from(Capsule capsule) {
+    public static CapsuleConditionResponseDTO from(Capsule capsule, List<CapsuleAttachmentViewResponse> attachments) {
         return new CapsuleConditionResponseDTO(
                 // 캡슐 정보
                 capsule.getCapsuleId(),
@@ -79,12 +83,13 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationRadiusM(),
 
                 false,
-                "SUCCESS"
+                "SUCCESS",
+                attachments
         );
     }
 
     //공개 캡슐의 경우(수신자 없음)
-    public static CapsuleConditionResponseDTO from(Capsule capsule, boolean viewStatus, boolean isBookmarked) {
+    public static CapsuleConditionResponseDTO from(Capsule capsule, boolean viewStatus, boolean isBookmarked,List<CapsuleAttachmentViewResponse> attachments) {
         return new CapsuleConditionResponseDTO(
                 // 캡슐 정보
                 capsule.getCapsuleId(),
@@ -107,7 +112,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationRadiusM(),
 
                 isBookmarked,
-                "SUCCESS"
+                "SUCCESS",
+
+                attachments
         );
     }
 
@@ -133,7 +140,8 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationRadiusM(),
 
                 false,
-                "FAIL"
+                "FAIL",
+                List.of()
         );
     }
 }

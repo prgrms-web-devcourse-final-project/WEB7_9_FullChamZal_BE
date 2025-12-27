@@ -72,6 +72,12 @@ openai:
     block-on-flagged: false   # true면 flagged 시 저장 막음
     fail-closed: false        # true면 OpenAI 장애 시 저장 막음
 
+app:
+  s3:
+    bucket: test-bucket
+    prefix: capsules
+    region: us-east-1
+
 google:
   drive:
     client-id: dummy-google-client-id

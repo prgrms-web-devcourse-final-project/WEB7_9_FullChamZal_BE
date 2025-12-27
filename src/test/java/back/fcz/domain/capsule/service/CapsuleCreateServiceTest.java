@@ -7,13 +7,8 @@ import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
-import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.entity.CapsuleRecipient;
-import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
-import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
-import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
-import back.fcz.domain.capsule.repository.CapsuleRepository;
-import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.capsule.entity.*;
+import back.fcz.domain.capsule.repository.*;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
@@ -31,6 +26,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -60,6 +56,8 @@ class CapsuleCreateServiceTest {
     CapsuleModerationService capsuleModerationService;
     @Mock
     SmsNotificaationService smsNotificaationService;
+    @Mock
+    CapsuleAttachmentRepository capsuleAttachmentRepository;
 
 
     @InjectMocks
@@ -91,7 +89,7 @@ class CapsuleCreateServiceTest {
                 1L, "nick", "title", "content", null,
                 "white", "blue", "PUBLIC", "TIME",
                 LocalDateTime.now(), null, "Seoul", "창원시 의창구",37.11, 127.22,
-                100, 10
+                100, 10,null
         );
 
         Capsule capsule = dto.toEntity();
@@ -117,7 +115,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, null, "1234", "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         String originalPassword = "1234";
@@ -145,7 +143,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "01000000000", null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         when(memberRepository.findById(1L))
@@ -182,7 +180,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "01000000000", null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         when(memberRepository.findById(1L))
@@ -217,7 +215,7 @@ class CapsuleCreateServiceTest {
                 99L, "nick", "title", "content", null,
                 "white", "blue", "PUBLIC", "TIME",
                 LocalDateTime.now(), null, "Seoul","창원시 의창구", 37.11, 127.22,
-                100, 10
+                100, 10,null
         );
 
         when(memberRepository.findById(99L)).thenReturn(Optional.empty());
@@ -238,7 +236,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, "01012341234", null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         when(memberRepository.findById(99L)).thenReturn(Optional.empty());
@@ -259,7 +257,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, null, null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         String encryptedPhone = "encryptedPhone123";
@@ -289,7 +287,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 99L, null, null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         String encryptedPhone = "encryptedPhone123";
@@ -326,7 +324,8 @@ class CapsuleCreateServiceTest {
                 300,
                 "red",
                 "white",
-                10
+                10,
+                null
         );
 
         when(memberRepository.findById(1L))
@@ -349,7 +348,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, null, null, "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         // when & then
@@ -368,7 +367,7 @@ class CapsuleCreateServiceTest {
         SecretCapsuleCreateRequestDTO dto = new SecretCapsuleCreateRequestDTO(
                 1L, "01000000000", "1234", "nick", "receiver","title", "content", "PRIVATE",
                 "TIME", LocalDateTime.now(), null, "Seoul","창원시 의창구",
-                37.11, 127.22, 300, "red", "white", 10
+                37.11, 127.22, 300, "red", "white", 10,null
         );
 
         // when & then
@@ -401,7 +400,7 @@ class CapsuleCreateServiceTest {
                 .build();
 
         CapsuleUpdateRequestDTO dto =
-                new CapsuleUpdateRequestDTO("new title", "new content");
+                new CapsuleUpdateRequestDTO("new title", "new content",null);
 
         // 캡슐열람 로그 없음 → 수정 가능
 
@@ -435,7 +434,7 @@ class CapsuleCreateServiceTest {
                 BusinessException.class,
                 () -> capsuleCreateService.updateCapsule(
                         capsuleId,
-                        new CapsuleUpdateRequestDTO("title", "content")
+                        new CapsuleUpdateRequestDTO("title", "content",null)
                 )
         );
 
@@ -458,7 +457,7 @@ class CapsuleCreateServiceTest {
                 BusinessException.class,
                 () -> capsuleCreateService.updateCapsule(
                         capsuleId,
-                        new CapsuleUpdateRequestDTO("title", "content")
+                        new CapsuleUpdateRequestDTO("title", "content",null)
                 )
         );
 
@@ -482,7 +481,7 @@ class CapsuleCreateServiceTest {
                 .build();
 
         CapsuleUpdateRequestDTO dto =
-                new CapsuleUpdateRequestDTO("new title", null);
+                new CapsuleUpdateRequestDTO("new title", null,null);
 
 
         Mockito.when(capsuleRepository.findById(capsuleId))
@@ -516,7 +515,7 @@ class CapsuleCreateServiceTest {
                 .build();
 
         CapsuleUpdateRequestDTO dto =
-                new CapsuleUpdateRequestDTO(null, "new content");
+                new CapsuleUpdateRequestDTO(null, "new content",null);
 
         Mockito.when(capsuleRepository.findById(capsuleId))
                 .thenReturn(Optional.of(capsule));
@@ -632,9 +631,16 @@ class CapsuleCreateServiceTest {
 
         Capsule capsule = mock(Capsule.class);
 
+        CapsuleAttachment att1 = mock(CapsuleAttachment.class);
+        CapsuleAttachment att2 = mock(CapsuleAttachment.class);
+
         given(capsuleRepository
                 .findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId))
                 .willReturn(Optional.of(capsule));
+
+        given(capsuleAttachmentRepository
+                .findAllByCapsule_CapsuleIdAndStatus(capsuleId, CapsuleAttachmentStatus.USED))
+                .willReturn(List.of(att1, att2));
 
         // when
         CapsuleDeleteResponseDTO response =
@@ -644,6 +650,10 @@ class CapsuleCreateServiceTest {
         verify(capsule).markDeleted();
         verify(capsule).setIsDeleted(1);
         verify(capsuleRepository).save(capsule);
+
+        verify(att1).markDeleted();
+        verify(att2).markDeleted();
+        verify(capsuleAttachmentRepository).saveAll(List.of(att1, att2));
 
         assertThat(response.capsuleId()).isEqualTo(capsuleId);
         assertThat(response.message()).contains("삭제");

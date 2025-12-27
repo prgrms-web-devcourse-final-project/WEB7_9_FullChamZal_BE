@@ -115,7 +115,8 @@ class CapsuleCreateControllerTest {
                         37.5,
                         127.0,
                         100,
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/public")
@@ -170,7 +171,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -237,7 +239,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -288,7 +291,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -338,7 +342,8 @@ class CapsuleCreateControllerTest {
                         300,
                         "navy",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         InServerMemberResponse mockUserResponse = new InServerMemberResponse(
@@ -415,7 +420,7 @@ class CapsuleCreateControllerTest {
         );
 
         CapsuleUpdateRequestDTO requestDTO =
-                new CapsuleUpdateRequestDTO("new title", "new content");
+                new CapsuleUpdateRequestDTO("new title", "new content",null);
 
         mockMvc.perform(put("/api/v1/capsule/update")
                         .param("capsuleId", capsule.getCapsuleId().toString())
