@@ -4,6 +4,7 @@ import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleLikeRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.domain.unlock.dto.request.NearbyOpenCapsuleRequest;
 import back.fcz.domain.unlock.dto.response.NearbyOpenCapsuleResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +13,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +48,9 @@ public class NearbyOpenCapsuleServiceTest {
         when(publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId))
                 .thenReturn(java.util.Set.of(1L));
 
+        when(capsuleLikeRepository.findAllLikedCapsuleIdsByMemberId(memberId))
+                .thenReturn(Set.of());
+
         Capsule capsule1 = createCapsule(1L, 37.5674, 126.9780);
         Capsule capsule2 = createCapsule(2L, 37.5709, 126.9780);
         Capsule capsule3 = createCapsule(3L, 37.5845, 127.0000);
@@ -61,6 +65,26 @@ public class NearbyOpenCapsuleServiceTest {
                 .thenReturn(500.0);
         when(unlockService.calculateDistanceInMeters(eq(capsule3.getLocationLat()), eq(capsule3.getLocationLng()), eq(userLat), eq(userLng)))
                 .thenReturn(2000.0);
+
+        when(unlockService.validateTimeAndLocationConditions(
+                eq(capsule1),
+                any(),
+                anyDouble(),
+                anyDouble(),
+                any(),
+                eq(memberId),
+                isNull()
+        )).thenReturn(UnlockValidationResult.success());
+
+        when(unlockService.validateTimeAndLocationConditions(
+                eq(capsule2),
+                any(),
+                anyDouble(),
+                anyDouble(),
+                any(),
+                eq(memberId),
+                isNull()
+        )).thenReturn(UnlockValidationResult.success());
 
         // Request DTO 생성 (반경 1000m 설정)
         NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, 1000);
@@ -85,6 +109,8 @@ public class NearbyOpenCapsuleServiceTest {
         Long memberId = 1L;
         when(publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId))
                 .thenReturn(java.util.Set.of(1L));
+        when(capsuleLikeRepository.findAllLikedCapsuleIdsByMemberId(memberId))
+                .thenReturn(Set.of());
 
         Capsule capsule = createCapsule(1L, 37.5709, 126.9780);
         when(capsuleRepository.findOpenCapsule("PUBLIC", 0)).thenReturn(List.of(capsule));
@@ -92,6 +118,16 @@ public class NearbyOpenCapsuleServiceTest {
         // 사용자와 capsule 사이의 거리: 500m
         when(unlockService.calculateDistanceInMeters(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
                 .thenReturn(500.0);
+
+        when(unlockService.validateTimeAndLocationConditions(
+                eq(capsule),
+                any(),
+                anyDouble(),
+                anyDouble(),
+                any(),
+                eq(memberId),
+                isNull()
+        )).thenReturn(UnlockValidationResult.success());
 
         // Request DTO 생성 (반경 null 설정)
         NearbyOpenCapsuleRequest request = new NearbyOpenCapsuleRequest(userLat, userLng, null);

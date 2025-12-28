@@ -223,7 +223,7 @@ class StorytrackServiceTest {
                 .build();
 
         CapsuleConditionRequestDTO request =
-                new CapsuleConditionRequestDTO(10L, null, null, null, null);
+                new CapsuleConditionRequestDTO(10L, null, null, null, null, null, null, null);
 
         given(storytrackProgressRepository
                 .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 1L))
