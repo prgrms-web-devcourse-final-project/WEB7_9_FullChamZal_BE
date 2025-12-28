@@ -1,6 +1,7 @@
 package back.fcz.domain.capsule.repository;
 
 import back.fcz.domain.capsule.entity.CapsuleOpenLog;
+import back.fcz.domain.capsule.entity.CapsuleOpenStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -31,9 +32,17 @@ public interface CapsuleOpenLogRepository extends JpaRepository<CapsuleOpenLog, 
             String ipAddress
     );
 
-    // 회원의 특정 캡슐 조회 이력 존재 여부 (재조회 판별용)
-    boolean existsByCapsuleId_CapsuleIdAndMemberId_MemberId(Long capsuleId, Long memberId);
+    // 성공 기록 확인 (회원용)
+    boolean existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            Long capsuleId,
+            Long memberId,
+            CapsuleOpenStatus status
+    );
 
-    // 특정 IP의 캡슐 조회 이력 여부 (재조회 판별용)
-    boolean existsByCapsuleId_CapsuleIdAndIpAddress(Long capsuleId, String ipAddress);
+    // 성공 기록 확인 (비회원용)
+    boolean existsByCapsuleId_CapsuleIdAndIpAddressAndStatus(
+            Long capsuleId,
+            String ipAddress,
+            CapsuleOpenStatus status
+    );
 }

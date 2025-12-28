@@ -60,7 +60,7 @@ public class UnlockService {
 
         // 2. 이상 활동 감지
         AnomalyType anomalyType = detectAnomaly(
-                capsule, currentLat, currentLng, currentTime, clientTime, memberId, ipAddress  // ✅ ipAddress 추가
+                capsule, currentLat, currentLng, currentTime, clientTime, memberId, ipAddress
         );
 
         // 3. 의심 점수 계산

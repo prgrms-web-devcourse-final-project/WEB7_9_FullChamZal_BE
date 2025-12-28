@@ -11,7 +11,7 @@ public record CapsuleConditionRequestDTO(
         String password,
         String userAgent, // 서버에서 채우는 값: 브라우저 정보
         String ipAddress, // 서버에서 채우는 값: 클라이언트 IP 주소
-        LocalDateTime clientTime // 서버에서 채우는 값: 클라이언트가 전송한 시간
+        LocalDateTime serverTime // 서버에서 채우는 값: 클라이언트가 전송한 시간
 ){
 }
 

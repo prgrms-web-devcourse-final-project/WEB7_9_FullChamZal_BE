@@ -96,16 +96,20 @@ public class CapsuleReadService {
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         log.info("로그인 회원 - memberId: {}", currentMemberId);
 
-        // 재조회
-        boolean hasAlreadyViewed = publicCapsuleRecipientRepository
-                .existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId);
+        // 성공 기록이 있는지 확인
+        boolean hasSuccessfullyViewed = capsuleOpenLogRepository
+                .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                        capsule.getCapsuleId(),
+                        currentMemberId,
+                        CapsuleOpenStatus.SUCCESS
+                );
 
-        if (hasAlreadyViewed) {
-            log.info("재조회 - 로그 기록 및 이상 감지");
+        if (hasSuccessfullyViewed) {
+            log.info("이전 성공 기록 존재, 재조회 - 로그 기록 및 이상 감지만 수행");
             return handlePublicReview(capsule, requestDto, currentMemberId);
         }
 
-        log.info("첫 조회 - 검증 시작");
+        log.info("이전 성공 기록 미존재, 첫 조회 - 검증 시작");
 
         // 시간/위치 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateTimeAndLocationConditions(
@@ -113,7 +117,7 @@ public class CapsuleReadService {
                 requestDto.unlockAt(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.clientTime(),
+                requestDto.serverTime(),
                 currentMemberId,
                 requestDto.ipAddress()
         );
@@ -197,7 +201,7 @@ public class CapsuleReadService {
                     requestDto.locationLat(),
                     requestDto.locationLng(),
                     requestDto.unlockAt(),
-                    requestDto.clientTime(),
+                    requestDto.serverTime(),
                     currentMemberId,
                     requestDto.ipAddress()
             );
@@ -278,12 +282,20 @@ public class CapsuleReadService {
 
         log.info("수신자 본인 확인 완료");
 
-        if(capsule.getCurrentViewCount() > 0) {
-            log.info("재조회 - 로그 기록 및 이상 감지");
+        // 성공 기록이 있는지 확인
+        boolean hasSuccessfullyViewed = capsuleOpenLogRepository
+                .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                        capsule.getCapsuleId(),
+                        currentMemberId,
+                        CapsuleOpenStatus.SUCCESS
+                );
+
+        if (hasSuccessfullyViewed) {
+            log.info("이전 성공 기록 존재, 재조회 - 로그 기록 및 이상 감지만 수행");
             return handleProtectedReview(capsule, requestDto, currentMemberId, recipient);
         }
 
-        log.info("첫 조회 - 조건 검증 시작");
+        log.info("이전 성공 기록 미존재, 첫 조회 - 검증 시작");
 
         // 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateUnlockConditionsForPrivate(
@@ -291,7 +303,7 @@ public class CapsuleReadService {
                 requestDto.unlockAt(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.clientTime(),
+                requestDto.serverTime(),
                 currentMemberId,
                 requestDto.ipAddress()
         );
@@ -348,7 +360,7 @@ public class CapsuleReadService {
                     requestDto.locationLat(),
                     requestDto.locationLng(),
                     requestDto.unlockAt(),
-                    requestDto.clientTime(),
+                    requestDto.serverTime(),
                     currentMemberId,
                     requestDto.ipAddress()
             );
@@ -423,7 +435,7 @@ public class CapsuleReadService {
                 requestDto.unlockAt(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.clientTime(),
+                requestDto.serverTime(),
                 memberId,
                 requestDto.ipAddress()
         );
@@ -490,7 +502,7 @@ public class CapsuleReadService {
                     requestDto.locationLat(),
                     requestDto.locationLng(),
                     requestDto.unlockAt(),
-                    requestDto.clientTime(),
+                    requestDto.serverTime(),
                     memberId,
                     requestDto.ipAddress()
             );
@@ -520,16 +532,26 @@ public class CapsuleReadService {
         }
     }
 
-    // 비보호 캡슐 재조회 여부 (memberId 또는 IP 기반)
+    // 비보호 캡슐 재조회 여부 (memberId 또는 IP 기반으로 성공 여부 확인)
     private boolean hasAlreadyOpenedUnprotected(Long capsuleId, Long memberId, String ipAddress) {
         // 회원인 경우
         if (memberId != null) {
-            return capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberId(capsuleId, memberId);
+            return capsuleOpenLogRepository
+                    .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                            capsuleId,
+                            memberId,
+                            CapsuleOpenStatus.SUCCESS
+                    );
         }
 
         // 비회원인 경우 (IP 기반)
         if (ipAddress != null && !ipAddress.equals("UNKNOWN")) {
-            return capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndIpAddress(capsuleId, ipAddress);
+            return capsuleOpenLogRepository
+                    .existsByCapsuleId_CapsuleIdAndIpAddressAndStatus(
+                            capsuleId,
+                            ipAddress,
+                            CapsuleOpenStatus.SUCCESS
+                    );
         }
 
         return false;

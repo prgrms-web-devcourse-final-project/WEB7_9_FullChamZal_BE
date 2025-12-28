@@ -89,7 +89,7 @@ public class CapsuleReadController {
         String ipAddress = RequestInfoExtractor.extractIp(request);
         String userAgent = RequestInfoExtractor.extractUserAgent(request);
 
-        LocalDateTime clientTime = capsuleConditionRequestDto.unlockAt();
+        LocalDateTime serverTime = LocalDateTime.now();
 
         CapsuleConditionRequestDTO plusDto = new CapsuleConditionRequestDTO(
                 capsuleConditionRequestDto.capsuleId(),
@@ -99,7 +99,7 @@ public class CapsuleReadController {
                 capsuleConditionRequestDto.password(),
                 userAgent,
                 ipAddress,
-                clientTime
+                serverTime
         );
         return ResponseEntity.ok(ApiResponse.success(capsuleReadService.conditionAndRead(plusDto)));
     }
