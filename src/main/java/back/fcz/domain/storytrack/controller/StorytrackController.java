@@ -130,14 +130,19 @@ public class StorytrackController {
 
     // 조회
     // 전체 스토리트랙 조회
-    @Operation(summary = "공개 스토리트랙 목록 조회", description = "PUBLIC 상태인 스토리트랙 목록을 조회할 수 있습니다.")
-    @ApiErrorCodeExample({})
+    @Operation(summary = "공개 스토리트랙 목록 조회", description = "PUBLIC 상태인 스토리트랙 목록을 조회, 멤버 상태(CREATOR, NOT_JOIN, PARTICIPANT, COMPLETED)가 표시됩니다.")
+    @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE
+    })
     @GetMapping("/List")
     public ResponseEntity<ApiResponse<PageResponse<TotalStorytrackResponse>>> readStorytrackList (
             @RequestParam(defaultValue ="0") int page,
             @RequestParam(defaultValue = "10") int size
     ){
-        PageResponse<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(page, size);
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        PageResponse<TotalStorytrackResponse> response = storytrackService.readTotalStorytrack(loginMember, page, size);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

@@ -1,7 +1,9 @@
 package back.fcz.domain.storytrack.dto.response;
 
 
-import back.fcz.domain.storytrack.entity.Storytrack;
+import back.fcz.domain.storytrack.dto.StorytrackMemberType;
+
+import java.time.LocalDateTime;
 
 public record TotalStorytrackResponse(
         Long storytrackId,
@@ -11,18 +13,8 @@ public record TotalStorytrackResponse(
         String trackType,
         int isPublic,
         int price,
-        int totalSteps
-){
-    public static TotalStorytrackResponse from(Storytrack track){
-        return new TotalStorytrackResponse(
-                track.getStorytrackId(),
-                track.getMember().getNickname(),
-                track.getTitle(),
-                track.getDescription(),
-                track.getTrackType(),
-                track.getIsPublic(),
-                track.getPrice(),
-                track.getTotalSteps()
-        );
-    }
-}
+        int totalSteps,
+        LocalDateTime createdAt,
+        Long totalMemberCount,
+        StorytrackMemberType memberType
+){ }

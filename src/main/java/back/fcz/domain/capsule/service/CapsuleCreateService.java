@@ -28,6 +28,7 @@ import java.util.*;
 import static io.micrometer.common.util.StringUtils.isBlank;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class CapsuleCreateService {
 
