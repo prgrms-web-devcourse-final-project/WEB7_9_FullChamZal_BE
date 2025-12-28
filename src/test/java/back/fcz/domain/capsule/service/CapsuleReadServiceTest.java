@@ -4,10 +4,7 @@ import back.fcz.domain.bookmark.repository.BookmarkRepository;
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.entity.*;
-import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
-import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
-import back.fcz.domain.capsule.repository.CapsuleRepository;
-import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.capsule.repository.*;
 import back.fcz.domain.member.dto.response.MemberDetailResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
@@ -15,6 +12,8 @@ import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
+import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
+import back.fcz.domain.capsule.entity.CapsuleAttachmentStatus;
 import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.service.MonitoringService;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
@@ -40,6 +39,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,6 +68,9 @@ class CapsuleReadServiceTest {
     private BookmarkRepository bookmarkRepository;
 
     @Mock
+    private CapsuleAttachmentRepository capsuleAttachmentRepository;
+
+    @Mock
     private PhoneCrypto phoneCrypto;
 
     @Mock
@@ -94,6 +97,11 @@ class CapsuleReadServiceTest {
     void setUp() {
         // 테스트용 회원 생성
         testMember = createMember(1L, "testUser", "테스터");
+
+        lenient().when(capsuleAttachmentRepository.findAllByCapsule_CapsuleIdAndStatus(
+                anyLong(),
+                any(CapsuleAttachmentStatus.class)
+        )).thenReturn(Collections.emptyList());
     }
 
     // ========== 헬퍼 메서드 ==========
