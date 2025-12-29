@@ -35,8 +35,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -75,7 +74,7 @@ class CapsuleCreateControllerTest {
     CapsuleModerationService capsuleModerationService;
 
     @MockitoBean
-    SmsNotificaationService smsNotificaationService;
+    SmsNotificaationService smsNotificationService;
 
 
     // =========================
@@ -116,7 +115,8 @@ class CapsuleCreateControllerTest {
                         37.5,
                         127.0,
                         100,
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/public")
@@ -171,7 +171,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -238,7 +239,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -289,7 +291,8 @@ class CapsuleCreateControllerTest {
                         100,
                         "red",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         mockMvc.perform(post("/api/v1/capsule/create/private")
@@ -339,7 +342,8 @@ class CapsuleCreateControllerTest {
                         300,
                         "navy",
                         "white",
-                        5
+                        5,
+                        null
                 );
 
         InServerMemberResponse mockUserResponse = new InServerMemberResponse(
@@ -351,6 +355,9 @@ class CapsuleCreateControllerTest {
                 "hash123",
                 member.getRole()
         );
+
+        InServerMemberResponse loginUser = mock(InServerMemberResponse.class);
+        when(loginUser.memberId()).thenReturn(1L);
 
         when(currentUserContext.getCurrentUser()).thenReturn(mockUserResponse);
 
@@ -413,7 +420,7 @@ class CapsuleCreateControllerTest {
         );
 
         CapsuleUpdateRequestDTO requestDTO =
-                new CapsuleUpdateRequestDTO("new title", "new content");
+                new CapsuleUpdateRequestDTO("new title", "new content",null);
 
         mockMvc.perform(put("/api/v1/capsule/update")
                         .param("capsuleId", capsule.getCapsuleId().toString())
@@ -461,6 +468,9 @@ class CapsuleCreateControllerTest {
                         .build()
         );
 
+        InServerMemberResponse loginUser = mock(InServerMemberResponse.class);
+        when(loginUser.memberId()).thenReturn(1L);
+
         when(currentUserContext.getCurrentUser())
                 .thenReturn(InServerMemberResponse.from(member));
 
@@ -478,7 +488,7 @@ class CapsuleCreateControllerTest {
         doNothing().when(capsuleModerationService).attachCapsuleId(any(), any());
 
         // ✅ SMS 발송도 외부 호출 금지 → 아무것도 안 하게
-        doNothing().when(smsNotificaationService).sendCapsuleCreatedNotification(any(), any(), any());
+        doNothing().when(smsNotificationService).sendCapsuleCreatedNotification(any(), any(), any());
     }
 
 

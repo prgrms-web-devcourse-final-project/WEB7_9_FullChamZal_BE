@@ -3,10 +3,12 @@ package back.fcz.domain.capsule.repository;
 
 import back.fcz.domain.capsule.entity.CapsuleLike;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,5 +26,8 @@ public interface CapsuleLikeRepository extends JpaRepository<CapsuleLike, Long> 
     @Query("SELECT c.capsuleId.capsuleId FROM CapsuleLike c WHERE c.memberId.memberId = :memberId")
     Set<Long> findAllLikedCapsuleIdsByMemberId(@Param("memberId") Long memberId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from CapsuleLike cl where cl.capsuleId.capsuleId in :capsuleIds")
+    int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
     Optional<CapsuleLike> findByCapsuleId_CapsuleIdAndMemberId_MemberId(Long capsuleId, Long memberId);
 }

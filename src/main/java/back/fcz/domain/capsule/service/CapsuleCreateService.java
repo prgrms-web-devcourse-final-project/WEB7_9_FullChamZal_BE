@@ -7,13 +7,8 @@ import back.fcz.domain.capsule.DTO.response.CapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
-import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.entity.CapsuleRecipient;
-import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
-import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
-import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
-import back.fcz.domain.capsule.repository.CapsuleRepository;
-import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.capsule.entity.*;
+import back.fcz.domain.capsule.repository.*;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.openai.moderation.dto.CapsuleModerationBlockedPayload;
@@ -26,15 +21,14 @@ import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import static io.micrometer.common.util.StringUtils.isBlank;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class CapsuleCreateService {
 
@@ -48,6 +42,9 @@ public class CapsuleCreateService {
 
     // ✅ moderation
     private final CapsuleModerationService capsuleModerationService;
+
+    // 캡슐 첨부 파일
+    private final CapsuleAttachmentRepository capsuleAttachmentRepository;
 
     // url 도메인
     @Value("${cors.capsule-domain}")
@@ -86,6 +83,7 @@ public class CapsuleCreateService {
      * - moderation flagged이면 생성 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌 (CapsuleModerationService에서 처리)
      * - ✅ PASS/SKIPPED는 로그 저장 안 함, 실패만 저장
      */
+    @Transactional
     public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate) {
         Capsule capsule = capsuleCreate.toEntity();
 
@@ -110,12 +108,16 @@ public class CapsuleCreateService {
         capsule.setUuid(setUUID());
         Capsule saved = capsuleRepository.save(capsule);
 
+        // 첨부파일 캡슐에 연결
+        attachFiles(member.getMemberId(), saved, capsuleCreate.attachmentIds());
+
         return CapsuleCreateResponseDTO.from(saved);
     }
 
     /**
      * 비공개 캡슐 생성 - 통합 진입점
      */
+    @Transactional
     public SecretCapsuleCreateResponseDTO createPrivateCapsule(SecretCapsuleCreateRequestDTO requestDTO) {
         String recipientPhone = requestDTO.recipientPhone();
         String capsulePassword = requestDTO.capsulePassword();
@@ -140,6 +142,7 @@ public class CapsuleCreateService {
     /**
      * 비공개 캡슐 생성 - URL + 비밀번호 조회
      */
+
     private SecretCapsuleCreateResponseDTO privateCapsulePassword(SecretCapsuleCreateRequestDTO capsuleCreate, String password) {
 
         Member member = memberRepository.findById(capsuleCreate.memberId())
@@ -173,6 +176,8 @@ public class CapsuleCreateService {
         secretCapsule.setProtected(0);
 
         Capsule saved = capsuleRepository.save(secretCapsule);
+        // 첨부파일 캡슐에 연결
+        attachFiles(member.getMemberId(), saved, capsuleCreate.attachmentIds());
 
         String url = domain + "/" + saved.getUuid();
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
@@ -183,6 +188,7 @@ public class CapsuleCreateService {
      * - 수신자 전화번호가 "회원"이면 보호=1 (recipient 테이블 저장)
      * - "비회원"이면 보호=0 + 비밀번호 생성
      */
+
     private SecretCapsuleCreateResponseDTO privateCapsulePhone(SecretCapsuleCreateRequestDTO capsuleCreate, String receiveTel) {
 
         Capsule capsule = capsuleCreate.toEntity();
@@ -226,6 +232,8 @@ public class CapsuleCreateService {
                     .build();
 
             recipientRepository.save(recipientRecord);
+            // 첨부파일 캡슐에 연결
+            attachFiles(member.getMemberId(), saved, capsuleCreate.attachmentIds());
 
             String url = domain + "/" + saved.getUuid();
             smsNotificaationService.sendCapsuleCreatedNotification(receiveTel,member.getName(),capsule.getTitle());
@@ -241,6 +249,8 @@ public class CapsuleCreateService {
 
             capsule.setProtected(0); // ✅ 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
+            // 첨부파일 캡슐에 연결
+            attachFiles(member.getMemberId(), saved, capsuleCreate.attachmentIds());
 
             String url = domain + "/" + saved.getUuid();
             return SecretCapsuleCreateResponseDTO.from(saved, url, capsulePW);
@@ -250,6 +260,7 @@ public class CapsuleCreateService {
     /**
      * 비공개 캡슐 - 나에게 보내는 캡슐 (보호=1)
      */
+    @Transactional
     public SecretCapsuleCreateResponseDTO capsuleToMe(SecretCapsuleCreateRequestDTO requestDTO, String encryptedPhone, String phoneHash) {
         Capsule capsule = requestDTO.toEntity();
 
@@ -278,6 +289,8 @@ public class CapsuleCreateService {
         isCapsuleProfileIncomplete(capsule);
 
         Capsule saved = capsuleRepository.save(capsule);
+        // 첨부파일 캡슐에 연결
+        attachFiles(member.getMemberId(), saved, requestDTO.attachmentIds());
 
         CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
                 .capsuleId(saved)
@@ -300,6 +313,7 @@ public class CapsuleCreateService {
      * ✅ 수정은 capsuleId가 이미 있으므로,
      *    실패(예외) 때 payload의 auditId를 뽑아서 attach해두면 관리자 추적이 좋아짐
      */
+    @Transactional
     public CapsuleUpdateResponseDTO updateCapsule(Long capsuleId, CapsuleUpdateRequestDTO updateDTO) {
 
         if (capsuleRepository.findCurrentViewCountByCapsuleId(capsuleId) > 0) {
@@ -343,12 +357,15 @@ public class CapsuleCreateService {
         }
 
         Capsule saved = capsuleRepository.save(targetCapsule);
+        // 첨부파일 캡슐에 연결
+        attachFiles(actorId, saved, updateDTO.attachmentIds());
         return CapsuleUpdateResponseDTO.from(saved);
     }
 
     /**
      * 캡슐 삭제 - 수신자 삭제
      */
+    @Transactional
     public CapsuleDeleteResponseDTO receiverDelete(Long capsuleId, String phoneHash) {
 
         Optional<CapsuleRecipient> privateOpt =
@@ -389,6 +406,7 @@ public class CapsuleCreateService {
     /**
      * 캡슐 삭제 - 발신자 삭제
      */
+    @Transactional
     public CapsuleDeleteResponseDTO senderDelete(Long capsuleId, Long memberId) {
 
         Capsule capsule = capsuleRepository.findByCapsuleIdAndMemberId_MemberId(capsuleId, memberId)
@@ -396,6 +414,15 @@ public class CapsuleCreateService {
 
         capsule.markDeleted();
         capsule.setIsDeleted(1);
+
+        // 관련된 첨부파일 모두 삭제 처리
+        List<CapsuleAttachment> used = capsuleAttachmentRepository
+                .findAllByCapsule_CapsuleIdAndStatus(capsuleId, CapsuleAttachmentStatus.USED);
+
+        for (CapsuleAttachment a : used) {
+            a.markDeleted(); // status=DELETED, deletedAt=now()
+        }
+        capsuleAttachmentRepository.saveAll(used);
         capsuleRepository.save(capsule);
 
         return new CapsuleDeleteResponseDTO(
@@ -423,4 +450,32 @@ public class CapsuleCreateService {
 
         return null;
     }
+
+    // 첨부파일 캡슐에 연결
+    //TODO: 에러 코드 변경 및 반환 타입 수정 (attachmentIds 줄지 void로 할지)
+    private List<Long> attachFiles(Long memberId, Capsule capsule, List<Long> attachmentIds) {
+        if (attachmentIds == null || attachmentIds.isEmpty()) return List.of();
+
+        List<CapsuleAttachment> attachments =
+                capsuleAttachmentRepository.findAllById(attachmentIds);
+
+        if (attachments.size() != attachmentIds.size()) {
+            throw new IllegalStateException("일부 첨부파일을 찾을 수 없습니다.");
+        }
+        for (CapsuleAttachment a : attachments) {
+            if (!a.getUploaderId().equals(memberId)) {
+                throw new IllegalStateException("본인 파일만 첨부할 수 있습니다.");
+            }
+            if (a.getStatus() != CapsuleAttachmentStatus.TEMP) {
+                throw new IllegalStateException("임시 파일만 첨부할 수 있습니다.");
+            }
+            a.attachToCapsule(capsule); // capsule 세팅 + USED
+        }
+        capsuleAttachmentRepository.saveAll(attachments);
+
+        return attachments.stream()
+                .map(CapsuleAttachment::getId)
+                .toList();
+    }
+
 }

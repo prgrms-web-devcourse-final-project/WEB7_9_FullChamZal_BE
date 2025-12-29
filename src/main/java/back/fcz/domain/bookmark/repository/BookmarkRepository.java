@@ -5,9 +5,11 @@ import back.fcz.domain.bookmark.entity.Bookmark;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
@@ -36,4 +38,12 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     ORDER BY b.createdAt DESC
     """)
     Page<BookmarkWithCapsule> findBookmarksWithCapsuleInfo(@Param("memberId") Long memberId, Pageable pageable);
+
+    // ✅ 테스트가 원하는 시그니처: countByCapsuleId(Long capsuleId)
+    @Query("select count(b) from Bookmark b where b.capsuleId = :capsuleId")
+    long countByCapsuleId(@Param("capsuleId") Long capsuleId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Bookmark b where b.capsuleId in :capsuleIds")
+    int deleteByCapsuleIdIn(@Param("capsuleIds") List<Long> capsuleIds);
 }

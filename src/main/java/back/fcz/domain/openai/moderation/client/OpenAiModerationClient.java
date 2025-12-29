@@ -46,7 +46,31 @@ public class OpenAiModerationClient {
                 .build();
     }
 
+    /** 텍스트 moderation  */
     public OpenAiModerationResult moderateText(String input) {
+        if (input == null) input = "";
+        return callModeration(input);
+    }
+
+    /** ✅ 이미지 URL moderation 추가 */
+    public OpenAiModerationResult moderateImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            // 호출자가 보통 null/blank를 걸러주지만, 안전장치로 PASS 처리
+            return new OpenAiModerationResult(false, List.of(), null);
+        }
+
+        Map<String, Object> image = new LinkedHashMap<>();
+        image.put("type", "image_url");
+        image.put("image_url", Map.of("url", imageUrl));
+
+        // OpenAI Moderation API는 input에 "멀티모달 배열"을 받을 수 있음
+        List<Object> input = List.of(image);
+
+        return callModeration(input);
+    }
+
+    /** 공통 호출 로직 (input이 String이든, List<Object>든 그대로 body에 넣음) */
+    private OpenAiModerationResult callModeration(Object input) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -71,25 +95,13 @@ public class OpenAiModerationClient {
             }
 
             JsonNode root = objectMapper.readTree(rawJson);
-            JsonNode result0 = root.path("results").isArray() && root.path("results").size() > 0
-                    ? root.path("results").get(0)
-                    : null;
+
+            JsonNode results = root.path("results");
+            JsonNode result0 = (results.isArray() && results.size() > 0) ? results.get(0) : null;
 
             boolean flagged = result0 != null && result0.path("flagged").asBoolean(false);
 
-            List<String> trueCategories = new ArrayList<>();
-            if (result0 != null) {
-                JsonNode categories = result0.path("categories");
-                if (categories != null && categories.isObject()) {
-                    Iterator<Map.Entry<String, JsonNode>> it = categories.fields();
-                    while (it.hasNext()) {
-                        Map.Entry<String, JsonNode> e = it.next();
-                        if (e.getValue().asBoolean(false)) {
-                            trueCategories.add(e.getKey());
-                        }
-                    }
-                }
-            }
+            List<String> trueCategories = extractTrueCategories(result0);
 
             return new OpenAiModerationResult(flagged, trueCategories, root);
 
@@ -102,7 +114,25 @@ public class OpenAiModerationClient {
         }
     }
 
+    private List<String> extractTrueCategories(JsonNode result0) {
+        List<String> trueCategories = new ArrayList<>();
+        if (result0 == null) return trueCategories;
+
+        JsonNode categories = result0.path("categories");
+        if (categories != null && categories.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> it = categories.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> e = it.next();
+                if (e.getValue().asBoolean(false)) {
+                    trueCategories.add(e.getKey());
+                }
+            }
+        }
+        return trueCategories;
+    }
+
     public String toRawJson(JsonNode node) {
+        if (node == null) return null;
         try {
             return objectMapper.writeValueAsString(node);
         } catch (JsonProcessingException e) {

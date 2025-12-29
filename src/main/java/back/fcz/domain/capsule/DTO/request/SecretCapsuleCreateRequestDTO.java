@@ -3,6 +3,7 @@ package back.fcz.domain.capsule.DTO.request;
 import back.fcz.domain.capsule.entity.Capsule;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record SecretCapsuleCreateRequestDTO(
         Long memberId,
@@ -23,7 +24,8 @@ public record SecretCapsuleCreateRequestDTO(
         int viewingRadius,
         String packingColor,
         String contentColor,
-        int maxViewCount
+        int maxViewCount,
+        List<Long> attachmentIds
 ) {
     public Capsule toEntity() {
         return Capsule.builder()

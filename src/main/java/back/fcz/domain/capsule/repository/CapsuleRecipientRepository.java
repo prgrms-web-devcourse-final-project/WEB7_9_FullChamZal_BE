@@ -48,6 +48,13 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
     """)
     List<CapsuleRecipient> findAllByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 
+
+    @Query("SELECT c FROM CapsuleRecipient c WHERE c.capsuleId.capsuleId = :capsuleId")
+    Optional<CapsuleRecipient> findByCapsuleId(@Param("capsuleId") Long capsuleId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from CapsuleRecipient cr where cr.capsuleId.capsuleId in :capsuleIds")
+    int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
     // 수신 캡슐 월별 카운트
     @Query("SELECT month(cr.createdAt), count(cr) " +
             "FROM CapsuleRecipient cr " +

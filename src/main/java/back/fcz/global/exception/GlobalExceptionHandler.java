@@ -3,10 +3,14 @@ package back.fcz.global.exception;
 import back.fcz.global.response.ApiResponse;
 import back.fcz.global.response.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
@@ -85,5 +89,14 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Void> response = ApiResponse.error(ErrorCode.INTERNAL_ERROR);
         return new ResponseEntity<>(response, ErrorCode.INTERNAL_ERROR.getStatus());
+    }
+
+    @ExceptionHandler({
+            ClientAbortException.class,
+            AsyncRequestNotUsableException.class
+    })
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleClientAbortLikeExceptions(Exception e) {
+        log.debug("Client connection aborted or not usable");
     }
 }
