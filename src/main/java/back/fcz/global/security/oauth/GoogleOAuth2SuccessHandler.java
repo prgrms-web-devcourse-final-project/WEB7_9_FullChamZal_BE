@@ -11,6 +11,7 @@ import back.fcz.global.security.jwt.JwtProvider;
 import back.fcz.global.security.jwt.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,6 +69,11 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 refreshToken,
                 jwtProperties.getRefreshToken().getExpiration() / 1000
         );
+
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
 
         // 토큰을 쿠키 설정
         ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", accessToken)

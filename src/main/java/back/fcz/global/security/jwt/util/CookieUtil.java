@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -68,19 +69,16 @@ public class CookieUtil {
 
     // 쿠키 삭제
     public static void deleteCookie(HttpServletResponse response, String cookieName, boolean isSecure, String sameSite, String domain) {
-        Cookie cookie = new Cookie(cookieName, "");
+        ResponseCookie cookie = ResponseCookie.from(cookieName, "")
+                .httpOnly(true)
+                .secure(isSecure)
+                .sameSite(sameSite)
+                .domain(domain)
+                .path(COOKIE_PATH)
+                .maxAge(0)
+                .build();
 
-        cookie.setMaxAge(0);
-        cookie.setPath(COOKIE_PATH);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecure);
-        cookie.setAttribute("SameSite", sameSite);
-
-        if (domain != null && !domain.isEmpty()) {
-            cookie.setDomain(domain);
-        }
-
-        response.addCookie(cookie);
+        response.addHeader("Set-Cookie", cookie.toString());
 
         log.info("쿠키 삭제 완료. name: {}", cookieName);
     }
