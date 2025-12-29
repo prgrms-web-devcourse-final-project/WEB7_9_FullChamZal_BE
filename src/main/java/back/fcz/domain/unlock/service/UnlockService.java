@@ -243,7 +243,7 @@ public class UnlockService {
                 .filter(log -> log.getOpenedAt().isAfter(serverTime.minusMinutes(5)))
                 .count();
 
-        if (recentAttemptsCount >= 3) {
+        if (recentAttemptsCount >= 20) {
             return AnomalyType.RAPID_RETRY;
         }
 
