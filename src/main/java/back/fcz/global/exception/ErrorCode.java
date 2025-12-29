@@ -138,7 +138,7 @@ public enum ErrorCode {
     // ========== 구글 드라이브 백업 에러 ==========
     GOOGLE_DRIVE_UPLOAD_FAIL("BA001", HttpStatus.INTERNAL_SERVER_ERROR, "구글 드라이브 업로드 중 에러가 발생했습니다."),
     GOOGLE_TOKEN_UPDATE_FAIL("BA002", HttpStatus.INTERNAL_SERVER_ERROR, "구글 연결을 위한 토큰 갱신에 실패했습니다."),
-    ONLY_RECIPIENT_CAN_BACKUP("BA003", HttpStatus.BAD_REQUEST, "수신한 캡슐만 구글 드라이브 백업 기능을 사용할 수 있습니다.");
+    ONLY_RECIPIENT_CAN_BACKUP("BA003", HttpStatus.BAD_REQUEST, "수신한 개인 캡슐 또는 조회한 공개 캡슐만 구글 드라이브 백업 기능을 사용할 수 있습니다.");
 
     private final String code;
     private final HttpStatus status;

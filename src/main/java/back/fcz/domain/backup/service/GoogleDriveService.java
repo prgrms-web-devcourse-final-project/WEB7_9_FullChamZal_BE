@@ -1,8 +1,8 @@
 package back.fcz.domain.backup.service;
 
 import back.fcz.domain.backup.entity.Backup;
-import back.fcz.domain.backup.repository.BackupRepository;
 import back.fcz.domain.capsule.entity.Capsule;
+import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -22,7 +22,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -44,8 +43,8 @@ public class GoogleDriveService {
     @Value("${google.drive.redirect-uri}")
     private String redirectUri;
 
-    private final BackupRepository tokenRepository;
-
+    private final GoogleTokenRedisService googleTokenRedisService;
+    private final PhoneCrypto phoneCrypto;
     private final RestTemplate restTemplate;
 
     /**
@@ -81,31 +80,41 @@ public class GoogleDriveService {
     }
 
     /**
-     * access 토큰 유효성 검사 및 갱신 처리
-     * 토큰 만료 시점이 임박했거나 만료된 경우, refresh 토큰을 사용해 새 access 토큽 발급
+     * access 토큰 유효성 검사
      */
     private String getOrRefreshAccessToken(Backup backup) {
-        // access 토큰 만료가 현재 시각으로부터 5분 이상 남았다면, 토큰 재발급 X
-        if (backup.getExpiryDate().isAfter(LocalDateTime.now().plusMinutes(5))) {
-            return backup.getAccessToken();
-        }
+        long memberId = backup.getMemberId();
+        String accessToken = googleTokenRedisService.getAccessToken(memberId).orElseGet(() ->
+        {
+            log.info("Google Access Token이 없거나 만료됨. 토큰 갱신 시도. MemberId: {}", memberId);
+            return refreshAndSaveAccessToken(backup);
+        });
+
+        return accessToken;
+    }
+
+    /**
+     * access 토큰 갱신 및 Redis에 저장
+     */
+    private String refreshAndSaveAccessToken(Backup backup) {
+        // refresh 토큰 복호화
+        String decryptedRefreshToken = phoneCrypto.decrypt(backup.getRefreshToken());
 
         // refresh 토큰으로 새 access 토큰 요청
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("client_id", clientId);
         params.add("client_secret", clientSecret);
-        params.add("refresh_token", backup.getRefreshToken());
+        params.add("refresh_token", decryptedRefreshToken);
         params.add("grant_type", "refresh_token");
 
         Map<String, Object> response = restTemplate.postForObject("https://oauth2.googleapis.com/token", params, Map.class);
 
-        // access 토큰 갱신
+        // access 토큰 갱신 및 Redis에 저장
         if (response != null && response.containsKey("access_token")) {
             String newAccessToken = (String) response.get("access_token");
             long expiresIn = ((Number) response.get("expires_in")).longValue();
 
-            backup.updateAccessToken(newAccessToken, expiresIn);
-            tokenRepository.save(backup);
+            googleTokenRedisService.saveAccessToken(backup.getMemberId(), newAccessToken, expiresIn);
             return newAccessToken;
         }
         throw new BusinessException(ErrorCode.GOOGLE_TOKEN_UPDATE_FAIL);
