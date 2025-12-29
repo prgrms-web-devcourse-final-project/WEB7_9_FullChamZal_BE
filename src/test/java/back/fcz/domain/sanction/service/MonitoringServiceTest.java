@@ -62,7 +62,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(10L);
-        when(valueOperations.get(anyString())).thenReturn("10");
 
         // When
         monitoringService.incrementSuspicionScore(memberId, scoreToAdd);
@@ -81,7 +80,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(30L);
-        when(valueOperations.get(anyString())).thenReturn("30");
 
         // When
         monitoringService.incrementSuspicionScore(memberId, scoreToAdd);
@@ -101,7 +99,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(50L);
-        when(valueOperations.get(anyString())).thenReturn("50");
 
         // When
         monitoringService.incrementSuspicionScore(memberId, scoreToAdd);
@@ -123,7 +120,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(100L);
-        when(valueOperations.get(anyString())).thenReturn("100");
 
         // When
         monitoringService.incrementSuspicionScore(memberId, scoreToAdd);
@@ -154,7 +150,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(10L);
-        when(valueOperations.get(anyString())).thenReturn("10");
 
         // When
         monitoringService.incrementSuspicionScoreByIp(ipAddress, scoreToAdd);
@@ -178,7 +173,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(30L);
-        when(valueOperations.get(anyString())).thenReturn("30");
 
         // When
         monitoringService.incrementSuspicionScoreByIp(ipAddress, scoreToAdd);
@@ -198,7 +192,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(50L);
-        when(valueOperations.get(anyString())).thenReturn("50");
 
         // When
         monitoringService.incrementSuspicionScoreByIp(ipAddress, scoreToAdd);
@@ -220,7 +213,6 @@ class MonitoringServiceTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(100L);
-        when(valueOperations.get(anyString())).thenReturn("100");
 
         // When
         monitoringService.incrementSuspicionScoreByIp(ipAddress, scoreToAdd);
@@ -416,17 +408,13 @@ class MonitoringServiceTest {
 
         // 첫 번째 증가: 20점 → 총 20점
         when(valueOperations.increment(anyString(), eq(20L))).thenReturn(20L);
-        when(valueOperations.get(anyString())).thenReturn("20");
         monitoringService.incrementSuspicionScore(memberId, 20);
 
         // 두 번째 증가: 15점 → 총 35점 (경고 수준)
         when(valueOperations.increment(anyString(), eq(15L))).thenReturn(35L);
-        when(valueOperations.get(anyString())).thenReturn("35");
         monitoringService.incrementSuspicionScore(memberId, 15);
 
-        // 세 번째 증가: 20점 → 총 55점 (제한 수준)
         when(valueOperations.increment(anyString(), eq(20L))).thenReturn(55L);
-        when(valueOperations.get(anyString())).thenReturn("55");
         monitoringService.incrementSuspicionScore(memberId, 20);
 
         // Then
