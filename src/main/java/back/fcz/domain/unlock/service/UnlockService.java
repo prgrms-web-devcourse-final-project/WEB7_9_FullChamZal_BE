@@ -197,14 +197,14 @@ public class UnlockService {
         if (memberId != null) {
             // 회원: memberId로 조회
             recentLogs = capsuleOpenLogRepository
-                    .findTop10ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
+                    .findTop15ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
                             capsule.getCapsuleId(),
                             memberId
                     );
         } else if (ipAddress != null && !ipAddress.equals("UNKNOWN")) {
             // 비회원: IP로 조회
             recentLogs = capsuleOpenLogRepository
-                    .findTop10ByCapsuleId_CapsuleIdAndIpAddressOrderByOpenedAtDesc(
+                    .findTop15ByCapsuleId_CapsuleIdAndIpAddressOrderByOpenedAtDesc(
                             capsule.getCapsuleId(),
                             ipAddress
                     );
@@ -243,18 +243,18 @@ public class UnlockService {
                 .filter(log -> log.getOpenedAt().isAfter(serverTime.minusMinutes(5)))
                 .count();
 
-        if (recentAttemptsCount >= 20) {
+        if (recentAttemptsCount >= 7) {
             return AnomalyType.RAPID_RETRY;
         }
 
         // 6. 조건 반복 실패 (위치 정보 없어도 가능)
-        if (recentLogs.size() >= 5) {
+        if (recentLogs.size() >= 15) {
             long failedCount = recentLogs.stream()
-                    .limit(5)
+                    .limit(15)
                     .filter(log -> "FAILED".equals(log.getStatus().name()))
                     .count();
 
-            if (failedCount >= 5) {
+            if (failedCount >= 15) {
                 return AnomalyType.LOCATION_RETRY;
             }
         }
