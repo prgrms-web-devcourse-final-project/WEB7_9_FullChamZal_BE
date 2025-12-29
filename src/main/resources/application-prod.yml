@@ -101,7 +101,7 @@ openai:
 
 app:
   s3:
-    bucket-name: ${S3_BUCKET_NAME}
+    bucket: ${S3_BUCKET_NAME}
     prefix: capsules
     region: ${S3_REGION}
 

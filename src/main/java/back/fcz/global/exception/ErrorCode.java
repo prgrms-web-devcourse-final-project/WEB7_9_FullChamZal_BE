@@ -97,6 +97,15 @@ public enum ErrorCode {
     NICKNAME_REQUIRED("CP020", HttpStatus.BAD_REQUEST, "캡슐 생성에 발신자 닉네임이 필요합니다."),
     PHONENUMBER_REQUIRED("CP021", HttpStatus.BAD_REQUEST, "캡슐 생성에 전화번호가 필요합니다."),
     NOT_PUBLIC("CPS022", HttpStatus.BAD_REQUEST, "공개 캡슐이 아닙니다."),
+    // ========== 캡슐 파일 업로드 ==========
+    CAPSULE_FILE_NOT_FOUND("CPSF001", HttpStatus.NOT_FOUND, "캡슐 업로드 파일을 찾을 수 없습니다."),
+    CAPSULE_FILE_DELETE_FORBIDDEN("CPSF002", HttpStatus.FORBIDDEN, "본인이 업로드 한 파일만 삭제할 수 있습니다."),
+    CAPSULE_FILE_DELETE_INVALID_STATUS("CPSF003", HttpStatus.BAD_REQUEST, "임시 저장 상태인 파일만 삭제할 수 있습니다."),
+    CAPSULE_FILE_UPLOAD_FAILED("CPSF004", HttpStatus.INTERNAL_SERVER_ERROR, "캡슐 파일 업로드에 실패했습니다."),
+    CAPSULE_FILES_NOT_FOUND("CPSF005", HttpStatus.NOT_FOUND, "일부 캡슐 파일을 찾을 수 없습니다."),
+    CAPSULE_FILE_ATTACH_FORBIDDEN("CPSF006", HttpStatus.FORBIDDEN, "본인이 업로드 한 파일만 첨부할 수 있습니다."),
+    CAPSULE_FILE_ATTACH_INVALID_STATUS("CPSF007", HttpStatus.BAD_REQUEST, "임시 저장 상태인 파일만 첨부할 수 있습니다."),
+
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
@@ -146,7 +155,7 @@ public enum ErrorCode {
     // ========== 구글 드라이브 백업 에러 ==========
     GOOGLE_DRIVE_UPLOAD_FAIL("BA001", HttpStatus.INTERNAL_SERVER_ERROR, "구글 드라이브 업로드 중 에러가 발생했습니다."),
     GOOGLE_TOKEN_UPDATE_FAIL("BA002", HttpStatus.INTERNAL_SERVER_ERROR, "구글 연결을 위한 토큰 갱신에 실패했습니다."),
-    ONLY_RECIPIENT_CAN_BACKUP("BA003", HttpStatus.BAD_REQUEST, "수신한 캡슐만 구글 드라이브 백업 기능을 사용할 수 있습니다.");
+    ONLY_RECIPIENT_CAN_BACKUP("BA003", HttpStatus.BAD_REQUEST, "수신한 개인 캡슐 또는 조회한 공개 캡슐만 구글 드라이브 백업 기능을 사용할 수 있습니다.");
 
     private final String code;
     private final HttpStatus status;

@@ -460,14 +460,14 @@ public class CapsuleCreateService {
                 capsuleAttachmentRepository.findAllById(attachmentIds);
 
         if (attachments.size() != attachmentIds.size()) {
-            throw new IllegalStateException("일부 첨부파일을 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.CAPSULE_FILES_NOT_FOUND);
         }
         for (CapsuleAttachment a : attachments) {
             if (!a.getUploaderId().equals(memberId)) {
-                throw new IllegalStateException("본인 파일만 첨부할 수 있습니다.");
+                throw new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN);
             }
             if (a.getStatus() != CapsuleAttachmentStatus.TEMP) {
-                throw new IllegalStateException("임시 파일만 첨부할 수 있습니다.");
+                throw new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS);
             }
             a.attachToCapsule(capsule); // capsule 세팅 + USED
         }

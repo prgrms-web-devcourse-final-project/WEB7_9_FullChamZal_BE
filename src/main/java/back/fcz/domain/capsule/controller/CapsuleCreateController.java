@@ -35,7 +35,10 @@ public class CapsuleCreateController {
             ErrorCode.CAPSULE_NOT_CREATE,
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.NICKNAME_REQUIRED,
-            ErrorCode.PHONENUMBER_REQUIRED
+            ErrorCode.PHONENUMBER_REQUIRED,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS
     })
     @PostMapping("/create/public")
     public ResponseEntity<ApiResponse<CapsuleCreateResponseDTO>> createPublicCapsule(
@@ -53,7 +56,10 @@ public class CapsuleCreateController {
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.RECEIVERNICKNAME_IS_REQUIRED,
             ErrorCode.NICKNAME_REQUIRED,
-            ErrorCode.PHONENUMBER_REQUIRED
+            ErrorCode.PHONENUMBER_REQUIRED,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS
     })
     @PostMapping("/create/private")
     public ResponseEntity<ApiResponse<SecretCapsuleCreateResponseDTO>> createPrivateCapsule(
@@ -69,7 +75,10 @@ public class CapsuleCreateController {
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.RECEIVERNICKNAME_IS_REQUIRED,
             ErrorCode.NICKNAME_REQUIRED,
-            ErrorCode.PHONENUMBER_REQUIRED
+            ErrorCode.PHONENUMBER_REQUIRED,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS
     })
     @PostMapping("/create/me")
     public ResponseEntity
@@ -86,7 +95,10 @@ public class CapsuleCreateController {
     @Operation(summary = "캡슐 수정API", description = "캡슐이 열람 되었는지 확인 후 수정 가능하도록 되어있습니다.")
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_UPDATE,
-            ErrorCode.CAPSULE_NOT_FOUND
+            ErrorCode.CAPSULE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS
     })
     @PutMapping("/update")
     public ResponseEntity

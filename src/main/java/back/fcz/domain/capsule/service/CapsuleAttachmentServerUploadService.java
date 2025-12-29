@@ -3,6 +3,8 @@ package back.fcz.domain.capsule.service;
 import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentUploadResponse;
 import back.fcz.domain.capsule.entity.CapsuleAttachment;
 import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
 import back.fcz.infra.storage.FileStorage;
 import back.fcz.infra.storage.FileUploadCommand;
 import back.fcz.infra.storage.StoredFile;
@@ -11,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.UUID;
 
 @Service
@@ -24,7 +25,7 @@ public class CapsuleAttachmentServerUploadService {
     @Transactional
     public CapsuleAttachmentUploadResponse uploadTemp (Long uploaderId, MultipartFile file){
         try {
-            String key = generateKey(file.getOriginalFilename(),uploaderId);
+            String key = generateKey(file.getName(),uploaderId);
 
             // s3에 파일 업로드
             FileUploadCommand cmd = new FileUploadCommand(
@@ -52,8 +53,8 @@ public class CapsuleAttachmentServerUploadService {
                     null,
                     null
             );
-        } catch (IOException e){
-            throw new RuntimeException("파일 업로드 실패", e);
+        } catch (Exception e){
+            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_FAILED, e);
         }
     }
 
