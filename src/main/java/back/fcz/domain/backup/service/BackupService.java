@@ -6,6 +6,7 @@ import back.fcz.domain.backup.repository.BackupRepository;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -26,6 +27,7 @@ public class BackupService {
     private final MemberRepository memberRepository;
     private final CapsuleRepository capsuleRepository;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
+    private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final BackupRepository backupRepository;
     private final GoogleDriveService googleDriveService;
     private final GoogleTokenRedisService googleTokenRedisService;
@@ -51,9 +53,10 @@ public class BackupService {
             return new GoogleDriveConnectionResponse("NEED_CONNECT", "구글 드라이브 연동 필요", authUrl);
         }
 
-        // 사용자가 수신한 캡슐인지 검증
+        // 사용자가 수신한 개인 캡슐 또는 조회한 공개 캡슐인지 검증
         boolean isRecipient = capsuleRecipientRepository.existsByCapsuleId_CapsuleIdAndRecipientPhoneHash(capsuleId, member.getPhoneHash());
-        if (!isRecipient) { throw new BusinessException(ErrorCode.ONLY_RECIPIENT_CAN_BACKUP); }
+        boolean isPublicRecipient = publicCapsuleRecipientRepository.existsByCapsuleId_CapsuleIdAndMemberId(capsuleId, memberId);
+        if (!isRecipient && !isPublicRecipient) { throw new BusinessException(ErrorCode.ONLY_RECIPIENT_CAN_BACKUP); }
 
         // 구글 드라이브에 CSV 파일 형태로 캡슐 업로드
         try {
