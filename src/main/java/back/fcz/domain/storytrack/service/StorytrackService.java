@@ -143,10 +143,10 @@ public class StorytrackService {
                 .trackType(request.trackType())
                 .isPublic(request.isPublic())
                 .price(request.price())
+                .totalSteps(request.capsuleList().size())
                 .isDeleted(0)
                 .build();
 
-        storytrack.setTotalSteps(storytrack.getSteps().size());
         storytrackRepository.save(storytrack);
 
         int stepOrder = 1;
