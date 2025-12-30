@@ -66,8 +66,10 @@ public class BackupService {
             googleDriveService.uploadCapsule(token.get(), capsule);
             return new GoogleDriveConnectionResponse("SUCCESS", "구글 드라이브 백업 완료", null);
         } catch (Exception e) {
-            log.error("Google Drive 업로드 실패 - {}", e);
-            throw new BusinessException(ErrorCode.GOOGLE_DRIVE_UPLOAD_FAIL);
+            log.error("Google Drive 업로드 실패 - {}", e.getMessage(), e);
+
+            String authUrl = googleDriveService.generateAuthUrl();
+            return new GoogleDriveConnectionResponse("NEED_CONNECT", "구글 드라이브 연동 필요", authUrl);
         }
     }
 
