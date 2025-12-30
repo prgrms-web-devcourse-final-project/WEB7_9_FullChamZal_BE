@@ -84,7 +84,6 @@ public class CapsuleReadService {
     }
 
     //공개 캡슐
-    @Transactional
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         log.info("=== 공개 캡슐 로직 시작 - capsuleId: {} ===", capsule.getCapsuleId());
 
@@ -95,8 +94,6 @@ public class CapsuleReadService {
         
         Long currentMemberId = currentUserContext.getCurrentMemberId();
         log.info("로그인 회원 - memberId: {}", currentMemberId);
-
-        log.info("첫 조회 - 검증 시작");
 
         // 시간/위치 조건 검증
         boolean conditionMet = unlockService.validateTimeAndLocationConditions(
@@ -110,39 +107,17 @@ public class CapsuleReadService {
 
         log.info("시간/위치 조건 통과");
 
-        if (firstComeService.hasFirstComeLimit(capsule)) {
-            log.info("선착순 제한 있음 - maxViewCount: {}", capsule.getMaxViewCount());
+        boolean isNewView = firstComeService.tryIncrementViewCountAndSaveRecipient(
+                capsule.getCapsuleId(),
+                currentMemberId,
+                requestDto.unlockAt()
+        );
 
-            // 선착순 검증과 PublicCapsuleRecipient 저장을 원자적으로 처리
-            boolean isNewView = firstComeService.tryIncrementViewCountAndSaveRecipient(
-                    capsule.getCapsuleId(),
-                    currentMemberId,
-                    requestDto.unlockAt()
-            );
+        log.info("공개 캡슐 조회 처리 완료. isNewView={}", isNewView);
+        log.info("=== 공개 캡슐 로직 종료 ===");
 
-            log.info("선착순 검증 및 저장 완료");
-            return readPublicCapsule(capsule, requestDto, !isNewView);
-        } else {
-            log.info("선착순 없음 - 바로 저장");
-
-            boolean isFirstTimeViewing = !publicCapsuleRecipientRepository
-                    .existsByCapsuleId_CapsuleIdAndMemberId(capsule.getCapsuleId(), currentMemberId);
-
-            if (isFirstTimeViewing) {
-                PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
-                        .capsuleId(capsule)
-                        .memberId(currentMemberId)
-                        .unlockedAt(requestDto.unlockAt())
-                        .build();
-                publicCapsuleRecipientRepository.save(publicCapsuleLog);
-                log.info("저장 완료");
-            } else {
-                log.info("재조회 - 저장 건너뜀");
-            }
-
-            log.info("=== 공개 캡슐 로직 종료 ===");
-            return readPublicCapsule(capsule, requestDto, !isFirstTimeViewing);
-        }
+        // viewStatus: true = 재조회, false = 첫 조회
+        return readPublicCapsule(capsule, requestDto, !isNewView);
     }
 
     //개인 캡슐
@@ -276,25 +251,13 @@ public class CapsuleReadService {
                 .build();
         capsuleOpenLogRepository.save(log);
 
-        // viewStatus = false: 처음 조회
-        // viewStatus = true: 재조회
-        boolean isFirstView = !viewStatus;
-        boolean hasFirstCome = firstComeService.hasFirstComeLimit(capsule);
-
-        // 조회수 증가 조건:
-        // 1. 처음 조회이고
-        // 2. 선착순이 없는 경우만
-        // (선착순 있으면 FirstComeService에서 이미 증가됨)
-        if (isFirstView && !hasFirstCome) {
-            capsule.increasedViewCount();
-        }
-
         Long currentMemberId = currentUserContext.getCurrentMemberId();
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
                 currentMemberId,
                 capsule.getCapsuleId()
         );
+
         var attachments = buildAttachmentViews(capsule.getCapsuleId());
         return CapsuleConditionResponseDTO.from(capsule, viewStatus, isBookmarked, attachments);
 
