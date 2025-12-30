@@ -34,12 +34,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -96,7 +91,7 @@ public class BaseInitData implements CommandLineRunner {
 
         createHardDeleteCandidates(member1);
 
-        generateTokensForK6();
+//        generateTokensForK6();
     }
 
     private void createTestMembers() {

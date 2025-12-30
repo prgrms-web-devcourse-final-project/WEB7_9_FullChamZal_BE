@@ -105,7 +105,6 @@ app:
     prefix: capsules
     region: ${S3_REGION}
 
-
 google:
   drive:
     client-id: ${GOOGLE_OAUTH_ID}
