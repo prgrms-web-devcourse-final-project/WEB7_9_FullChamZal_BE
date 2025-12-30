@@ -24,15 +24,22 @@ import back.fcz.domain.storytrack.entity.StorytrackStep;
 import back.fcz.domain.storytrack.repository.StorytrackProgressRepository;
 import back.fcz.domain.storytrack.repository.StorytrackRepository;
 import back.fcz.global.crypto.PhoneCrypto;
+import back.fcz.global.security.jwt.JwtProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -42,6 +49,7 @@ import java.util.UUID;
 @Profile({"local","dev"})
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class BaseInitData implements CommandLineRunner {
 
     private final MemberRepository memberRepository;
@@ -54,6 +62,7 @@ public class BaseInitData implements CommandLineRunner {
     private final ReportRepository reportRepository;
     private final StorytrackRepository storytrackRepository;
     private final StorytrackProgressRepository storytrackProgressRepository;
+    private final JwtProvider jwtProvider;
 
     @Override
     @Transactional
@@ -86,6 +95,8 @@ public class BaseInitData implements CommandLineRunner {
                 .orElseThrow(() -> new IllegalStateException("testuser 없음"));
 
         createHardDeleteCandidates(member1);
+
+        generateTokensForK6();
     }
 
     private void createTestMembers() {
@@ -699,7 +710,7 @@ public class BaseInitData implements CommandLineRunner {
     private void createFirstComeTestMembers() {
 
         // 이미 생성되어 있으면 다시 만들지 않음
-        boolean exists = memberRepository.existsByUserId("testuser");
+        boolean exists = memberRepository.existsByUserId("testuser1");
         if (exists) {
             return;
         }
@@ -726,12 +737,12 @@ public class BaseInitData implements CommandLineRunner {
     private void createFirstComeTestCapsule() {
 
         // 이미 존재하면 중복 생성 방지
-        boolean exists = capsuleRepository.findAll().stream()
-                .anyMatch(c -> "K6 선착순 테스트 캡슐".equals(c.getTitle()));
-
-        if (exists) {
-            return;
-        }
+//        boolean exists = capsuleRepository.findAll().stream()
+//                .anyMatch(c -> "K6 선착순 테스트 캡슐".equals(c.getTitle()));
+//
+//        if (exists) {
+//            return;
+//        }
 
         // 작성자: USER 중 아무나
         Member writer = memberRepository.findAll().stream()
@@ -761,6 +772,63 @@ public class BaseInitData implements CommandLineRunner {
                 .build();
 
         capsuleRepository.save(capsule);
+    }
+
+    /**
+     * K6 테스트용 JWT 토큰 CSV 생성
+     * - testuser1 ~ testuser100의 Access Token을 tokens.csv로 저장
+     * - 프로젝트 루트에 생성됨
+     */
+    private void generateTokensForK6() {
+
+        // 이미 생성되어 있으면 스킵
+        Path tokensPath = Paths.get("tokens.csv");
+        if (Files.exists(tokensPath)) {
+            return;
+        }
+
+        log.info("=== K6 테스트용 토큰 CSV 생성 시작 ===");
+
+        List<String> csvRows = new ArrayList<>();
+        csvRows.add("user_id,access_token"); // CSV 헤더
+
+        for (int i = 1; i <= 100; i++) {
+            String userId = "testuser" + i;
+
+            // 회원 조회
+            Member member = memberRepository.findByUserId(userId)
+                    .orElse(null);
+
+            if (member == null) {
+                log.warn("회원 없음: {}", userId);
+                continue;
+            }
+
+            // Access Token 생성
+            String accessToken;
+            if (member.getRole() == MemberRole.ADMIN) {
+                accessToken = jwtProvider.generateAdminAccessToken(member.getMemberId());
+            } else {
+                accessToken = jwtProvider.generateMemberAccessToken(
+                        member.getMemberId(),
+                        member.getRole().name()
+                );
+            }
+
+            csvRows.add(userId + "," + accessToken);
+
+            if (i % 10 == 0) {
+                log.info("토큰 생성 진행: {}/100", i);
+            }
+        }
+
+        // CSV 파일 저장
+        try {
+            Files.write(tokensPath, csvRows);
+            log.info("=== tokens.csv 생성 완료: {} ===", tokensPath.toAbsolutePath());
+        } catch (IOException e) {
+            log.error("CSV 저장 실패: {}", e.getMessage());
+        }
     }
 
     private void createTestStorytracks() {
