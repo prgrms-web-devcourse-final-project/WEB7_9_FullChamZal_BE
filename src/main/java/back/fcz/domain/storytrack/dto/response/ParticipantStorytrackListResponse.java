@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public record ParticipantStorytrackListResponse(
         Long memberId,
         Long storytrackId,
+        String creatorNickname,
         String title,
         String description,
         String trackType,

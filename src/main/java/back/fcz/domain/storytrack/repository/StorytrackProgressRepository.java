@@ -46,6 +46,7 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
 SELECT new back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResponse(
     m.memberId,
     s.storytrackId,
+    m.nickname,
     s.title,
     s.description,
     s.trackType,

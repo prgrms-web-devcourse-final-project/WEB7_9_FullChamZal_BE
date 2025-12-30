@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record CreaterStorytrackListResponse(
         Long storytrackId,
+        String creatorNickname,
         String title,
         String description,
         String trackType,
