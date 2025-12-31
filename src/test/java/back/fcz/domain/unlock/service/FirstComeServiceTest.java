@@ -1,5 +1,6 @@
 package back.fcz.domain.unlock.service;
 
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
@@ -118,10 +119,21 @@ class FirstComeServiceTest {
     @DisplayName("선착순 조회수 증가 및 수신자 저장 성공")
     void tryIncrementViewCountAndSaveRecipient_success() {
         // when
+        CapsuleConditionRequestDTO requestDto = new CapsuleConditionRequestDTO(
+                testCapsule.getCapsuleId(),
+                LocalDateTime.now(),  // unlockAt
+                37.5665,              // locationLat
+                126.9780,             // locationLng
+                null,                 // password
+                "Mozilla/5.0",        // userAgent
+                "192.168.1.1",        // ipAddress
+                LocalDateTime.now()   // serverTime
+        );
+
         boolean result = firstComeService.tryIncrementViewCountAndSaveRecipient(
                 testCapsule.getCapsuleId(),
                 testMember.getMemberId(),
-                LocalDateTime.now()
+                requestDto
         );
 
         // then
@@ -140,6 +152,17 @@ class FirstComeServiceTest {
     @DisplayName("선착순 마감 시 예외 발생")
     void tryIncrementViewCountAndSaveRecipient_closed() {
         // given - 이미 3명이 조회함
+        CapsuleConditionRequestDTO requestDto = new CapsuleConditionRequestDTO(
+                testCapsule.getCapsuleId(),
+                LocalDateTime.now(),  // unlockAt
+                37.5665,              // locationLat
+                126.9780,             // locationLng
+                null,                 // password
+                "Mozilla/5.0",        // userAgent
+                "192.168.1.1",        // ipAddress
+                LocalDateTime.now()   // serverTime
+        );
+
         for (int i = 0; i < 3; i++) {
             Member member = Member.builder()
                     .userId("user" + i + "-" + System.currentTimeMillis())
@@ -154,7 +177,7 @@ class FirstComeServiceTest {
             firstComeService.tryIncrementViewCountAndSaveRecipient(
                     testCapsule.getCapsuleId(),
                     member.getMemberId(),
-                    LocalDateTime.now()
+                    requestDto
             );
         }
 
@@ -172,7 +195,7 @@ class FirstComeServiceTest {
         assertThatThrownBy(() -> firstComeService.tryIncrementViewCountAndSaveRecipient(
                 testCapsule.getCapsuleId(),
                 extraMember.getMemberId(),
-                LocalDateTime.now()
+                requestDto
         ))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FIRST_COME_CLOSED);
@@ -182,10 +205,21 @@ class FirstComeServiceTest {
     @DisplayName("남은 선착순 인원 조회")
     void getRemainingCount() {
         // given
+        CapsuleConditionRequestDTO requestDto = new CapsuleConditionRequestDTO(
+                testCapsule.getCapsuleId(),
+                LocalDateTime.now(),  // unlockAt
+                37.5665,              // locationLat
+                126.9780,             // locationLng
+                null,                 // password
+                "Mozilla/5.0",        // userAgent
+                "192.168.1.1",        // ipAddress
+                LocalDateTime.now()   // serverTime
+        );
+
         firstComeService.tryIncrementViewCountAndSaveRecipient(
                 testCapsule.getCapsuleId(),
                 testMember.getMemberId(),
-                LocalDateTime.now()
+                requestDto
         );
         Capsule updated = capsuleRepository.findById(testCapsule.getCapsuleId()).orElseThrow();
 
@@ -199,18 +233,29 @@ class FirstComeServiceTest {
     @Test
     @DisplayName("이미 조회한 사용자는 재조회 시 false 반환")
     void tryIncrementViewCountAndSaveRecipient_alreadyViewed() {
+        CapsuleConditionRequestDTO requestDto = new CapsuleConditionRequestDTO(
+                testCapsule.getCapsuleId(),
+                LocalDateTime.now(),  // unlockAt
+                37.5665,              // locationLat
+                126.9780,             // locationLng
+                null,                 // password
+                "Mozilla/5.0",        // userAgent
+                "192.168.1.1",        // ipAddress
+                LocalDateTime.now()   // serverTime
+        );
+
         // given - 첫 조회
         firstComeService.tryIncrementViewCountAndSaveRecipient(
                 testCapsule.getCapsuleId(),
                 testMember.getMemberId(),
-                LocalDateTime.now()
+                requestDto
         );
 
         // when - 재조회
         boolean result = firstComeService.tryIncrementViewCountAndSaveRecipient(
                 testCapsule.getCapsuleId(),
                 testMember.getMemberId(),
-                LocalDateTime.now()
+                requestDto
         );
 
         // then

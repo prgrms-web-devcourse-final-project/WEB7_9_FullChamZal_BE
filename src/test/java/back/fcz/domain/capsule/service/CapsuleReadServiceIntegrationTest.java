@@ -19,17 +19,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CapsuleReadServiceIntegrationTest {
 
@@ -79,6 +78,11 @@ class CapsuleReadServiceIntegrationTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        capsuleOpenLogRepository.deleteAll();
+        publicCapsuleRecipientRepository.deleteAll();
+        capsuleRecipientRepository.deleteAll();
+        capsuleRepository.deleteAll();
+        memberRepository.deleteAll();
     }
 
     // ========== 헬퍼 메서드 ==========

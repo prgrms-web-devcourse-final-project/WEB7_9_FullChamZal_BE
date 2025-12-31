@@ -55,6 +55,7 @@ public class CapsuleReadService {
     private final MonitoringService monitoringService;
     private final CapsuleAttachmentRepository capsuleAttachmentRepository;
     private final PresignedUrlProvider presignedUrlProvider;
+    private final CapsuleOpenLogService capsuleOpenLogService;
 
     public CapsuleConditionResponseDTO capsuleRead(Long capsuleId){
         //자신이 작성한 캡슐이면 검증 없이 읽기
@@ -130,41 +131,37 @@ public class CapsuleReadService {
                 requestDto.ipAddress()
         );
 
-        CapsuleOpenStatus status = determineOpenStatus(validationResult, capsule.getUnlockType());
+        // 조건 검증 실패 시
+        if(!validationResult.isSuccess()) {
+            CapsuleOpenStatus status = determineOpenStatus(validationResult, capsule.getUnlockType());
 
-        // 로그 생성
-        CapsuleOpenLog openLog = createOpenLog(
-                capsule,
-                requestDto,
-                status,
-                currentMemberId,
-                "MEMBER"
-        );
-        capsuleOpenLogRepository.save(openLog);
+            // 로그 생성
+            CapsuleOpenLog openLog = createOpenLog(
+                    capsule,
+                    requestDto,
+                    status,
+                    currentMemberId,
+                    "MEMBER"
+            );
+            capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
-        // 조건 검증 실패 시 이상 탐지 및 제재 처리
-        if (!validationResult.isSuccess()) {
             detectAndHandleAnomaly(openLog, validationResult, currentMemberId, requestDto.ipAddress());
 
             if (validationResult.hasAnomaly()) {
                 throwAnomalyException(validationResult, currentMemberId);
             }
 
-            log.warn("조건 미충족 또는 이상 활동 감지");
             return CapsuleConditionResponseDTO.failFrom(capsule);
         }
-
-        log.info("시간/위치 조건 통과");
 
         // 조건 검증 성공 시
         if (firstComeService.hasFirstComeLimit(capsule)) {
             log.info("선착순 제한 있음 - maxViewCount: {}", capsule.getMaxViewCount());
 
-            // 선착순 검증과 PublicCapsuleRecipient 저장을 원자적으로 처리
             boolean isNewView = firstComeService.tryIncrementViewCountAndSaveRecipient(
                     capsule.getCapsuleId(),
                     currentMemberId,
-                    requestDto.unlockAt()
+                    requestDto
             );
 
             log.info("선착순 검증 및 저장 완료");
@@ -172,13 +169,12 @@ public class CapsuleReadService {
         } else {
             log.info("선착순 없음 - 바로 저장");
 
-            PublicCapsuleRecipient publicCapsuleLog = PublicCapsuleRecipient.builder()
-                    .capsuleId(capsule)
-                    .memberId(currentMemberId)
-                    .unlockedAt(requestDto.unlockAt())
-                    .build();
-            publicCapsuleRecipientRepository.save(publicCapsuleLog);
-            log.info("저장 완료");
+            // 선착순 없는 경우도 FirstComeService로
+            firstComeService.saveRecipientWithoutFirstCome(
+                    capsule.getCapsuleId(),
+                    currentMemberId,
+                    requestDto
+            );
 
             log.info("=== 공개 캡슐 로직 종료 ===");
             return readPublicCapsule(capsule, requestDto, false);
@@ -186,8 +182,7 @@ public class CapsuleReadService {
     }
 
     // 공개 캡슐 재조회
-    @Transactional
-    protected CapsuleConditionResponseDTO handlePublicReview(
+    private CapsuleConditionResponseDTO handlePublicReview(
             Capsule capsule,
             CapsuleConditionRequestDTO requestDto,
             Long currentMemberId
@@ -201,7 +196,7 @@ public class CapsuleReadService {
                 currentMemberId,
                 "MEMBER"
         );
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         if (requestDto.locationLat() != null && requestDto.locationLng() != null) {
             AnomalyType anomalyType = unlockService.detectAnomalyOnly(
@@ -235,7 +230,6 @@ public class CapsuleReadService {
     }
 
     //개인 캡슐
-    @Transactional
     public CapsuleConditionResponseDTO privateCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         //전화번호 기반인지 url+비번 기반인지를 먼저 확인하고 조회 횟수를 검증할것
         boolean hasPassword = !(requestDto.password() == null || requestDto.password().isBlank());
@@ -264,16 +258,16 @@ public class CapsuleReadService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
 
-        CapsuleRecipient recipient = capsuleRecipientRepository
-                .findByCapsuleId_CapsuleId(capsule.getCapsuleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND));
-
         InServerMemberResponse user = currentUserContext.getCurrentUser();
         MemberDetailResponse response = memberService.getDetailMe(user);
         String phoneNumber = response.phoneNumber();
         Long currentMemberId = user.memberId();
 
-        if (!phoneCrypto.verifyHash(phoneNumber, recipient.getRecipientPhoneHash())) {
+        CapsuleRecipient recipient = capsuleRecipientRepository
+                .findByCapsuleId_CapsuleId(capsule.getCapsuleId())
+                .orElse(null);
+
+        if (recipient == null || !phoneCrypto.verifyHash(phoneNumber, recipient.getRecipientPhoneHash())) {
             log.warn("수신자가 아닌 회원의 접근 시도 - memberId: {}", user.memberId());
 
             CapsuleOpenLog openLog = createOpenLog(
@@ -283,9 +277,13 @@ public class CapsuleReadService {
                     currentMemberId,
                     "MEMBER"
             );
-            capsuleOpenLogRepository.save(openLog);
+            capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
-            throw new BusinessException(ErrorCode.CAPSULE_NOT_RECEIVER);
+            if (recipient == null) {
+                throw new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND);
+            } else {
+                throw new BusinessException(ErrorCode.CAPSULE_NOT_RECEIVER);
+            }
         }
 
         log.info("수신자 본인 확인 완료");
@@ -325,7 +323,7 @@ public class CapsuleReadService {
                 currentMemberId,
                 "MEMBER"
         );
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         // 실패 시 이상 탐지 및 제재 처리
         if (!validationResult.isSuccess()) {
@@ -344,8 +342,7 @@ public class CapsuleReadService {
     }
 
     // 보호된 캡슐 재조회
-    @Transactional
-    protected CapsuleConditionResponseDTO handleProtectedReview(
+    private CapsuleConditionResponseDTO handleProtectedReview(
             Capsule capsule,
             CapsuleConditionRequestDTO requestDto,
             Long currentMemberId,
@@ -360,7 +357,7 @@ public class CapsuleReadService {
                 currentMemberId,
                 "MEMBER"
         );
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         if (requestDto.locationLat() != null && requestDto.locationLng() != null) {
             AnomalyType anomalyType = unlockService.detectAnomalyOnly(
@@ -417,7 +414,7 @@ public class CapsuleReadService {
                     memberId,
                     viewerType
             );
-            capsuleOpenLogRepository.save(openLog);
+            capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH);
         }
@@ -457,7 +454,7 @@ public class CapsuleReadService {
                 memberId,
                 viewerType
         );
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         // 실패 시 이상 탐지 및 제재 처리
         if (!validationResult.isSuccess()) {
@@ -486,8 +483,7 @@ public class CapsuleReadService {
     }
 
     // 비보호 캡슐 재조회
-    @Transactional
-    protected CapsuleConditionResponseDTO handleUnprotectedReview(
+    private CapsuleConditionResponseDTO handleUnprotectedReview(
             Capsule capsule,
             CapsuleConditionRequestDTO requestDto,
             Long memberId,
@@ -502,7 +498,7 @@ public class CapsuleReadService {
                 memberId,
                 viewerType
         );
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         if (requestDto.locationLat() != null && requestDto.locationLng() != null) {
             AnomalyType anomalyType = unlockService.detectAnomalyOnly(
@@ -567,19 +563,6 @@ public class CapsuleReadService {
 
     //공개 캡슐 읽기
     public CapsuleConditionResponseDTO readPublicCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean viewStatus) {
-        // viewStatus = false: 처음 조회
-        // viewStatus = true: 재조회
-        boolean isFirstView = !viewStatus;
-        boolean hasFirstCome = firstComeService.hasFirstComeLimit(capsule);
-
-        // 조회수 증가 조건:
-        // 1. 처음 조회이고
-        // 2. 선착순이 없는 경우만
-        // (선착순 있으면 FirstComeService에서 이미 증가됨)
-        if (isFirstView && !hasFirstCome) {
-            capsule.increasedViewCount();
-        }
-
         Long currentMemberId = currentUserContext.getCurrentMemberId();
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
@@ -660,6 +643,7 @@ public class CapsuleReadService {
         }
     }
 
+    @Transactional(readOnly = true)
     public CapsuleReadResponse existedPassword(String request){
         Capsule capsule = capsuleRepository.findByUuid(request)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
@@ -711,7 +695,7 @@ public class CapsuleReadService {
 
         // 로그에 이상 유형 기록
         openLog.markAsAnomaly(validationResult.getAnomalyType());
-        capsuleOpenLogRepository.save(openLog);
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         log.info("이상 활동 감지: anomalyType={}, score={}, memberId={}, ip={}",
                 validationResult.getAnomalyType(),

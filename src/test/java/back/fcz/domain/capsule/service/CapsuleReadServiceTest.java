@@ -88,6 +88,9 @@ class CapsuleReadServiceTest {
     @Mock
     private MonitoringService monitoringService;
 
+    @Mock
+    private CapsuleOpenLogService capsuleOpenLogService;
+
     @InjectMocks
     private CapsuleReadService capsuleReadService;
 
@@ -102,6 +105,8 @@ class CapsuleReadServiceTest {
                 anyLong(),
                 any(CapsuleAttachmentStatus.class)
         )).thenReturn(Collections.emptyList());
+
+        lenient().doNothing().when(capsuleOpenLogService).saveLogInNewTransaction(any(CapsuleOpenLog.class));
     }
 
     // ========== 헬퍼 메서드 ==========
@@ -221,9 +226,13 @@ class CapsuleReadServiceTest {
             )).thenReturn(successResult);
 
             when(firstComeService.hasFirstComeLimit(publicCapsule)).thenReturn(false);
+
+            doNothing().when(firstComeService).saveRecipientWithoutFirstCome(
+                    eq(1L), eq(1L), any(CapsuleConditionRequestDTO.class)
+            );
+
             when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
                     .thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -231,14 +240,11 @@ class CapsuleReadServiceTest {
             // Then
             assertNotNull(result);
 
-            ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(firstComeService, times(1)).saveRecipientWithoutFirstCome(
+                    eq(1L), eq(1L), any(CapsuleConditionRequestDTO.class)
+            );
 
-            CapsuleOpenLog savedLog = logCaptor.getValue();
-            assertEquals(CapsuleOpenStatus.SUCCESS, savedLog.getStatus());
-            assertEquals("MEMBER", savedLog.getViewerType());
-
-            verify(publicCapsuleRecipientRepository, times(1)).save(any(PublicCapsuleRecipient.class));
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -275,12 +281,10 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals(CapsuleOpenStatus.FAIL_LOCATION, savedLog.getStatus());
-
-            verify(publicCapsuleRecipientRepository, never()).save(any());
         }
 
         @Test
@@ -328,7 +332,7 @@ class CapsuleReadServiceTest {
             );
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(2)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(2)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog anomalyLog = logCaptor.getAllValues().get(1);
             assertEquals(AnomalyType.IMPOSSIBLE_MOVEMENT, anomalyLog.getAnomalyType());
@@ -359,10 +363,10 @@ class CapsuleReadServiceTest {
                     anyString()
             )).thenReturn(AnomalyType.NONE);
 
-            when(firstComeService.hasFirstComeLimit(publicCapsule)).thenReturn(false);
+            lenient().when(firstComeService.hasFirstComeLimit(publicCapsule)).thenReturn(false);
             when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
                     .thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
+            lenient().when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -378,7 +382,7 @@ class CapsuleReadServiceTest {
                     any(), any(), any(), any(), any(), any(), any()
             );
 
-            verify(capsuleOpenLogRepository, times(1)).save(any(CapsuleOpenLog.class));
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -467,7 +471,7 @@ class CapsuleReadServiceTest {
             // Then
             assertNotNull(result);
 
-            verify(capsuleOpenLogRepository, times(1)).save(any(CapsuleOpenLog.class));
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(any(CapsuleOpenLog.class));
             verify(capsuleRecipientRepository, times(1)).save(recipient);
         }
 
@@ -516,7 +520,7 @@ class CapsuleReadServiceTest {
             assertEquals(ErrorCode.CAPSULE_NOT_RECEIVER, exception.getErrorCode());
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals(CapsuleOpenStatus.FAIL_PERMISSION, savedLog.getStatus());
@@ -630,7 +634,7 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals("MEMBER", savedLog.getViewerType());
@@ -670,7 +674,7 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals("GUEST", savedLog.getViewerType());
@@ -702,7 +706,7 @@ class CapsuleReadServiceTest {
             assertEquals(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH, exception.getErrorCode());
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
+            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals(CapsuleOpenStatus.FAIL_PASSWORD, savedLog.getStatus());
