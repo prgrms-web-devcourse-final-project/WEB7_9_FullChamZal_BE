@@ -396,7 +396,7 @@ public class StorytrackService {
 
         StorytrackProgress progress =
                 storytrackProgressRepository
-                        .findByStorytrack_StorytrackIdAndMember_MemberId(storytrackId, memberId)
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         return ParticipantProgressResponse.from(progress);
@@ -421,7 +421,7 @@ public class StorytrackService {
     ) {
         // 진행 정보 조회
         StorytrackProgress progress = storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         // FREE 타입이면 그냥 바로 넘어가기
@@ -451,7 +451,7 @@ public class StorytrackService {
         // 참여자 진행 정보 조회
         StorytrackProgress progress =
                 storytrackProgressRepository
-                        .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() ->
                                 new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND)
                         );
@@ -469,6 +469,10 @@ public class StorytrackService {
         // 캡슐 조건 검증 + 오픈
         CapsuleConditionResponseDTO response =
                 capsuleReadService.conditionAndRead(request);
+
+        if (!"SUCCESS".equals(response.result())) {
+            return response;
+        }
 
         // 진행 상태 업데이트
         progress.completeStep(
