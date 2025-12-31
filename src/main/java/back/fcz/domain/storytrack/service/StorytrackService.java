@@ -191,7 +191,7 @@ public class StorytrackService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
         // 참여자 확인
-        if(!Objects.equals(storytrack.getMember().getMemberId(), memberId)){
+        if(Objects.equals(storytrack.getMember().getMemberId(), memberId)){
             throw new BusinessException(ErrorCode.STORYTRACK_CREATOR_NOT_JOIN);
         }
 
