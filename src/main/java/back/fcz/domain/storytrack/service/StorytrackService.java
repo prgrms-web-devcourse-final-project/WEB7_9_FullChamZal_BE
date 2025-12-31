@@ -301,8 +301,8 @@ public class StorytrackService {
         Optional<StorytrackProgress> progressOpt =
                 storytrackProgressRepository
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(
-                                memberId,
-                                storytrack.getStorytrackId()
+                                storytrack.getStorytrackId(),
+                                memberId
                         );
 
         // 참여 이력 없음
