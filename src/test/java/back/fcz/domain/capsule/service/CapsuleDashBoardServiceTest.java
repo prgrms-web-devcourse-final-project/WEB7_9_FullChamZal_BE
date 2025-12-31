@@ -217,8 +217,7 @@ public class CapsuleDashBoardServiceTest {
         given(capsuleRepository.findMyCapsulesLocationType(
                 eq(memberId),
                 eq("PUBLIC"),
-                eq("LOCATION"),
-                eq("TIME_AND_LOCATION"),
+                eq(List.of("LOCATION", "TIME_AND_LOCATION")),
                 any(Pageable.class)
         )).willReturn(capsulePage);
 
@@ -242,8 +241,7 @@ public class CapsuleDashBoardServiceTest {
                 .findMyCapsulesLocationType(
                         eq(memberId),
                         eq("PUBLIC"),
-                        eq("LOCATION"),
-                        eq("TIME_AND_LOCATION"),
+                        eq(List.of("LOCATION", "TIME_AND_LOCATION")),
                         any(Pageable.class)
                 );
     }

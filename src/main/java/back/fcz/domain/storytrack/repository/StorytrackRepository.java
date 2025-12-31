@@ -59,6 +59,7 @@ GROUP BY s, m, spMe
     @Query("""
     SELECT new back.fcz.domain.storytrack.dto.response.CreaterStorytrackListResponse(
         s.storytrackId,
+        s.member.nickname,
         s.title,
         s.description,
         s.trackType,

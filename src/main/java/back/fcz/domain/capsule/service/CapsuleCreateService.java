@@ -376,7 +376,9 @@ public class CapsuleCreateService {
 
             // deletedAt 갱신
             privateCapsule.markDeleted();
-            recipientRepository.save(privateCapsule);
+
+            // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
+            // recipientRepository.save(privateCapsule);
 
             return new CapsuleDeleteResponseDTO(
                     capsuleId,
@@ -392,7 +394,9 @@ public class CapsuleCreateService {
 
             // deletedAt 갱신
             publicCapsule.markDeleted();
-            publicRecipientRepository.save(publicCapsule);
+
+            // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
+            // publicRecipientRepository.save(publicCapsule);
 
             return new CapsuleDeleteResponseDTO(
                     capsuleId,
@@ -423,7 +427,6 @@ public class CapsuleCreateService {
             a.markDeleted(); // status=DELETED, deletedAt=now()
         }
         capsuleAttachmentRepository.saveAll(used);
-        capsuleRepository.save(capsule);
 
         return new CapsuleDeleteResponseDTO(
                 capsuleId,
