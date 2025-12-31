@@ -176,7 +176,7 @@ public class CapsuleCreateService {
 
         Capsule saved = capsuleRepository.save(secretCapsule);
 
-        String url = domain + saved.getUuid();
+        String url = domain + "/" + saved.getUuid();
         return SecretCapsuleCreateResponseDTO.from(saved, url, password);
     }
 
