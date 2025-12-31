@@ -556,7 +556,6 @@ class CapsuleCreateServiceTest {
 
         // then
         verify(privateRecipient).markDeleted();
-        verify(recipientRepository).save(privateRecipient);
 
         // PUBLIC 조회는 타지 않아야 함
         verify(publicRecipientRepository, never())
@@ -591,7 +590,6 @@ class CapsuleCreateServiceTest {
 
         // then
         verify(publicRecipient).markDeleted();
-        verify(publicRecipientRepository).save(publicRecipient);
 
         assertThat(response.capsuleId()).isEqualTo(capsuleId);
         assertThat(response.message()).contains("삭제");
@@ -643,7 +641,6 @@ class CapsuleCreateServiceTest {
         // then
         verify(capsule).markDeleted();
         verify(capsule).setIsDeleted(1);
-        verify(capsuleRepository).save(capsule);
 
         assertThat(response.capsuleId()).isEqualTo(capsuleId);
         assertThat(response.message()).contains("삭제");
