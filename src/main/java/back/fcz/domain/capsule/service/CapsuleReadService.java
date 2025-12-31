@@ -93,7 +93,6 @@ public class CapsuleReadService {
     }
 
     //공개 캡슐
-    @Transactional
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
         log.info("=== 공개 캡슐 로직 시작 - capsuleId: {} ===", capsule.getCapsuleId());
 

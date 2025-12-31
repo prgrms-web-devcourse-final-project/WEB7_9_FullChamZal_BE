@@ -47,6 +47,7 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j:9.1.0'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.35.0'
 
     // 5. Testing (테스트 전용)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

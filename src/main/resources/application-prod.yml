@@ -9,7 +9,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 10
+      maximum-pool-size: 50
       minimum-idle: 2
       connection-timeout: 30000
       idle-timeout: 600000
@@ -104,7 +104,6 @@ app:
     bucket: ${S3_BUCKET_NAME}
     prefix: capsules
     region: ${S3_REGION}
-
 
 google:
   drive:
