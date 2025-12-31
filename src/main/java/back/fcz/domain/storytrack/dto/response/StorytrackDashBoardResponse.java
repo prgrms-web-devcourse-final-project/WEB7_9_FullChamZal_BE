@@ -1,6 +1,7 @@
 package back.fcz.domain.storytrack.dto.response;
 
 import back.fcz.domain.storytrack.dto.PathResponse;
+import back.fcz.domain.storytrack.dto.StorytrackMemberType;
 import back.fcz.domain.storytrack.entity.Storytrack;
 import back.fcz.global.dto.PageResponse;
 import org.springframework.data.domain.Page;
@@ -17,13 +18,15 @@ public record StorytrackDashBoardResponse(
         LocalDateTime createdAt,
         int totalParticipant,
         int completeParticipant,
+        StorytrackMemberType memberType,
         PageResponse<PathResponse> paths
 ){
     public static StorytrackDashBoardResponse of(
             Storytrack storytrack,
             Page<PathResponse> paths,
             int totalParticipant,
-            int completeProgress
+            int completeProgress,
+            StorytrackMemberType memberType
     ) {
         return new StorytrackDashBoardResponse(
                 storytrack.getStorytrackId(),
@@ -36,6 +39,8 @@ public record StorytrackDashBoardResponse(
 
                 totalParticipant,
                 completeProgress,
+
+                memberType,
 
                 new PageResponse<> (paths)
         );

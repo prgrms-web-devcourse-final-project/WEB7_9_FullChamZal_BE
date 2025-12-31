@@ -252,9 +252,8 @@ public class StorytrackService {
         int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
         int completeProgress = storytrackProgressRepository.countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(storytrackId);
 
-        //
-        StorytrackMemberType memberType =
-                resolveMemberType(memberId, storytrack);
+        // 로그인한 사용자가 해당 대시보드와 어떤 관계인지 표시
+        StorytrackMemberType memberType = resolveMemberType(memberId, storytrack);
 
         // 스토리트랙 경로
         Pageable pageable = createPageable(
@@ -272,7 +271,8 @@ public class StorytrackService {
                 storytrack,
                 responsePage,
                 totalParticipant,
-                completeProgress
+                completeProgress,
+                memberType
         );
     }
 
@@ -288,7 +288,7 @@ public class StorytrackService {
         // 현재 참여 상태 조회 (soft delete 제외됨)
         Optional<StorytrackProgress> progressOpt =
                 storytrackProgressRepository
-                        .findByMember_MemberIdAndStorytrack_StorytrackId(
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(
                                 memberId,
                                 storytrack.getStorytrackId()
                         );
