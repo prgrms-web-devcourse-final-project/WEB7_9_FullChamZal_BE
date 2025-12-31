@@ -8,6 +8,7 @@ import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.storytrack.dto.PathResponse;
+import back.fcz.domain.storytrack.dto.StorytrackMemberType;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -77,7 +79,8 @@ public class StorytrackService {
             step.markDeleted();
         }
 
-        storytrackRepository.save(targetStorytrack);
+        // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
+        // storytrackRepository.save(targetStorytrack);
         return new DeleteStorytrackResponse(
                 storytrackId,
                 storytrackId + "번 스토리트랙이 삭제 되었습니다."
@@ -95,7 +98,8 @@ public class StorytrackService {
         // 삭제 - 소프트딜리트
         targetMember.markDeleted();
 
-        storytrackProgressRepository.save(targetMember);
+        // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
+        // storytrackProgressRepository.save(targetMember);
 
         return new DeleteParticipantResponse(
                 "스토리트랙 참여를 종료했습니다."
@@ -143,10 +147,10 @@ public class StorytrackService {
                 .trackType(request.trackType())
                 .isPublic(request.isPublic())
                 .price(request.price())
+                .totalSteps(request.capsuleList().size())
                 .isDeleted(0)
                 .build();
 
-        storytrack.setTotalSteps(storytrack.getSteps().size());
         storytrackRepository.save(storytrack);
 
         int stepOrder = 1;
@@ -191,6 +195,11 @@ public class StorytrackService {
             throw new BusinessException(ErrorCode.STORYTRACK_NOT_PUBLIC);
         }
 
+        // 스토리트랙 참여자 존재 확인 -> 존재하면 이미 존재 중이라고 예외 처리
+        if(storytrackProgressRepository.existsByMember_MemberIdAndStorytrack_StorytrackId(memberId, request.storytrackId())){
+            throw new BusinessException(ErrorCode.PARTICIPANT_ALREADY_JOIN);
+        }
+
         // 참여자 생성
         StorytrackProgress participant = StorytrackProgress.builder()
                 .member(member)
@@ -230,6 +239,7 @@ public class StorytrackService {
     // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회
     // 대략적인 경로(순서), 총 인원 수, 완료한 인원 수, 스토리트랙 제작자(닉네임)
     public StorytrackDashBoardResponse storytrackDashboard(
+            Long memberId,
             Long storytrackId,
             int page,
             int size
@@ -241,6 +251,9 @@ public class StorytrackService {
 
         int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
         int completeProgress = storytrackProgressRepository.countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(storytrackId);
+
+        // 로그인한 사용자가 해당 대시보드와 어떤 관계인지 표시
+        StorytrackMemberType memberType = resolveMemberType(memberId, storytrack);
 
         // 스토리트랙 경로
         Pageable pageable = createPageable(
@@ -258,8 +271,42 @@ public class StorytrackService {
                 storytrack,
                 responsePage,
                 totalParticipant,
-                completeProgress
+                completeProgress,
+                memberType
         );
+    }
+
+    private StorytrackMemberType resolveMemberType(
+            Long memberId,
+            Storytrack storytrack
+    ) {
+        // 스토리트랙 생성자
+        if (storytrack.getMember().getMemberId().equals(memberId)) {
+            return StorytrackMemberType.CREATOR;
+        }
+
+        // 현재 참여 상태 조회 (soft delete 제외됨)
+        Optional<StorytrackProgress> progressOpt =
+                storytrackProgressRepository
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(
+                                memberId,
+                                storytrack.getStorytrackId()
+                        );
+
+        // 참여 이력 없음
+        if (progressOpt.isEmpty()) {
+            return StorytrackMemberType.NOT_JOINED;
+        }
+
+        StorytrackProgress progress = progressOpt.get();
+
+        // 완료 여부
+        if (progress.getCompletedAt() != null) {
+            return StorytrackMemberType.COMPLETED;
+        }
+
+        // 참여 중
+        return StorytrackMemberType.PARTICIPANT;
     }
 
 

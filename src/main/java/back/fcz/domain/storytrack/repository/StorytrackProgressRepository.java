@@ -13,6 +13,9 @@ import java.util.Optional;
 public interface StorytrackProgressRepository extends JpaRepository<StorytrackProgress, Long> {
     Optional<StorytrackProgress> findByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
 
+    Optional<StorytrackProgress>
+    findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull( Long storytrackId, Long memberId);
+
     // 스토리트랙 참여자 집계
     @Query("""
     SELECT COUNT(sp)
@@ -46,6 +49,7 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
 SELECT new back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResponse(
     m.memberId,
     s.storytrackId,
+    m.nickname,
     s.title,
     s.description,
     s.trackType,

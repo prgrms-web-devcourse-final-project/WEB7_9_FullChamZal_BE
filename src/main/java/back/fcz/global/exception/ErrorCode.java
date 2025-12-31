@@ -142,6 +142,7 @@ public enum ErrorCode {
     STORYTRACK_NOT_PUBLIC("ST007", HttpStatus.BAD_REQUEST, "PUBLIC 상태의 스토리트랙에만 참여자가 참여할 수 있습니다."),
     STEP_NOT_FOUND("ST008", HttpStatus.BAD_REQUEST, "존재하지 않는 단계입니다."),
     INVALID_STEP_ORDER("ST009", HttpStatus.BAD_REQUEST, "현재 단계의 캡슐이 아닙니다."),
+    PARTICIPANT_ALREADY_JOIN("ST010", HttpStatus.BAD_REQUEST, "이미 스토리트랙에 참여하고 있는 회원입니다."),
 
     // ========== AI(OpenAI) / Moderation ==========
     OPENAI_MODERATION_FAILED("AI001", HttpStatus.SERVICE_UNAVAILABLE, "콘텐츠 검증에 실패했습니다. 잠시 후 다시 시도해주세요."),
