@@ -92,7 +92,7 @@ public class StorytrackService {
     public DeleteParticipantResponse deleteParticipant(Long memberId, Long storytrackId) {
 
         // 스토리트랙 참여자 조회
-        StorytrackProgress targetMember = storytrackProgressRepository.findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+        StorytrackProgress targetMember = storytrackProgressRepository.findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         // 삭제 - 소프트딜리트
@@ -189,6 +189,11 @@ public class StorytrackService {
         // 스토리트랙 존재 확인
         Storytrack storytrack = storytrackRepository.findById(request.storytrackId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
+
+        // 참여자 확인
+        if(!Objects.equals(storytrack.getMember().getMemberId(), memberId)){
+            throw new BusinessException(ErrorCode.STORYTRACK_CREATOR_NOT_JOIN);
+        }
 
         // 스토리트랙 상태 확인
         if (storytrack.getIsPublic() == 0) {
