@@ -7,6 +7,7 @@ import back.fcz.global.dto.PageResponse;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record StorytrackDashBoardResponse(
         Long storytrackId,
@@ -20,14 +21,16 @@ public record StorytrackDashBoardResponse(
         int totalParticipant,
         int completeParticipant,
         StorytrackMemberType memberType,
-        PageResponse<PathResponse> paths
+        PageResponse<PathResponse> paths,
+        List<Long> completedCapsuleId
 ){
     public static StorytrackDashBoardResponse of(
             Storytrack storytrack,
             Page<PathResponse> paths,
             int totalParticipant,
             int completeProgress,
-            StorytrackMemberType memberType
+            StorytrackMemberType memberType,
+            List<Long> completedCapsuleId
     ) {
         return new StorytrackDashBoardResponse(
                 storytrack.getStorytrackId(),
@@ -44,7 +47,9 @@ public record StorytrackDashBoardResponse(
 
                 memberType,
 
-                new PageResponse<> (paths)
+                new PageResponse<> (paths),
+
+                completedCapsuleId
         );
     }
 }

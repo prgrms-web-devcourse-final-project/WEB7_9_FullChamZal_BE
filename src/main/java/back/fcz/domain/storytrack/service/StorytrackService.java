@@ -272,12 +272,19 @@ public class StorytrackService {
         Page<PathResponse> responsePage =
                 paths.map(PathResponse::from);
 
+        List<Long> completedCapsuleIds =
+                storytrackStepRepository.findCompletedCapsuleIds(
+                        storytrackId,
+                        memberId
+                );
+
         return StorytrackDashBoardResponse.of(
                 storytrack,
                 responsePage,
                 totalParticipant,
                 completeProgress,
-                memberType
+                memberType,
+                completedCapsuleIds
         );
     }
 
