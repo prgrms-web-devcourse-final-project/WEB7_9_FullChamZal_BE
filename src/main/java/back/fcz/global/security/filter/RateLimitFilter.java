@@ -26,26 +26,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RateLimitService rateLimitService;
     private final CurrentUserContext currentUserContext;
 
-    private static final String[] EXCLUDED_PATHS = {
-            "/h2-console",
-            "/actuator/health",
-            "/v3/api-docs",
-            "/swagger-ui",
-            "/swagger-resources",
-            "/webjars"
-    };
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        for (String excludedPath : EXCLUDED_PATHS) {
-            if (path.startsWith(excludedPath)) {
-                return true;
-            }
-        }
-
-        return false;
+        return !path.equals("/api/v1/capsule/read");
     }
 
     @Override
