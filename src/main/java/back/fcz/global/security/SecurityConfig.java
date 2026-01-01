@@ -95,8 +95,8 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .addFilterBefore(ipBlockFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(rateLimitFilter, IpBlockFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, RateLimitFilter.class);
+                .addFilterAfter(jwtAuthenticationFilter, IpBlockFilter.class)
+                .addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
