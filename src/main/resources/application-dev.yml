@@ -5,6 +5,9 @@ spring:
       file: docker-compose.yml
       lifecycle-management: start-and-stop
 
+  jackson:
+    time-zone: Asia/Seoul
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

@@ -37,7 +37,6 @@ public class CapsuleDashBoardService {
     // 사용자가 전송한 캡슐 목록 조회
     public Page<CapsuleDashBoardResponse> readSendCapsuleList(Long memberId, Pageable pageable) {
         Page<Capsule> capsules = capsuleRepository.findActiveCapsulesByMemberId(memberId, pageable);
-
         return capsules.map(capsule -> {
             return new CapsuleDashBoardResponse(capsule);
         });
@@ -116,7 +115,6 @@ public class CapsuleDashBoardService {
 
     // 스토리트랙용 캡슐 목록 조회(내가 만든 캡슐, 공개 ,장소 기반)
     public PageResponse<CapsuleDashBoardResponse> myPublicLocationCapsule (Long memberId, int page, int size){
-        System.out.println("✅ CapsuleDashBoardService 진입");
 
         Pageable pageable = createPageable(
                 page,

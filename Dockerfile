@@ -12,7 +12,7 @@ RUN rm -rf /app/build/libs/*-plain.jar
 FROM container-registry.oracle.com/graalvm/jdk:21
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
 
 # prod profile
 # ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
