@@ -61,3 +61,33 @@ management:
   endpoint:
     health:
       show-details: never
+
+sanction:
+  rate-limit:
+    window-seconds:
+      LOW: 60
+      MEDIUM: 30
+      HIGH: 10
+
+    max-requests:
+      LOW: 60
+      MEDIUM: 30
+      HIGH: 10
+
+    cooldown-seconds:
+      LOW: 0
+      MEDIUM: 300
+      HIGH: 1800
+
+  monitoring:
+    thresholds:
+      warning: 50
+      limit: 100
+
+    anomaly-scores:
+      NONE: 0
+      SUSPICIOUS_PATTERN: 10
+      RAPID_RETRY: 20
+      LOCATION_RETRY: 30
+      IMPOSSIBLE_MOVEMENT: 50
+      TIME_MANIPULATION: 100
