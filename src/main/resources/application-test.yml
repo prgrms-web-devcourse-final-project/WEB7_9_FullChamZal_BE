@@ -1,13 +1,19 @@
 spring:
   docker:
     compose:
-      enabled: false
+      enabled: true
 
   datasource:
     url: jdbc:h2:mem:db_test;MODE=MySQL
     driver-class-name: org.h2.Driver
     username: sa
     password:
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   data:
     redis:

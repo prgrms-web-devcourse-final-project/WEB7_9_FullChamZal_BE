@@ -158,7 +158,9 @@ public class StorytrackController {
             @RequestParam(defaultValue ="0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        StorytrackDashBoardResponse response = storytrackService.storytrackDashboard(storytrackId, page, size);
+        Long loginMember = currentUserContext.getCurrentUser().memberId();
+
+        StorytrackDashBoardResponse response = storytrackService.storytrackDashboard(loginMember, storytrackId, page, size);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -192,6 +194,8 @@ public class StorytrackController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ){
+
+        System.out.println("===================공개 캡슐 조회==================");
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
         PageResponse<CapsuleDashBoardResponse> response = capsuleDashBoardService.myPublicLocationCapsule(loginMember, page, size);

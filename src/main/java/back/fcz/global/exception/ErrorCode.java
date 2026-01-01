@@ -89,6 +89,7 @@ public enum ErrorCode {
     NICKNAME_REQUIRED("CP020", HttpStatus.BAD_REQUEST, "캡슐 생성에 발신자 닉네임이 필요합니다."),
     PHONENUMBER_REQUIRED("CP021", HttpStatus.BAD_REQUEST, "캡슐 생성에 전화번호가 필요합니다."),
     NOT_PUBLIC("CPS022", HttpStatus.BAD_REQUEST, "공개 캡슐이 아닙니다."),
+
     // ========== 캡슐 파일 업로드 ==========
     CAPSULE_FILE_NOT_FOUND("CPSF001", HttpStatus.NOT_FOUND, "캡슐 업로드 파일을 찾을 수 없습니다."),
     CAPSULE_FILE_DELETE_FORBIDDEN("CPSF002", HttpStatus.FORBIDDEN, "본인이 업로드 한 파일만 삭제할 수 있습니다."),
@@ -97,7 +98,6 @@ public enum ErrorCode {
     CAPSULE_FILES_NOT_FOUND("CPSF005", HttpStatus.NOT_FOUND, "일부 캡슐 파일을 찾을 수 없습니다."),
     CAPSULE_FILE_ATTACH_FORBIDDEN("CPSF006", HttpStatus.FORBIDDEN, "본인이 업로드 한 파일만 첨부할 수 있습니다."),
     CAPSULE_FILE_ATTACH_INVALID_STATUS("CPSF007", HttpStatus.BAD_REQUEST, "임시 저장 상태인 파일만 첨부할 수 있습니다."),
-
 
     // ========== 북마크 에러 ==========
     BOOKMARK_ALREADY_EXISTS("BMK001", HttpStatus.CONFLICT, "이미 북마크된 캡슐입니다."),
@@ -109,6 +109,8 @@ public enum ErrorCode {
     // ========== 선착순 에러 ==========
     FIRST_COME_CLOSED("FCM001", HttpStatus.CONFLICT, "선착순 마감되었습니다."),
     FAILED_FIRST_COME_REQUEST("FCM002", HttpStatus.TOO_MANY_REQUESTS, "조회수 증가에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    FIRST_COME_TIMEOUT("FCM003", HttpStatus.REQUEST_TIMEOUT, "선착순 처리 시간이 초과되었습니다. 다시 시도해주세요."),
+    FIRST_COME_INTERRUPTED("FCM004", HttpStatus.INTERNAL_SERVER_ERROR, "선착순 처리 중 오류가 발생했습니다."),
 
     // ========== 해제조건 에러 ==========
     INVALID_UNLOCK_TIME("UNL001", HttpStatus.BAD_REQUEST, "유효하지 않은 시간 값입니다."),
@@ -140,6 +142,7 @@ public enum ErrorCode {
     STORYTRACK_NOT_PUBLIC("ST007", HttpStatus.BAD_REQUEST, "PUBLIC 상태의 스토리트랙에만 참여자가 참여할 수 있습니다."),
     STEP_NOT_FOUND("ST008", HttpStatus.BAD_REQUEST, "존재하지 않는 단계입니다."),
     INVALID_STEP_ORDER("ST009", HttpStatus.BAD_REQUEST, "현재 단계의 캡슐이 아닙니다."),
+    PARTICIPANT_ALREADY_JOIN("ST010", HttpStatus.BAD_REQUEST, "이미 스토리트랙에 참여하고 있는 회원입니다."),
 
     // ========== AI(OpenAI) / Moderation ==========
     OPENAI_MODERATION_FAILED("AI001", HttpStatus.SERVICE_UNAVAILABLE, "콘텐츠 검증에 실패했습니다. 잠시 후 다시 시도해주세요."),

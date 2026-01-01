@@ -195,13 +195,13 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     SELECT c FROM Capsule c
     WHERE c.memberId.memberId = :memberId
       AND c.visibility = :isPublic
-      AND (c.unlockType = :type1 OR c.unlockType = :type2)
+      AND c.unlockType IN :types
+      AND c.isDeleted = 0
 """)
     Page<Capsule> findMyCapsulesLocationType(
             @Param("memberId") Long memberId,
             @Param("isPublic") String isPublic,
-            @Param("type1") String type1,
-            @Param("type2") String type2,
+            @Param("types") List<String> types,
             Pageable pageable
     );
 }

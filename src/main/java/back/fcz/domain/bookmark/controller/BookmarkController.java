@@ -36,9 +36,6 @@ public class BookmarkController {
     @Operation(summary = "북마크 생성/복구", description = "열람한 캡슐을 북마크에 추가하거나 삭제된 북마크를 복구하는 API입니다.")
     @ApiErrorCodeExample({
             ErrorCode.CAPSULE_NOT_FOUND,
-            ErrorCode.CAPSULE_RECIPIENT_NOT_FOUND,
-            ErrorCode.NOT_CAPSULE_RECIPIENT,
-            ErrorCode.CAPSULE_NOT_UNLOCKED,
             ErrorCode.INVALID_CAPSULE_VISIBILITY,
             ErrorCode.BOOKMARK_ALREADY_EXISTS,
             ErrorCode.MEMBER_NOT_FOUND,

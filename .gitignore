@@ -57,3 +57,5 @@ db_dev.trace.db
 .serena/
 .claude
 .claude/
+
+tokens.csv
