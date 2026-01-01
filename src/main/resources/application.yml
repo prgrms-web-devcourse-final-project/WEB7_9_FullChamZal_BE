@@ -80,6 +80,7 @@ sanction:
       HIGH: 1800
 
   monitoring:
+    suspicion-ttl: 30m
     thresholds:
       warning: 50
       limit: 100
