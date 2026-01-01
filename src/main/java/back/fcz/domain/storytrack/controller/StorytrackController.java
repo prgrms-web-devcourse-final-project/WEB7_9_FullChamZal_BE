@@ -39,6 +39,8 @@ public class StorytrackController {
     // 작성자 - 스토리트랙 삭제
     @Operation(summary = "스토리트랙 삭제", description = "스토리트랙 작성자가 스토리트랙을 삭제할 수 있습니다.")
     @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.STORYTRACK_NOT_FOUND,
             ErrorCode.NOT_STORYTRACK_CREATER,
             ErrorCode.PARTICIPANT_EXISTS
@@ -56,6 +58,8 @@ public class StorytrackController {
     // 참여자 - 참여 스토리트랙 삭제(참여종료)
     @Operation(summary = "참여 스토리트랙 삭제", description = "스토리트랙 참여자가 참여한 스토리트랙을 삭제할 수 있습니다.")
     @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.PARTICIPANT_NOT_FOUND
     })
     @DeleteMapping("/delete/participant")
@@ -73,6 +77,8 @@ public class StorytrackController {
     // 작성자 - 스토리트랙 경로 수정
     @Operation(summary = "스토리트랙 경로 수정", description = "스토리트랙 작성자가 스토리트랙 경로를 수정할 수 있습니다.")
     @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.STORYTRACK_PAHT_NOT_FOUND,
             ErrorCode.NOT_STORYTRACK_CREATER,
             ErrorCode.CAPSULE_NOT_FOUND
@@ -93,6 +99,9 @@ public class StorytrackController {
     // 스토리트랙 생성
     @Operation(summary = "스토리트랙 생성", description = "공개 상태의 캡슐로 스토리트랙을 생성할 수 있습니다.")
     @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
+            ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.CAPSULE_NOT_FOUND,
             ErrorCode.CAPSULE_NOT_PUBLIC
     })
@@ -115,7 +124,9 @@ public class StorytrackController {
             ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.PARTICIPANT_NOT_FOUND,
             ErrorCode.STORYTRACK_NOT_FOUND,
-            ErrorCode.STORYTRACK_NOT_PUBLIC
+            ErrorCode.STORYTRACK_CREATOR_NOT_JOIN,
+            ErrorCode.STORYTRACK_NOT_PUBLIC,
+            ErrorCode.PARTICIPANT_ALREADY_JOIN
     })
     @PostMapping("/creat/participant")
     public ResponseEntity<ApiResponse<JoinStorytrackResponse>> joinStorytrack(
@@ -150,6 +161,8 @@ public class StorytrackController {
     // 스토리트랙 상세 조회
     @Operation(summary = "스토리트랙 상세 조회", description = "한 스토리트랙에 대한 자세한 내용을 조회할 수 있습니다.")
     @ApiErrorCodeExample({
+            ErrorCode.MEMBER_NOT_FOUND,
+            ErrorCode.MEMBER_NOT_ACTIVE,
             ErrorCode.STORYTRACK_NOT_FOUND
     })
     @GetMapping("/dashboard")
@@ -194,8 +207,6 @@ public class StorytrackController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ){
-
-        System.out.println("===================공개 캡슐 조회==================");
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
         PageResponse<CapsuleDashBoardResponse> response = capsuleDashBoardService.myPublicLocationCapsule(loginMember, page, size);

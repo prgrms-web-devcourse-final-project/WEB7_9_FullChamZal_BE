@@ -42,4 +42,24 @@ public interface StorytrackStepRepository extends JpaRepository<StorytrackStep, 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from StorytrackStep ss where ss.capsule.capsuleId in :capsuleIds")
     int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
+
+    // 스토리트랙 대시보드 - 완료된 단계의 캡슐 Id 표시
+    @Query("""
+    select s.capsule.capsuleId
+    from StorytrackStep s
+    where s.storytrack.storytrackId = :storytrackId
+      and s.stepOrder <= (
+          select p.lastCompletedStep
+          from StorytrackProgress p
+          where p.storytrack.storytrackId = :storytrackId
+            and p.member.memberId = :memberId
+            and p.deletedAt is null
+      )
+      and s.storytrack.isDeleted = 0
+    order by s.stepOrder
+""")
+    List<Long> findCompletedCapsuleIds(
+            @Param("storytrackId") Long storytrackId,
+            @Param("memberId") Long memberId
+    );
 }

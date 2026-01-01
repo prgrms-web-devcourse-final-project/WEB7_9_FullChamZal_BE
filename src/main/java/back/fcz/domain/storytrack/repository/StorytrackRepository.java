@@ -31,24 +31,26 @@ SELECT new back.fcz.domain.storytrack.dto.response.TotalStorytrackResponse(
     s.price,
     s.totalSteps,
     s.createdAt,
-    COUNT(spAll),
+    COUNT(spAllActive),
     CASE
         WHEN m.memberId = :loginMemberId THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.CREATOR
-        WHEN spMe.completedAt IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.COMPLETED
-        WHEN spMe.id IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.PARTICIPANT
+        WHEN spMeActive.completedAt IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.COMPLETED
+        WHEN spMeActive.id IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.PARTICIPANT
         ELSE back.fcz.domain.storytrack.dto.StorytrackMemberType.NOT_JOINED
     END
 )
 FROM Storytrack s
 JOIN s.member m
-LEFT JOIN StorytrackProgress spAll
-    ON spAll.storytrack = s
-LEFT JOIN StorytrackProgress spMe
-    ON spMe.storytrack = s
-   AND spMe.member.memberId = :loginMemberId
+LEFT JOIN StorytrackProgress spAllActive
+    ON spAllActive.storytrack = s
+   AND spAllActive.deletedAt IS NULL
+LEFT JOIN StorytrackProgress spMeActive
+    ON spMeActive.storytrack = s
+   AND spMeActive.member.memberId = :loginMemberId
+   AND spMeActive.deletedAt IS NULL
 WHERE s.isPublic = 1
   AND s.isDeleted = 0
-GROUP BY s, m, spMe
+GROUP BY s, m, spMeActive
 """)
     Page<TotalStorytrackResponse> findPublicStorytracksWithMemberType(
             @Param("loginMemberId") Long loginMemberId,

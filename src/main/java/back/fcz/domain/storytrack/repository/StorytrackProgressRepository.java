@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface StorytrackProgressRepository extends JpaRepository<StorytrackProgress, Long> {
@@ -38,12 +39,13 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
     from StorytrackProgress sp
     join fetch sp.storytrack s
     where sp.member.memberId = :memberId
+    and sp.deletedAt IS NULL
 """)
     Page<StorytrackProgress> findProgressesByMemberId(Long memberId, Pageable pageable);
 
     Optional<StorytrackProgress> findByStorytrack_StorytrackIdAndMember_MemberId(Long storytrackId, Long memberId);
 
-    boolean existsByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
+    boolean existsByMember_MemberIdAndStorytrack_StorytrackIdAndDeletedAt(Long memberId, Long storytrackId, LocalDateTime deleteAt);
 
     @Query("""
 SELECT new back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResponse(
@@ -69,10 +71,13 @@ JOIN p.storytrack s
 LEFT JOIN StorytrackProgress sp2
     ON sp2.storytrack = s
 WHERE m.memberId = :memberId
+AND p.deletedAt IS NULL
 GROUP BY p, m, s
 """)
     Page<ParticipantStorytrackListResponse> findJoinedStorytracksWithMemberCount(
             @Param("memberId") Long memberId,
             Pageable pageable
     );
+
+    boolean existsByMember_MemberIdAndStorytrack_StorytrackId(Long memberId, Long storytrackId);
 }

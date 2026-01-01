@@ -92,7 +92,7 @@ public class StorytrackService {
     public DeleteParticipantResponse deleteParticipant(Long memberId, Long storytrackId) {
 
         // 스토리트랙 참여자 조회
-        StorytrackProgress targetMember = storytrackProgressRepository.findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+        StorytrackProgress targetMember = storytrackProgressRepository.findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         // 삭제 - 소프트딜리트
@@ -190,13 +190,18 @@ public class StorytrackService {
         Storytrack storytrack = storytrackRepository.findById(request.storytrackId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
+        // 참여자 확인
+        if(Objects.equals(storytrack.getMember().getMemberId(), memberId)){
+            throw new BusinessException(ErrorCode.STORYTRACK_CREATOR_NOT_JOIN);
+        }
+
         // 스토리트랙 상태 확인
         if (storytrack.getIsPublic() == 0) {
             throw new BusinessException(ErrorCode.STORYTRACK_NOT_PUBLIC);
         }
 
         // 스토리트랙 참여자 존재 확인 -> 존재하면 이미 존재 중이라고 예외 처리
-        if(storytrackProgressRepository.existsByMember_MemberIdAndStorytrack_StorytrackId(memberId, request.storytrackId())){
+        if(storytrackProgressRepository.existsByMember_MemberIdAndStorytrack_StorytrackIdAndDeletedAt(memberId, request.storytrackId(), null)){
             throw new BusinessException(ErrorCode.PARTICIPANT_ALREADY_JOIN);
         }
 
@@ -221,7 +226,7 @@ public class StorytrackService {
     }
 
     // 조회
-    // 전체 스토리 트랙 목록 조회
+    // 전체 스토리 트랙 목록 조회 -> 삭제된 스토리트랙(isDelete = 1)은 조회에서 제외
     public PageResponse<TotalStorytrackResponse> readTotalStorytrack(Long memberId, int page, int size) {
 
         Pageable pageable = createPageable(
@@ -236,7 +241,7 @@ public class StorytrackService {
         return new PageResponse<>(responsePage);
     }
 
-    // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회
+    // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회 : 삭제된 스토리트랙은 미조회
     // 대략적인 경로(순서), 총 인원 수, 완료한 인원 수, 스토리트랙 제작자(닉네임)
     public StorytrackDashBoardResponse storytrackDashboard(
             Long memberId,
@@ -267,12 +272,19 @@ public class StorytrackService {
         Page<PathResponse> responsePage =
                 paths.map(PathResponse::from);
 
+        List<Long> completedCapsuleIds =
+                storytrackStepRepository.findCompletedCapsuleIds(
+                        storytrackId,
+                        memberId
+                );
+
         return StorytrackDashBoardResponse.of(
                 storytrack,
                 responsePage,
                 totalParticipant,
                 completeProgress,
-                memberType
+                memberType,
+                completedCapsuleIds
         );
     }
 
@@ -289,8 +301,8 @@ public class StorytrackService {
         Optional<StorytrackProgress> progressOpt =
                 storytrackProgressRepository
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(
-                                memberId,
-                                storytrack.getStorytrackId()
+                                storytrack.getStorytrackId(),
+                                memberId
                         );
 
         // 참여 이력 없음
@@ -310,7 +322,7 @@ public class StorytrackService {
     }
 
 
-    // 생성, 참여 : 스토리트랙 경로 조회
+    // 생성, 참여 : 스토리트랙 경로 조회 -> 삭제된 스토리트랙 미조회
     // 단계, 각 단계의 캡슐 조회
     public StorytrackPathResponse storytrackPath(
             Long storytrackId,
@@ -344,7 +356,7 @@ public class StorytrackService {
     }
 
 
-    // 생성자 : 생성한 스토리트랙 목록 조회
+    // 생성자 : 생성한 스토리트랙 목록 조회 -> 삭제된 스토리트랙 미조회
     public PageResponse<CreaterStorytrackListResponse> createdStorytrackList(
             Long memberId,
             int page,
@@ -366,7 +378,7 @@ public class StorytrackService {
         return new PageResponse<> (responsePage);
     }
 
-    // 참여자 : 참여한 스토리트랙 목록 조회
+    // 참여자 : 참여한 스토리트랙 목록 조회 -> 삭제된 스토리트랙 목록 미조회 추가
     public PageResponse<ParticipantStorytrackListResponse> joinedStorytrackList(
             Long memberId,
             int page,
@@ -386,12 +398,12 @@ public class StorytrackService {
         return new PageResponse<> (responsePage);
     }
 
-    // 참여자 : 스토리트랙 진행 상세 조회
+    // 참여자 : 스토리트랙 진행 상세 조회 -> 삭제된 스토리트랙 미조회 추가
     public ParticipantProgressResponse storytrackProgress(Long storytrackId, Long memberId) {
 
         StorytrackProgress progress =
                 storytrackProgressRepository
-                        .findByStorytrack_StorytrackIdAndMember_MemberId(storytrackId, memberId)
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         return ParticipantProgressResponse.from(progress);
@@ -416,7 +428,7 @@ public class StorytrackService {
     ) {
         // 진행 정보 조회
         StorytrackProgress progress = storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         // FREE 타입이면 그냥 바로 넘어가기
@@ -446,7 +458,7 @@ public class StorytrackService {
         // 참여자 진행 정보 조회
         StorytrackProgress progress =
                 storytrackProgressRepository
-                        .findByMember_MemberIdAndStorytrack_StorytrackId(memberId, storytrackId)
+                        .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() ->
                                 new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND)
                         );
@@ -464,6 +476,10 @@ public class StorytrackService {
         // 캡슐 조건 검증 + 오픈
         CapsuleConditionResponseDTO response =
                 capsuleReadService.conditionAndRead(request);
+
+        if (!"SUCCESS".equals(response.result())) {
+            return response;
+        }
 
         // 진행 상태 업데이트
         progress.completeStep(

@@ -161,7 +161,7 @@ class StorytrackServiceTest {
                 .build();
 
         given(storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 10L))
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(10L, 1L))
                 .willReturn(Optional.of(progress));
 
         // when & then
@@ -175,12 +175,14 @@ class StorytrackServiceTest {
     void validateStepAccess_invalidOrder() {
         // given
         Storytrack storytrack = Storytrack.builder()
+                .storytrackId(10L)
                 .trackType("SEQUENTIAL")
                 .build();
 
         StorytrackProgress progress = StorytrackProgress.builder()
                 .storytrack(storytrack)
                 .lastCompletedStep(1)
+                .completedAt(null)
                 .build();
 
         StorytrackStep step = StorytrackStep.builder()
@@ -188,7 +190,7 @@ class StorytrackServiceTest {
                 .build();
 
         given(storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 10L))
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(10L, 1L))
                 .willReturn(Optional.of(progress));
 
         given(storytrackStepRepository
@@ -200,6 +202,11 @@ class StorytrackServiceTest {
                 storytrackService.validateStepAccess(1L, 10L, 100L)
         ).isInstanceOf(BusinessException.class)
                 .hasMessage(ErrorCode.INVALID_STEP_ORDER.getMessage());
+
+        verify(storytrackProgressRepository, times(1))
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(
+                        10L, 1L
+                );
     }
 
     @Test
@@ -225,8 +232,13 @@ class StorytrackServiceTest {
         CapsuleConditionRequestDTO request =
                 new CapsuleConditionRequestDTO(10L, null, null, null, null);
 
+        CapsuleConditionResponseDTO response =
+                mock(CapsuleConditionResponseDTO.class);
+
+        given(response.result()).willReturn("SUCCESS");
+
         given(storytrackProgressRepository
-                .findByMember_MemberIdAndStorytrack_StorytrackId(1L, 1L))
+                .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(1L, 1L))
                 .willReturn(Optional.of(progress));
 
         given(storytrackStepRepository
@@ -234,7 +246,7 @@ class StorytrackServiceTest {
                 .willReturn(Optional.of(step));
 
         given(capsuleReadService.conditionAndRead(request))
-                .willReturn(mock(CapsuleConditionResponseDTO.class));
+                .willReturn(response);
 
         // when
         storytrackService.openCapsuleAndUpdateProgress(1L, 1L, request);
