@@ -4,6 +4,7 @@ import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.member.service.MemberStatusCache;
 import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.entity.MemberSanctionHistory;
 import back.fcz.domain.sanction.entity.SanctionType;
@@ -39,6 +40,9 @@ class SanctionServiceTest {
     @Mock
     private SanctionProperties sanctionProperties;
 
+    @Mock
+    private MemberStatusCache memberStatusCache;
+
     private SanctionConstants sanctionConstants;
     private SanctionService sanctionService;
 
@@ -53,7 +57,8 @@ class SanctionServiceTest {
         sanctionService = new SanctionService(
                 memberRepository,
                 sanctionHistoryRepository,
-                sanctionConstants
+                sanctionConstants,
+                memberStatusCache
         );
     }
 
