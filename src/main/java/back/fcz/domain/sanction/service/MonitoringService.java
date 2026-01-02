@@ -31,7 +31,7 @@ public class MonitoringService {
         int currentScore = incrementScore(key, score, "회원 " + memberId);
 
         // 임계값 확인 및 제재 적용
-        checkAndApplySanction(memberId, null, currentScore);
+        checkAndApplySanctionForMember(memberId, currentScore);
     }
 
     //  비회원(IP)의 의심 점수 증가
@@ -39,49 +39,41 @@ public class MonitoringService {
         String key = SUSPICION_KEY_PREFIX_IP + ipAddress;
         int currentScore = incrementScore(key, score, "IP " + ipAddress);
 
+        checkAndApplySanctionForIp(ipAddress, currentScore);
+    }
+
+    // 임계값 확인하고 필요 시 제재 - 멤버
+    private void checkAndApplySanctionForMember(Long memberId, int currentScore) {
         var thresholds = sanctionProperties.getMonitoring().getThresholds();
 
-        // 임계값 확인
         if (currentScore >= thresholds.getLimit()) {
-            log.error("IP 차단 필요: {} (점수: {}점)", ipAddress, currentScore);
+            sanctionService.applyAutoSuspension(
+                    memberId,
+                    "의심 활동 누적 (점수: " + currentScore + "점)",
+                    7
+            );
+            resetSuspicionScore(memberId);
+        } else if (currentScore >= thresholds.getWarning()) {
+            int cooldownSeconds = sanctionProperties.getRateLimit()
+                    .getCooldownSeconds().get(RiskLevel.MEDIUM);
+            rateLimitService.applyCooldown(memberId, cooldownSeconds / 60);
+        }
+    }
+
+    // 임계값 확인하고 필요 시 제재 - 비회원
+    private void checkAndApplySanctionForIp(String ipAddress, int currentScore) {
+        var thresholds = sanctionProperties.getMonitoring().getThresholds();
+
+        if (currentScore >= thresholds.getLimit()) {
             ipBlockService.blockIp(
                     ipAddress,
                     "의심 활동 누적 (점수: " + currentScore + "점)"
             );
             resetSuspicionScoreByIp(ipAddress);
         } else if (currentScore >= thresholds.getWarning()) {
-            log.warn("IP 제한 필요: {} (점수: {}점)", ipAddress, currentScore);
-            int cooldownMinutes =
-                    sanctionProperties.getRateLimit()
-                            .getCooldownSeconds()
-                            .get(RiskLevel.MEDIUM) / 60;
-
-            rateLimitService.applyCooldownByIp(ipAddress, cooldownMinutes);
-        }
-    }
-
-    // 임계값 확인하고 필요 시 제재
-    private void checkAndApplySanction(Long memberId, String ipAddress, int currentScore) {
-        var thresholds = sanctionProperties.getMonitoring().getThresholds();
-
-        if (currentScore >= thresholds.getLimit()) {
-            // 차단 수준: 계정 정지
-            log.error("자동 제재 발동: 회원 {} (점수: {}점) - 계정 정지 7일", memberId, currentScore);
-            sanctionService.applyAutoSuspension(
-                    memberId,
-                    "의심 활동 누적 (점수: " + currentScore + "점)",
-                    7
-            );
-            // 제재 후 점수 초기화
-            resetSuspicionScore(memberId);
-        } else if (currentScore >= thresholds.getWarning()) {
-            // 제한S 수준: Rate limiting 적용
-            log.warn("Rate Limiting 적용 대상: 회원 {} (점수: {}점)", memberId, currentScore);
-            int cooldownMinutes =
-                    sanctionProperties.getRateLimit()
-                            .getCooldownSeconds()
-                            .get(RiskLevel.MEDIUM) / 60;
-            rateLimitService.applyCooldown(memberId, cooldownMinutes); // 30분 쿨다운
+            int cooldownSeconds = sanctionProperties.getRateLimit()
+                    .getCooldownSeconds().get(RiskLevel.MEDIUM);
+            rateLimitService.applyCooldownByIp(ipAddress, cooldownSeconds / 60);
         }
     }
 
