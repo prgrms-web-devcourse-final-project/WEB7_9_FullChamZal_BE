@@ -286,7 +286,7 @@ public class StorytrackService {
                 .findByStorytrackIdAndIsDeleted(storytrackId, 0)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
-        int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
+        int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
         int completeProgress = storytrackProgressRepository.countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(storytrackId);
 
         // 로그인한 사용자가 해당 대시보드와 어떤 관계인지 표시

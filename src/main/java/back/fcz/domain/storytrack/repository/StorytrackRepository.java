@@ -37,7 +37,8 @@ SELECT new back.fcz.domain.storytrack.dto.response.TotalStorytrackResponse(
         WHEN spMeActive.completedAt IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.COMPLETED
         WHEN spMeActive.id IS NOT NULL THEN back.fcz.domain.storytrack.dto.StorytrackMemberType.PARTICIPANT
         ELSE back.fcz.domain.storytrack.dto.StorytrackMemberType.NOT_JOINED
-    END
+    END,
+    null
 )
 FROM Storytrack s
 JOIN s.member m
@@ -74,6 +75,7 @@ GROUP BY s, m, spMeActive
     FROM Storytrack s
     LEFT JOIN StorytrackProgress sp
         ON sp.storytrack = s
+        AND sp.deletedAt IS NULL
     WHERE s.member.memberId = :memberId
       AND s.isDeleted = 0
     GROUP BY s
