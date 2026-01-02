@@ -4,6 +4,7 @@ import back.fcz.domain.bookmark.dto.request.BookmarkCreateRequest;
 import back.fcz.domain.bookmark.dto.response.BookmarkListItemResponse;
 import back.fcz.domain.bookmark.service.BookmarkService;
 import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.ErrorCode;
@@ -44,6 +45,7 @@ public class BookmarkController {
             ErrorCode.TOKEN_EXPIRED,
             ErrorCode.TOKEN_INVALID
     })
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<Void>> bookmark(
             @Valid @RequestBody BookmarkCreateRequest bookmarkCreateRequest
             ) {
@@ -63,6 +65,7 @@ public class BookmarkController {
             ErrorCode.TOKEN_EXPIRED,
             ErrorCode.TOKEN_INVALID
     })
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<Void>> deleteBookmark(
             @PathVariable Long capsuleId
     ) {
