@@ -9,15 +9,20 @@ public record ParticipantProgressResponse(
         int completedSteps,
         int lastCompletedStep,
         LocalDateTime completedAt,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String imageUrl
 ){
-    public static ParticipantProgressResponse from(StorytrackProgress progress){
+    public static ParticipantProgressResponse from(
+            StorytrackProgress progress,
+            String imageUrl
+    ){
         return new ParticipantProgressResponse(
                 progress.getStorytrack().getStorytrackId(),
                 progress.getCompletedSteps(),
                 progress.getLastCompletedStep(),
                 progress.getCompletedAt(),
-                progress.getCreatedAt()
+                progress.getCreatedAt(),
+                imageUrl
         );
     }
 }

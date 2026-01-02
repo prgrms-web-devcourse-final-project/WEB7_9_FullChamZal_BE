@@ -416,7 +416,27 @@ public class StorytrackService {
                         pageable
                 );
 
-        return new PageResponse<> (responsePage);
+        // 스토리트랙 id 리스트 추출
+        List<Long> storytrackIds = responsePage.getContent().stream()
+                .map(CreaterStorytrackListResponse::storytrackId)
+                .toList();
+
+        Map<Long, String> imageUrlMap =
+                storytrackAttachmentRepository
+                        .findActiveImagesByStorytrackIds(storytrackIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getStorytrack().getStorytrackId(),
+                                StorytrackAttachment::getFileURL
+                        ));
+
+        // DTO에 스토리트랙 이미지url 넣기
+        Page<CreaterStorytrackListResponse> finalPage =
+                responsePage.map(dto ->
+                        dto.withImageUrl(imageUrlMap.get(dto.storytrackId()))
+                );
+
+        return new PageResponse<> (finalPage);
     }
 
     // 참여자 : 참여한 스토리트랙 목록 조회 -> 삭제된 스토리트랙 목록 미조회 추가
@@ -436,7 +456,28 @@ public class StorytrackService {
                 storytrackProgressRepository
                         .findJoinedStorytracksWithMemberCount(memberId, pageable);
 
-        return new PageResponse<> (responsePage);
+        // storytrackId 목록 추출
+        List<Long> storytrackIds = responsePage.getContent().stream()
+                .map(ParticipantStorytrackListResponse::storytrackId)
+                .toList();
+
+        // 대표 이미지 조회 (active image)
+        Map<Long, String> imageUrlMap =
+                storytrackAttachmentRepository
+                        .findActiveImagesByStorytrackIds(storytrackIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getStorytrack().getStorytrackId(),
+                                StorytrackAttachment::getFileURL
+                        ));
+
+        // DTO에 imageUrl 주입
+        Page<ParticipantStorytrackListResponse> finalPage =
+                responsePage.map(dto ->
+                        dto.withImageUrl(imageUrlMap.get(dto.storytrackId()))
+                );
+
+        return new PageResponse<> (finalPage);
     }
 
     // 참여자 : 스토리트랙 진행 상세 조회 -> 삭제된 스토리트랙 미조회 추가
@@ -447,7 +488,17 @@ public class StorytrackService {
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
-        return ParticipantProgressResponse.from(progress);
+        List<StorytrackAttachment> image = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
+
+        String imageUrl = image.stream()
+                .findFirst()
+                .map(StorytrackAttachment::getFileURL)
+                .orElse(null);
+
+        return ParticipantProgressResponse.from(
+                progress,
+                imageUrl
+        );
     }
 
     // 스토리트랙 캡슐 열람 전 참여자 검증
