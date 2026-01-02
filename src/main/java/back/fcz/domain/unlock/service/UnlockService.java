@@ -11,11 +11,13 @@ import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UnlockService {
@@ -237,6 +239,9 @@ public class UnlockService {
 
                 if (movementLevel >= 2) {
                     return AnomalyType.SUSPICIOUS_PATTERN;
+                }
+                else if (movementLevel == 1) {
+                    log.info("의심 이동 감지 (점수 미적용): memberId={}");
                 }
             }
         }
