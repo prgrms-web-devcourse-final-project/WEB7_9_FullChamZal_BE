@@ -8,6 +8,8 @@ RUN ./gradlew dependencies --no-daemon
 COPY src src
 RUN ./gradlew build --no-daemon -x test
 RUN rm -rf /app/build/libs/*-plain.jar
+RUN dnf install -y tzdata && dnf clean all
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 
 FROM container-registry.oracle.com/graalvm/jdk:21
 WORKDIR /app
