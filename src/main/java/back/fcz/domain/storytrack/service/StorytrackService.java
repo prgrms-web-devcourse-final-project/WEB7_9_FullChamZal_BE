@@ -185,6 +185,8 @@ public class StorytrackService {
             storytrack.addStep(step);
         }
 
+        // TODO: 이미지 추가 로직 이곳에 작성해주세요.
+
         storytrackRepository.save(storytrack);
 
         return CreateStorytrackResponse.from(storytrack);
