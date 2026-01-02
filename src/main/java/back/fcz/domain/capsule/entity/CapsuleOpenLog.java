@@ -22,7 +22,11 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_col_capsule_ip_time",
                         columnList = "capsule_id, ip_address, opened_at"),
                 @Index(name = "idx_col_status",
-                        columnList = "status")
+                        columnList = "status"),
+                @Index(name = "idx_col_capsule_member_status",
+                        columnList = "capsule_id, member_id, status"),
+                @Index(name = "idx_col_capsule_ip_status",
+                        columnList = "capsule_id, ip_address, status")
         }
 )
 public class CapsuleOpenLog {
