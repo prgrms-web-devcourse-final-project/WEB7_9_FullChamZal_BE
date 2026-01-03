@@ -40,6 +40,10 @@ class PhoneVerificationServiceTest {
     @Mock
     private SmsSender smsSender;
 
+    @Mock
+    private RedisDailyLimitService redisDailyLimitService;
+
+
     @Test
     @DisplayName("인증 번호 발송 : 최초 - 성공")
     void sendCode_First_Success() {
@@ -54,6 +58,9 @@ class PhoneVerificationServiceTest {
                 .countByPhoneNumberHashAndPurposeAndCreatedAtAfter(anyString(),any(),any()))
                 .thenReturn(0L);
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
+        when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
+                .thenReturn(1L);
+
 
         //when
         SendSmsCodeResponse response = phoneVerificationService.sendCode(request);
@@ -85,6 +92,9 @@ class PhoneVerificationServiceTest {
                 .findLatestPending(anyString(), any()))
                 .thenReturn(java.util.Optional.of(existingVerification));
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
+        when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
+                .thenReturn(1L);
+
 
         //when
         SendSmsCodeResponse response = phoneVerificationService.sendCode(request);
@@ -118,6 +128,9 @@ class PhoneVerificationServiceTest {
                 .thenReturn(java.util.Optional.of(existingVerification));
         when(existingVerification.isExpired(any())).thenReturn(true);
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
+        when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
+                .thenReturn(1L);
+
 
         //when
         SendSmsCodeResponse response = phoneVerificationService.sendCode(request);
