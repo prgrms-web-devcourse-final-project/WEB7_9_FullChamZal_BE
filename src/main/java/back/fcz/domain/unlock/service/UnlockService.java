@@ -8,7 +8,6 @@ import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.util.AnomalyDetector;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
-import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -90,15 +89,12 @@ public class UnlockService {
 
     // 사용자 근처 공개 캡슐 조회 전용 위치/위치+시간 조건 검증
     public boolean validateNearbyCapsuleConditions(
-            NearbyOpenCapsuleProjection nearByCapsule,
+            Capsule capsule,
             LocalDateTime currentTime,
             Double currentLat,
             Double currentLng
     ) {
-        Capsule capsule = capsuleRepository.findById(nearByCapsule.capsuleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
-
-        String unlockType = nearByCapsule.unlockType();
+        String unlockType = capsule.getUnlockType();
 
         return switch (unlockType) {
             case "LOCATION" -> isLocationConditionMet(capsule, currentLat, currentLng);

@@ -1,11 +1,11 @@
 package back.fcz.domain.unlock.service;
 
+import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleLikeRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.unlock.dto.request.NearbyOpenCapsuleRequest;
 import back.fcz.domain.unlock.dto.response.NearbyOpenCapsuleResponse;
-import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class NearbyOpenCapsuleService {
 
         // 공개 캡슐은 위치 정보가 기본이므로, 해제 조건이 시간인지, 위치인지 필터링 불필요
         // 공개 + 삭제되지 않은 + bounding box 범위 내 공개 캡슐 조회
-        List<NearbyOpenCapsuleProjection> capsules = capsuleRepository.findNearbyCapsules(minLat, maxLat, minLng, maxLng);
+        List<Capsule> capsules = capsuleRepository.findNearbyCapsules(minLat, maxLat, minLng, maxLng);
 
         // 사용자가 열람한 공개 캡슐의 ID 목록 조회
         Set<Long> viewedCapsuleIds = publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId);
@@ -64,7 +64,7 @@ public class NearbyOpenCapsuleService {
                 .map(capsule -> {
                     // 캡슐 위치와 사용자 위치 간 거리 계산
                     double distance = unlockService.calculateDistanceInMeters(
-                            capsule.locationLat(), capsule.locationLng(), currentLat, currentLng
+                            capsule.getLocationLat(), capsule.getLocationLng(), currentLat, currentLng
                     );
 
                     // 요청 반경(searchRadiusM)을 벗어나면 null 반환
@@ -73,7 +73,7 @@ public class NearbyOpenCapsuleService {
                     }
 
                     // 사용자가 해당 캡슐을 열람한 적 있는 지, 확인 (열람했다면 true, 미열람이라면 false)
-                    boolean isViewed = viewedCapsuleIds.contains(capsule.capsuleId());
+                    boolean isViewed = viewedCapsuleIds.contains(capsule.getCapsuleId());
 
                     // 사용자가 해당 캡슐을 열람할 수 있는 지, 확인 (열람할 수 있다면 true, 열람 불가하다면 false)
                     boolean isUnlockable = unlockService.validateNearbyCapsuleConditions(
@@ -81,7 +81,7 @@ public class NearbyOpenCapsuleService {
                     );
 
                     // 사용자가 해당 캡슐에 좋아요를 눌렀는 지, 확인 (좋아요 했다면 true, 좋아요 안했다면 false)
-                    boolean isLiked = likedCapsuleIds.contains(capsule.capsuleId());
+                    boolean isLiked = likedCapsuleIds.contains(capsule.getCapsuleId());
 
                     // 응답 DTO로 매핑
                     return new NearbyOpenCapsuleResponse(capsule, distance, isViewed, isUnlockable, isLiked);

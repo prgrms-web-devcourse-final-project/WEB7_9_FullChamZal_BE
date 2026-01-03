@@ -1,6 +1,6 @@
 package back.fcz.domain.unlock.dto.response;
 
-import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
+import back.fcz.domain.capsule.entity.Capsule;
 
 import java.time.LocalDateTime;
 
@@ -20,21 +20,21 @@ public record NearbyOpenCapsuleResponse(
         int likeCount,
         boolean isLiked            // 사용자의 캡슐 좋아요 여부 (좋아요: true, 좋아요 X: false)
 ) {
-    public NearbyOpenCapsuleResponse(NearbyOpenCapsuleProjection capsule, double distanceToCapsule, boolean isViewed, boolean isUnlockable, boolean isLiked) {
+    public NearbyOpenCapsuleResponse(Capsule capsule, double distanceToCapsule, boolean isViewed, boolean isUnlockable, boolean isLiked) {
         this(
-                capsule.capsuleId(),
-                capsule.locationName(),
-                capsule.nickname(),
-                capsule.title(),
-                capsule.content(),
-                capsule.createdAt(),
-                capsule.unlockType(),
-                capsule.locationLat(),
-                capsule.locationLng(),
+                capsule.getCapsuleId(),
+                capsule.getLocationName(),
+                capsule.getNickname(),
+                capsule.getTitle(),
+                capsule.getContent(),
+                capsule.getCreatedAt(),
+                capsule.getUnlockType(),
+                capsule.getLocationLat(),
+                capsule.getLocationLng(),
                 distanceToCapsule,
                 isViewed,
                 isUnlockable,
-                capsule.likeCount(),
+                capsule.getLikeCount(),
                 isLiked
         );
     }
