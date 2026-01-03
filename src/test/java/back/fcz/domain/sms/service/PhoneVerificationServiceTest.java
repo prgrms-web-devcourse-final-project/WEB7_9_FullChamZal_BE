@@ -11,7 +11,7 @@ import back.fcz.domain.sms.repository.PhoneVerificationRepository;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
-import back.fcz.infra.sms.CoolSmsClient;
+import back.fcz.infra.sms.SmsSender;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +38,7 @@ class PhoneVerificationServiceTest {
     @Mock
     private PhoneCrypto phoneCrypto;
     @Mock
-    private CoolSmsClient coolSmsClient;
+    private SmsSender smsSender;
 
     @Test
     @DisplayName("인증 번호 발송 : 최초 - 성공")
@@ -63,7 +63,7 @@ class PhoneVerificationServiceTest {
         assertThat(response.success()).isTrue();
 
         verify(phoneVerificationRepository, times(1)).save(any(PhoneVerification.class));
-        verify(coolSmsClient, times(1)).sendSms(eq("01012345678"), anyString());
+        verify(smsSender, times(1)).send(eq("01012345678"), anyString());
     }
 
     @Test
@@ -95,7 +95,7 @@ class PhoneVerificationServiceTest {
 
         verify(existingVerification, times(1)).reset(anyString(), any());
         verify(phoneVerificationRepository, never()).save(any(PhoneVerification.class));
-        verify(coolSmsClient, times(1)).sendSms(eq("01012345678"), anyString());
+        verify(smsSender, times(1)).send(eq("01012345678"), anyString());
     }
 
     @Test
@@ -128,7 +128,7 @@ class PhoneVerificationServiceTest {
 
         verify(existingVerification, times(1)).markExpired();
         verify(phoneVerificationRepository, times(1)).save(any(PhoneVerification.class));
-        verify(coolSmsClient, times(1)).sendSms(eq("01012345678"), anyString());
+        verify(smsSender, times(1)).send(eq("01012345678"), anyString());
     }
     @Test
     @DisplayName("인증 번호 발송 : 재전송 쿨다운 시간 내 - 실패")
@@ -152,7 +152,7 @@ class PhoneVerificationServiceTest {
                 .isEqualTo(ErrorCode.SMS_RESEND_COOLDOWN);
 
         verify(phoneVerificationRepository, never()).save(any(PhoneVerification.class));
-        verify(coolSmsClient, never()).sendSms(anyString(), anyString());
+        verify(smsSender, never()).send(anyString(), anyString());
     }
     @Test
     @DisplayName("인증 코드 검증 - 성공")
