@@ -377,53 +377,6 @@ class CapsuleReadServiceTest {
         }
 
         @Test
-        @DisplayName("공개 캡슐 재조회 - 조건 검증 없이 성공, 이상 감지는 수행")
-        void publicCapsule_reAccess_skipValidation_butDetectAnomaly() {
-            // Given
-            setupSecurityContext(1L);
-            Capsule publicCapsule = createPublicCapsule(1L);
-            CapsuleConditionRequestDTO requestDto = createRequestDto(1L, 37.5665, 126.9780, null);
-
-            when(capsuleRepository.findById(1L)).thenReturn(Optional.of(publicCapsule));
-            when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
-
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
-                    1L, 1L, CapsuleOpenStatus.SUCCESS
-            )).thenReturn(true);
-
-            when(unlockService.detectAnomalyOnly(
-                    eq(publicCapsule),
-                    anyDouble(),
-                    anyDouble(),
-                    any(LocalDateTime.class),
-                    any(LocalDateTime.class),
-                    eq(1L),
-                    anyString()
-            )).thenReturn(AnomalyType.NONE);
-
-            lenient().when(firstComeService.hasFirstComeLimit(publicCapsule)).thenReturn(false);
-            when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
-                    .thenReturn(false);
-            lenient().when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-
-            // When
-            CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
-
-            // Then
-            assertNotNull(result);
-
-            verify(unlockService, never()).validateTimeAndLocationConditions(
-                    any(), any(), any(), any(), any(), any(), any()
-            );
-
-            verify(unlockService, times(1)).detectAnomalyOnly(
-                    any(), any(), any(), any(), any(), any(), any()
-            );
-
-            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(any(CapsuleOpenLog.class));
-        }
-
-        @Test
         @DisplayName("공개 캡슐 - 비로그인 상태로 접근 시 UNAUTHORIZED 예외")
         void publicCapsule_notLoggedIn_throwsUnauthorized() {
             // Given
@@ -562,67 +515,6 @@ class CapsuleReadServiceTest {
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals(CapsuleOpenStatus.FAIL_PERMISSION, savedLog.getStatus());
-        }
-
-        @Test
-        @DisplayName("보호된 캡슐 재조회 - 이상 감지 시 IMPOSSIBLE_MOVEMENT는 예외 발생")
-        void protectedCapsule_reAccess_impossibleMovement_throwsException() {
-            // Given
-            setupSecurityContext(1L);
-            Capsule protectedCapsule = createPrivateCapsule(1L, 1, null);
-            CapsuleConditionRequestDTO requestDto = createRequestDto(1L, 37.5665, 126.9780, null);
-
-            CapsuleRecipient recipient = CapsuleRecipient.builder()
-                    .capsuleId(protectedCapsule)
-                    .recipientName("홍길동")
-                    .recipientPhone("encryptedPhone")
-                    .recipientPhoneHash("phoneHash")
-                    .isSenderSelf(0)
-                    .build();
-
-            when(capsuleRepository.findById(1L)).thenReturn(Optional.of(protectedCapsule));
-            when(capsuleRecipientRepository.findByCapsuleId_CapsuleId(1L))
-                    .thenReturn(Optional.of(recipient));
-
-            InServerMemberResponse userResponse = new InServerMemberResponse(
-                    1L, "testUser", "홍길동", "테스터",
-                    "encryptedPhone", "phoneHash", MemberRole.USER
-            );
-            when(currentUserContext.getCurrentUser()).thenReturn(userResponse);
-
-            MemberDetailResponse detailResponse = new MemberDetailResponse(
-                    1L, "testUser", "홍길동", "테스터", "01012345678",
-                    MemberStatus.ACTIVE, MemberRole.USER, null,
-                    LocalDateTime.now(), LocalDateTime.now()
-            );
-            when(memberService.getDetailMe(userResponse)).thenReturn(detailResponse);
-            when(phoneCrypto.verifyHash("01012345678", "phoneHash")).thenReturn(true);
-
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
-                    1L, 1L, CapsuleOpenStatus.SUCCESS
-            )).thenReturn(true);
-
-            when(unlockService.detectAnomalyOnly(
-                    eq(protectedCapsule),
-                    anyDouble(),
-                    anyDouble(),
-                    any(LocalDateTime.class),
-                    any(LocalDateTime.class),
-                    eq(1L),
-                    anyString()
-            )).thenReturn(AnomalyType.IMPOSSIBLE_MOVEMENT);
-
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-
-            // When & Then
-            BusinessException exception = assertThrows(
-                    BusinessException.class,
-                    () -> capsuleReadService.conditionAndRead(requestDto)
-            );
-
-            assertEquals(ErrorCode.GPS_SPOOFING_SUSPECTED, exception.getErrorCode());
-
-            verify(monitoringService, times(1)).incrementSuspicionScore(eq(1L), anyInt());
         }
     }
 

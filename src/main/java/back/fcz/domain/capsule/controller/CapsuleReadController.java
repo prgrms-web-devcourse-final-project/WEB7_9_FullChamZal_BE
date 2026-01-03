@@ -7,6 +7,7 @@ import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
 import back.fcz.domain.sanction.util.RequestInfoExtractor;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
@@ -83,6 +84,7 @@ public class CapsuleReadController {
             ErrorCode.LOCATION_REQUIRED
     })
     @PostMapping("/read")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> conditionAndReadCapsule(
             @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto,
             HttpServletRequest request

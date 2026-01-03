@@ -8,6 +8,7 @@ import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.util.AnomalyDetector;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
+import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -87,17 +88,23 @@ public class UnlockService {
         return UnlockValidationResult.conditionFailed();
     }
 
-    // 재조회 시에만 사용하는 검증 메서드
-    public AnomalyType detectAnomalyOnly(
-            Capsule capsule,
+    // 사용자 근처 공개 캡슐 조회 전용 위치/위치+시간 조건 검증
+    public boolean validateNearbyCapsuleConditions(
+            NearbyOpenCapsuleProjection nearByCapsule,
+            LocalDateTime currentTime,
             Double currentLat,
-            Double currentLng,
-            LocalDateTime serverTime,
-            LocalDateTime clientTime,
-            Long memberId,
-            String ipAddress
+            Double currentLng
     ) {
-        return detectAnomaly(capsule, currentLat, currentLng, serverTime, clientTime, memberId, ipAddress);
+        Capsule capsule = capsuleRepository.findById(nearByCapsule.capsuleId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
+
+        String unlockType = nearByCapsule.unlockType();
+
+        return switch (unlockType) {
+            case "LOCATION" -> isLocationConditionMet(capsule, currentLat, currentLng);
+            case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule, currentTime, currentLat, currentLng);
+            default -> throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
+        };
     }
 
     /*

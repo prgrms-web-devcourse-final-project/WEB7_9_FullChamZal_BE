@@ -100,18 +100,16 @@ class MonitoringServiceTest {
         verify(rateLimitService, never()).applyCooldown(anyLong(), anyInt());
     }
 
-
     @Test
-    void 의심점수_증가시_TTL이_설정된다() {
+    void 의심점수_증가시_매번_TTL이_갱신된다() {
         // given
         given(thresholds.getWarning()).willReturn(100);
         given(thresholds.getLimit()).willReturn(200);
-        given(redisTemplate.getExpire(anyString()))
-                .willReturn(-1L);
+        // getExpire 호출 제거 - 더 이상 TTL 체크 안 함
         given(valueOperations.increment(anyString(), anyLong()))
                 .willReturn(10L);
         given(monitoringProperties.getSuspicionTtl())
-                .willReturn(Duration.ofDays(30));
+                .willReturn(Duration.ofDays(7));
 
         // when
         monitoringService.incrementSuspicionScore(1L, 10);
@@ -119,7 +117,7 @@ class MonitoringServiceTest {
         // then
         verify(redisTemplate).expire(
                 contains("suspicion:member:1"),
-                eq(Duration.ofDays(30))
+                eq(Duration.ofDays(7))
         );
     }
 

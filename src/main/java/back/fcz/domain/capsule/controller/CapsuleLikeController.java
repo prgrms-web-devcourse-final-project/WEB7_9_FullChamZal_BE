@@ -5,6 +5,7 @@ import back.fcz.domain.capsule.DTO.request.CapsuleLikeRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleLikeReadResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleLikeResponse;
 import back.fcz.domain.capsule.service.CapsuleLikeService;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
@@ -50,6 +51,7 @@ public class CapsuleLikeController {
             ErrorCode.MEMBER_NOT_FOUND
     })
     @PostMapping("/likeUp")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleLikeResponse>> likeUp(
             @RequestBody CapsuleLikeRequest capsuleLikeRequest
     ){
@@ -64,6 +66,7 @@ public class CapsuleLikeController {
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @PostMapping("/likeDown")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleLikeResponse>> likeDown(
             @RequestBody CapsuleLikeRequest capsuleLikeRequest
     ){

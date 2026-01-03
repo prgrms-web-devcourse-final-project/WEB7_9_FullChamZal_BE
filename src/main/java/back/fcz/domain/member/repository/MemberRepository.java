@@ -1,5 +1,6 @@
 package back.fcz.domain.member.repository;
 
+import back.fcz.domain.admin.member.dto.AdminMemberStatistics;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberStatus;
 import org.springframework.data.domain.Page;
@@ -51,5 +52,28 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             Pageable pageable
+    );
+
+    /**
+     * 회원 통계 정보 통합 조회 (성능 개선)
+     * - 캡슐 수, 보호 캡슐 수, 신고당한 횟수를 한 번의 쿼리로 조회
+     * - LEFT JOIN을 사용하여 캡슐이 없는 회원도 포함
+     */
+    @Query("""
+        select new back.fcz.domain.admin.member.dto.AdminMemberStatistics(
+            m.memberId,
+            coalesce(cast(sum(case when c.isDeleted = 0 then 1 else 0 end) as long), 0L),
+            coalesce(cast(sum(case when c.isDeleted = 0 and c.isProtected = :protectedValue then 1 else 0 end) as long), 0L),
+            coalesce(cast(count(distinct r.id) as long), 0L)
+        )
+        from Member m
+        left join Capsule c on c.memberId.memberId = m.memberId
+        left join Report r on r.capsule.memberId.memberId = m.memberId
+        where m.memberId in :memberIds
+        group by m.memberId
+    """)
+    List<AdminMemberStatistics> getMemberStatisticsBatch(
+            @Param("memberIds") List<Long> memberIds,
+            @Param("protectedValue") int protectedValue
     );
 }

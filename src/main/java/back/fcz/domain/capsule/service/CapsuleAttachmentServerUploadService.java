@@ -9,12 +9,14 @@ import back.fcz.infra.storage.FileStorage;
 import back.fcz.infra.storage.FileUploadCommand;
 import back.fcz.infra.storage.StoredFile;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CapsuleAttachmentServerUploadService {
@@ -54,6 +56,8 @@ public class CapsuleAttachmentServerUploadService {
                     null
             );
         } catch (Exception e){
+            log.error("[upload] failed uploaderId={}, filename={}, size={}, ct={}",
+                    uploaderId, file.getOriginalFilename(), file.getSize(), file.getContentType(), e);
             throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_FAILED, e);
         }
     }

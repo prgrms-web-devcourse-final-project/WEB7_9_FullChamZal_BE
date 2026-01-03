@@ -30,7 +30,7 @@ public interface StorytrackProgressRepository extends JpaRepository<StorytrackPr
     StorytrackProgress findByStorytrack_StorytrackId(Long storytrackId);
 
     // 집계용
-    int countByStorytrack_StorytrackId(Long storytrackId);
+    int countByStorytrack_StorytrackIdAndDeletedAtIsNull(Long storytrackId);
     int countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(Long storytrackId);
 
 
@@ -63,13 +63,15 @@ SELECT new back.fcz.domain.storytrack.dto.response.ParticipantStorytrackListResp
     p.startedAt,
     p.completedAt,
     s.createdAt,
-    COUNT(sp2)
+    COUNT(sp2),
+    null
 )
 FROM StorytrackProgress p
 JOIN p.member m
 JOIN p.storytrack s
 LEFT JOIN StorytrackProgress sp2
     ON sp2.storytrack = s
+    AND sp2.deletedAt IS NULL
 WHERE m.memberId = :memberId
 AND p.deletedAt IS NULL
 GROUP BY p, m, s
