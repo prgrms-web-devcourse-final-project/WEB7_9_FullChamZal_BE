@@ -190,6 +190,13 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             "WHERE c.memberId.memberId = :memberId AND year(c.createdAt) = :year " +
             "GROUP BY month(c.createdAt)")
     List<Object[]> countMonthlySendCapsules(@Param("memberId") Long memberId, @Param("year") int year);
+
+    // 송신 캡슐 특정 월 카운트
+    @Query("SELECT count(c) FROM Capsule c " +
+            "WHERE c.memberId.memberId = :memberId " +
+            "AND year(c.createdAt) = :year " +
+            "AND month(c.createdAt) = :month")
+    long countSpecificMonthSend(@Param("memberId") Long memberId, @Param("year") int year, @Param("month") int month);
            
     @Query("""
     SELECT c FROM Capsule c

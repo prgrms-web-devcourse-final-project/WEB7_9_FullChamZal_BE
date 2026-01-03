@@ -64,6 +64,14 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
             "GROUP BY month(cr.createdAt)")
     List<Object[]> countMonthlyReceiveCapsules(@Param("phoneHash") String phoneHash, @Param("year") int year);
 
+    // 수신 캡슐 특정 월 카운트
+    @Query("SELECT count(cr) FROM CapsuleRecipient cr " +
+            "WHERE cr.recipientPhoneHash = :phoneHash " +
+            "AND year(cr.createdAt) = :year " +
+            "AND month(cr.createdAt) = :month " +
+            "AND cr.deletedAt IS NULL")
+    long countSpecificMonthReceive(@Param("phoneHash") String phoneHash, @Param("year") int year, @Param("month") int month);
+
     @Query("SELECT cr FROM CapsuleRecipient cr " +
             "JOIN FETCH cr.capsuleId c " +
             "WHERE cr.recipientPhoneHash = :phoneHash " +
