@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @Table(name = "capsule", indexes = {
-        @Index(name = "idx_capsule_uuid", columnList = "uuid", unique = true)
+        @Index(name = "idx_capsule_uuid", columnList = "uuid", unique = true),
+        @Index(name = "idx_lat_lng", columnList = "locationLat, locationLng")
 })
 public class Capsule extends BaseEntity {
     @Id

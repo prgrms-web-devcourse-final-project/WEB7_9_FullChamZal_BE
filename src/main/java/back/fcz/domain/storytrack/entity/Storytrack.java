@@ -24,6 +24,9 @@ public class Storytrack extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+    @OneToMany(mappedBy = "storytrack", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StorytrackAttachment> storytrackAttachment = new ArrayList();
+
     @Column(name = "title", nullable = false)
     private String title;
 

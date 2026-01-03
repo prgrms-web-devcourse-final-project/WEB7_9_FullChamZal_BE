@@ -23,6 +23,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final GoogleOAuth2Service googleOAuth2Service;
     private final GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
@@ -86,6 +87,9 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(googleOAuth2Service))
                         .successHandler(googleOAuth2SuccessHandler)
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
 
                 .formLogin(AbstractHttpConfigurer::disable)

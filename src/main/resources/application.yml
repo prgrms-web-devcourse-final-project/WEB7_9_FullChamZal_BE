@@ -20,7 +20,7 @@ spring:
       hibernate:
         connection:
           isolation: 2                 # READ_COMMITTED 격리 수준
-      javax:
+      jakarta:
         persistence:
           lock:
             timeout: 3000              # 비관적 락 타임아웃
