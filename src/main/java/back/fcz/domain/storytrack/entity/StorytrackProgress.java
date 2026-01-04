@@ -43,9 +43,21 @@ public class StorytrackProgress extends BaseEntity {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    public void completeStep(int stepOrder, int totalSteps) {
+    public void completeStep(StorytrackStep step, int totalSteps) {
+        if (isStepCompleted(step.getStepOrder())) {
+            return;
+        }
+
+        completedStepSet.add(
+                StorytrackProgressStep.builder()
+                        .progress(this)
+                        .step(step)
+                        .completedAt(LocalDateTime.now())
+                        .build()
+        );
+
         this.completedSteps += 1;
-        this.lastCompletedStep = stepOrder;
+        this.lastCompletedStep = step.getStepOrder();
 
         if (this.completedSteps == totalSteps) {
             this.completedAt = LocalDateTime.now();
@@ -59,4 +71,13 @@ public class StorytrackProgress extends BaseEntity {
             orphanRemoval = true
     )
     private Set<StorytrackProgressStep> completedStepSet = new HashSet<>();
+
+    public boolean isStepCompleted(int stepOrder) {
+        for (StorytrackProgressStep progressStep : completedStepSet) {
+            if (progressStep.getStep().getStepOrder() == stepOrder) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
