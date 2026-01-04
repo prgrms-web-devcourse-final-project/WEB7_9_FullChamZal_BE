@@ -72,10 +72,24 @@ class AnomalyDetectorTest {
     }
 
     @Test
-    @DisplayName("시간이 0이면 속도는 0이다")
-    void calculateSpeedWhenTimeIsZero() {
+    @DisplayName("시간이 0이고 거리가 100km이면 무한대 속도를 반환한다")
+    void calculateSpeedWhenTimeIsZeroWithDistance() {
         // given
         double distance = 100.0;
+        long timeDiffSeconds = 0;
+
+        // when
+        double speed = AnomalyDetector.calculateSpeed(distance, timeDiffSeconds);
+
+        // then
+        assertThat(speed).isEqualTo(Double.MAX_VALUE);
+    }
+
+    @Test
+    @DisplayName("시간이 0이고 거리도 0이면 속도는 0이다")
+    void calculateSpeedWhenTimeAndDistanceAreZero() {
+        // given
+        double distance = 0.0;
         long timeDiffSeconds = 0;
 
         // when
@@ -86,10 +100,24 @@ class AnomalyDetectorTest {
     }
 
     @Test
-    @DisplayName("시간이 음수이면 속도는 0이다")
-    void calculateSpeedWhenTimeIsNegative() {
+    @DisplayName("시간이 음수이고 거리가 있으면 무한대 속도를 반환한다")
+    void calculateSpeedWhenTimeIsNegativeWithDistance() {
         // given
         double distance = 100.0;
+        long timeDiffSeconds = -100;
+
+        // when
+        double speed = AnomalyDetector.calculateSpeed(distance, timeDiffSeconds);
+
+        // then
+        assertThat(speed).isEqualTo(Double.MAX_VALUE);
+    }
+
+    @Test
+    @DisplayName("시간이 음수이고 거리가 0이면 속도는 0이다")
+    void calculateSpeedWhenTimeIsNegativeWithoutDistance() {
+        // given
+        double distance = 0.0;
         long timeDiffSeconds = -100;
 
         // when
@@ -175,7 +203,7 @@ class AnomalyDetectorTest {
     }
 
     @Test
-    @DisplayName("1초 이내 이동은 검증하지 않는다")
+    @DisplayName("동일 시간에 위치가 크게 변경되면 즉시 차단한다")
     void ignoreMovementWithinOneSecond() {
         // given
         double lat1 = 37.5665;
@@ -189,7 +217,7 @@ class AnomalyDetectorTest {
         int level = AnomalyDetector.classifyMovementAnomaly(lat1, lng1, lat2, lng2, time1, time2);
 
         // then
-        assertThat(level).isEqualTo(0);
+        assertThat(level).isEqualTo(3);
     }
 
     @Test
@@ -260,5 +288,59 @@ class AnomalyDetectorTest {
         assertThat(AnomalyDetector.isValidCoordinate(null, 126.9780)).isFalse();
         assertThat(AnomalyDetector.isValidCoordinate(37.5665, null)).isFalse();
         assertThat(AnomalyDetector.isValidCoordinate(null, null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("동일 시간이지만 GPS 오차 범위 내(100m 미만)는 정상이다")
+    void ignoreSameTimeWithinGpsError() {
+        // given - 동일 시간, 50m 이동
+        double lat1 = 37.5665;
+        double lng1 = 126.9780;
+        double lat2 = 37.5670; // 약 55m 이동
+        double lng2 = 126.9785;
+        LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0, 0);
+        LocalDateTime time2 = LocalDateTime.of(2025, 1, 1, 10, 0, 0); // 동일 시간
+
+        // when
+        int level = AnomalyDetector.classifyMovementAnomaly(lat1, lng1, lat2, lng2, time1, time2);
+
+        // then
+        assertThat(level).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("동일 시간에 1m 이상 이동하면 즉시 차단한다")
+    void detectSameTimeWithMinimalMovement() {
+        // given - 동일 시간, 1km 이동
+        double lat1 = 37.5665;
+        double lng1 = 126.9780;
+        double lat2 = 37.5765; // 약 1.1km 이동
+        double lng2 = 126.9780;
+        LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0, 0);
+        LocalDateTime time2 = LocalDateTime.of(2025, 1, 1, 10, 0, 0); // 동일 시간
+
+        // when
+        int level = AnomalyDetector.classifyMovementAnomaly(lat1, lng1, lat2, lng2, time1, time2);
+
+        // then
+        assertThat(level).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("시간이 음수(과거로 이동)이고 위치가 변경되면 즉시 차단한다")
+    void detectNegativeTimeWithMovement() {
+        // given - 미래에서 과거로 시간 이동 + 위치 변경
+        double lat1 = 37.5665;
+        double lng1 = 126.9780;
+        double lat2 = 37.6665;
+        double lng2 = 127.0780;
+        LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0, 0);
+        LocalDateTime time2 = LocalDateTime.of(2025, 1, 1, 9, 50, 0); // 과거
+
+        // when
+        int level = AnomalyDetector.classifyMovementAnomaly(lat1, lng1, lat2, lng2, time1, time2);
+
+        // then
+        assertThat(level).isEqualTo(3);
     }
 }
