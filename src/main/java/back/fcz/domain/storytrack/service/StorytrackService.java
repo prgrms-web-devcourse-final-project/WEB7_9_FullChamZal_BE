@@ -566,18 +566,29 @@ public class StorytrackService {
         int lastCompleted = progress.getLastCompletedStep();
         int requestedStep = step.getStepOrder();
 
-        // 아직 열 수 없는 단계
-        if (requestedStep > lastCompleted + 1) {
-            throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
-        }
+        if("SEQUENTIAL".equals(progress.getStorytrack().getTrackType())){
+            // 아직 열 수 없는 단계
+            if (requestedStep > lastCompleted + 1) {
+                throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
+            }
 
-        // 이미 완료한 단계 -> 재조회
-        if (requestedStep <= lastCompleted) {
-            return capsuleReadService.readAlreadyOpendeStorytrackCapsule(
-                    step.getCapsule(),
-                    request,
-                    memberId
-            );
+            // 이미 완료한 단계 -> 재조회
+            if (requestedStep <= lastCompleted) {
+                return capsuleReadService.readAlreadyOpendeStorytrackCapsule(
+                        step.getCapsule(),
+                        request,
+                        memberId
+                );
+            }
+        } else if ("FREE".equals(progress.getStorytrack().getTrackType())){
+            // 이미 완료한 단계 -> 재조회
+            if (progress.isStepCompleted(requestedStep)) {
+                return capsuleReadService.readAlreadyOpenedStorytrackCapsule(
+                        step.getCapsule(),
+                        request,
+                        memberId
+                );
+            }
         }
 
         // 지금 열 차례인 단계 -> 최초 열람

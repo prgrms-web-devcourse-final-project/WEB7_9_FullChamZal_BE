@@ -7,6 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -29,7 +31,7 @@ public class StorytrackProgress extends BaseEntity {
     private Storytrack storytrack;
 
     @Column(name = "completed_steps", nullable = false)
-    private int completedSteps;
+    private int completedSteps; // 총 완료한 단계의 합
 
     @Column(name = "last_completed_steps")
     private int lastCompletedStep;
@@ -49,4 +51,12 @@ public class StorytrackProgress extends BaseEntity {
             this.completedAt = LocalDateTime.now();
         }
     }
+
+    // 진행 상황에 따른 진행 단계
+    @OneToMany(
+            mappedBy = "progress",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private Set<StorytrackProgressStep> completedStepSet = new HashSet<>();
 }
