@@ -124,10 +124,10 @@ public class CapsuleReadService {
         // 시간/위치 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateTimeAndLocationConditions(
                 capsule,
-                requestDto.unlockAt(),
+                requestDto.serverTime(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.serverTime(),
+                requestDto.unlockAt(),
                 currentMemberId,
                 requestDto.ipAddress()
         );
@@ -280,10 +280,10 @@ public class CapsuleReadService {
         // 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateUnlockConditionsForPrivate(
                 capsule,
-                requestDto.unlockAt(),
+                requestDto.serverTime(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.serverTime(),
+                requestDto.unlockAt(),
                 currentMemberId,
                 requestDto.ipAddress()
         );
@@ -385,10 +385,10 @@ public class CapsuleReadService {
         // 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateUnlockConditionsForPrivate(
                 capsule,
-                requestDto.unlockAt(),
+                requestDto.serverTime(),
                 requestDto.locationLat(),
                 requestDto.locationLng(),
-                requestDto.serverTime(),
+                requestDto.unlockAt(),
                 memberId,
                 requestDto.ipAddress()
         );
