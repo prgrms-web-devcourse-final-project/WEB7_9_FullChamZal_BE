@@ -147,13 +147,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
 
-        return path.startsWith("/static") ||
+        // 1. 정적 리소스 제외
+        if (path.startsWith("/static") ||
                 path.startsWith("/css") ||
                 path.startsWith("/js") ||
                 path.startsWith("/images") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs") ||
                 path.startsWith("/webjars") ||
-                path.startsWith("/actuator");
+                path.startsWith("/actuator") ||
+                path.startsWith("/h2-console")) {
+            return true;
+        }
+
+        // 2. 인증 생성/갱신 API 제외 (JWT 검증 자체가 불필요)
+        if (path.equals("/api/v1/auth/login") ||
+                path.equals("/api/v1/auth/signup") ||
+                path.equals("/api/v1/auth/refresh") ||
+                path.equals("/api/v1/auth/findUserId") ||
+                path.equals("/api/v1/auth/findPassword") ||
+                path.startsWith("/oauth2/authorization/google")) {
+            return true;
+        }
+
+        return false;
     }
 }
