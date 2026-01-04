@@ -3,8 +3,10 @@ package back.fcz.domain.capsule.service;
 import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentUploadResponse;
 import back.fcz.domain.capsule.entity.CapsuleAttachment;
 import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
+import back.fcz.domain.openai.moderation.service.CapsuleImageModerationService;
 import back.fcz.infra.storage.FileStorage;
 import back.fcz.infra.storage.FileUploadCommand;
+import back.fcz.infra.storage.PresignedUrlProvider;
 import back.fcz.infra.storage.StoredFile;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,9 +19,9 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.lang.reflect.Field;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +35,12 @@ class CapsuleAttachmentServerUploadServiceTest {
 
     @Mock
     private CapsuleAttachmentRepository capsuleAttachmentRepository;
+
+    @Mock
+    private PresignedUrlProvider presignedUrlProvider;
+
+    @Mock
+    private CapsuleImageModerationService capsuleImageModerationService;
 
     @Test
     @DisplayName("서버 업로드 방식 - TEMP 업로드 성공")
@@ -54,6 +62,13 @@ class CapsuleAttachmentServerUploadServiceTest {
                 "image/png",
                 (long) file.getBytes().length
         );
+        given(presignedUrlProvider.presignGet(anyString(), any()))
+                .willReturn("https://example.com/test.png");
+
+        doNothing().when(capsuleImageModerationService)
+                .validateImageUrl(anyLong(), any(), anyString());
+
+
         given(fileStorage.store(any(FileUploadCommand.class), anyString()))
                 .willReturn(storedFile);
 

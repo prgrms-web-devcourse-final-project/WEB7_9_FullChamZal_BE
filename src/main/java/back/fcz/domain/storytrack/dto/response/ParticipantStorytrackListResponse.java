@@ -17,5 +17,27 @@ public record ParticipantStorytrackListResponse(
         LocalDateTime startedAt,
         LocalDateTime completedAt,
         LocalDateTime createdAt,
-        Long totalMemberCount
-){ }
+        Long totalMemberCount,
+        String imageUrl
+){
+    public ParticipantStorytrackListResponse withImageUrl(String imageUrl) {
+        return new ParticipantStorytrackListResponse(
+                memberId,
+                storytrackId,
+                creatorNickname,
+                title,
+                description,
+                trackType,
+                isPublic,
+                price,
+                totalSteps,
+                completedSteps,
+                lastCompletedStep,
+                startedAt,
+                completedAt,
+                createdAt,
+                totalMemberCount,
+                imageUrl
+        );
+    }
+}

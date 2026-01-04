@@ -2,6 +2,7 @@ package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,22 @@ public class UnlockService {
             case "TIME" -> isTimeConditionMet(capsule.getCapsuleId(), currentTime);
             case "LOCATION" -> isLocationConditionMet(capsule.getCapsuleId(), currentLat, currentLng);
             case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule.getCapsuleId(), currentTime, currentLat, currentLng);
+            default -> throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
+        };
+    }
+
+    // 사용자 근처 공개 캡슐 조회 전용 위치/위치+시간 조건 검증
+    public boolean validateNearbyCapsuleConditions(
+            NearbyOpenCapsuleProjection capsule,
+            LocalDateTime currentTime,
+            Double currentLat,
+            Double currentLng
+    ) {
+        String unlockType = capsule.unlockType();
+
+        return switch (unlockType) {
+            case "LOCATION" -> isLocationConditionMet(capsule.capsuleId(), currentLat, currentLng);
+            case "TIME_AND_LOCATION" -> isTimeAndLocationConditionMet(capsule.capsuleId(), currentTime, currentLat, currentLng);
             default -> throw new BusinessException(ErrorCode.CAPSULE_CONDITION_ERROR);
         };
     }

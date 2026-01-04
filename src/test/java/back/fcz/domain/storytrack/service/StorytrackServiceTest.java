@@ -14,22 +14,27 @@ import back.fcz.domain.storytrack.dto.response.JoinStorytrackResponse;
 import back.fcz.domain.storytrack.entity.Storytrack;
 import back.fcz.domain.storytrack.entity.StorytrackProgress;
 import back.fcz.domain.storytrack.entity.StorytrackStep;
+import back.fcz.domain.storytrack.repository.StorytrackAttachmentRepository;
 import back.fcz.domain.storytrack.repository.StorytrackProgressRepository;
 import back.fcz.domain.storytrack.repository.StorytrackRepository;
 import back.fcz.domain.storytrack.repository.StorytrackStepRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.infra.storage.PresignedUrlProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -41,12 +46,13 @@ class StorytrackServiceTest {
     private StorytrackService storytrackService;
 
     @Mock private StorytrackRepository storytrackRepository;
-    @Mock
-    private StorytrackProgressRepository storytrackProgressRepository;
+    @Mock private StorytrackProgressRepository storytrackProgressRepository;
     @Mock private StorytrackStepRepository storytrackStepRepository;
     @Mock private CapsuleRepository capsuleRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private CapsuleReadService capsuleReadService;
+    @Mock private StorytrackAttachmentRepository storytrackAttachmentRepository;
+    @Mock private PresignedUrlProvider presignedUrlProvider;
 
     @Test
     @DisplayName("스토리트랙 생성 성공")
@@ -68,7 +74,8 @@ class StorytrackServiceTest {
                 "SEQUENTIAL",
                 1,
                 0,
-                List.of(10L)
+                List.of(10L),
+                null
         );
 
         given(memberRepository.findById(memberId))
@@ -86,6 +93,125 @@ class StorytrackServiceTest {
 
         // then
         assertThat(response.title()).isEqualTo("title");
+        assertThat(response.totalSteps()).isEqualTo(1);
+        assertThat(response.capsuleList()).containsExactly(10L);
+
+        verify(storytrackAttachmentRepository, never()).save(any());
+        verify(storytrackAttachmentRepository,never()).saveAll(any());
+
+    }
+
+    @Test
+    @DisplayName("스토리트랙 생성 실패 - 비공개 캡슐")
+    void createStorytrack_fail_privateCapsule() {
+        Long memberId = 1L;
+
+        Member member = Member.builder().build();
+
+        Capsule capsule = Capsule.builder()
+                .capsuleId(10L)
+                .visibility("PRIVATE")
+                .build();
+
+        CreateStorytrackRequest request = new CreateStorytrackRequest(
+                "title",
+                "desc",
+                "SEQUENTIAL",
+                1,
+                0,
+                List.of(10L),
+                null
+        );
+
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(member));
+
+        given(capsuleRepository.findById(10L))
+                .willReturn(Optional.of(capsule));
+
+        // when & then
+        assertThatThrownBy(() ->
+                storytrackService.createStorytrack(request, memberId)
+        ).isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.CAPSULE_NOT_PUBLIC.getMessage());
+    }
+
+    @Test
+    @DisplayName("스토리트랙 생성 시 totalSteps는 capsuleList 크기와 동일")
+    void createStorytrack_totalSteps_matchCapsuleCount() {
+        Long memberId = 1L;
+
+        Member member = Member.builder().build();
+
+        Capsule capsule1 = Capsule.builder()
+                .capsuleId(1L)
+                .visibility("PUBLIC")
+                .build();
+
+        Capsule capsule2 = Capsule.builder()
+                .capsuleId(2L)
+                .visibility("PUBLIC")
+                .build();
+
+        CreateStorytrackRequest request = new CreateStorytrackRequest(
+                "title",
+                "desc",
+                "SEQUENTIAL",
+                1,
+                0,
+                List.of(1L, 2L),
+                null
+        );
+
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(member));
+
+        given(capsuleRepository.findById(1L))
+                .willReturn(Optional.of(capsule1));
+
+        given(capsuleRepository.findById(2L))
+                .willReturn(Optional.of(capsule2));
+
+        given(storytrackRepository.save(any()))
+                .willAnswer(inv -> inv.getArgument(0));
+
+        CreateStorytrackResponse response =
+                storytrackService.createStorytrack(request, memberId);
+
+        assertThat(response.totalSteps()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("스토리트랙 생성 시 capsuleList 순서가 stepOrder 순서가 된다")
+    void createStorytrack_stepOrder_matchCapsuleOrder() {
+        Long memberId = 1L;
+
+        Member member = Member.builder().build();
+
+        Capsule c1 = Capsule.builder().capsuleId(1L).visibility("PUBLIC").build();
+        Capsule c2 = Capsule.builder().capsuleId(2L).visibility("PUBLIC").build();
+
+        CreateStorytrackRequest request = new CreateStorytrackRequest(
+                "title",
+                "desc",
+                "SEQUENTIAL",
+                1,
+                0,
+                List.of(2L, 1L),
+                null
+        );
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(capsuleRepository.findById(2L)).willReturn(Optional.of(c2));
+        given(capsuleRepository.findById(1L)).willReturn(Optional.of(c1));
+
+        given(storytrackRepository.save(any()))
+                .willAnswer(inv -> inv.getArgument(0));
+
+        CreateStorytrackResponse response =
+                storytrackService.createStorytrack(request, memberId);
+
+        assertThat(response.capsuleList()).containsExactly(2L, 1L);
     }
 
     @Test
@@ -131,6 +257,45 @@ class StorytrackServiceTest {
         assertThat(response.title()).isEqualTo("title");
         assertThat(response.storytrackType()).isEqualTo("SEQUENTIAL");
         assertThat(response.completedSteps()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("이미 참여한 스토리트랙은 재참여 불가")
+    void joinStorytrack_fail_alreadyJoined() {
+        Long memberId = 1L;
+        Long storytrackId = 10L;
+
+        Member creator = Member.builder()
+                .nickname("생성자닉네임")
+                .build();
+        ReflectionTestUtils.setField(creator, "memberId", 2L);
+
+        Member member = Member.builder().build();
+        ReflectionTestUtils.setField(member, "memberId", memberId);
+
+        Storytrack storytrack = Storytrack.builder()
+                .member(creator)
+                .isPublic(1)
+                .build();
+
+        given(memberRepository.findById(memberId))
+                .willReturn(Optional.of(member));
+
+        given(storytrackRepository.findById(storytrackId))
+                .willReturn(Optional.of(storytrack));
+
+        given(storytrackProgressRepository
+                .existsByMember_MemberIdAndStorytrack_StorytrackIdAndDeletedAt(
+                        memberId, storytrackId, null))
+                .willReturn(true);
+
+        assertThatThrownBy(() ->
+                storytrackService.joinParticipant(
+                        new JoinStorytrackRequest(storytrackId),
+                        memberId
+                )
+        ).isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.PARTICIPANT_ALREADY_JOIN.getMessage());
     }
 
     @Test

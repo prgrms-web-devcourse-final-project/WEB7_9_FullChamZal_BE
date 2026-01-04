@@ -61,3 +61,35 @@ management:
   endpoint:
     health:
       show-details: never
+
+resilience4j:
+  ratelimiter:
+    instances:
+      coolsmsSend:
+        limitForPeriod: 10          # period당 허용 호출 수   5초에 10번 허용 -> 보수적으로 설정
+        limitRefreshPeriod: 5s      # period
+        timeoutDuration: 0          # 토큰 없으면 즉시 실패(대기 X)
+  retry:
+    instances:
+      coolsmsSend:
+        maxAttempts: 3               # 총 3번 시도 (최초 호출 + 2번 재시도)
+        waitDuration: 300ms
+        retryExceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - java.io.IOException
+        ignoreExceptions:
+          - back.fcz.global.exception.BusinessException
+  circuitbreaker:
+    instances:
+      coolsmsSend:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s             # 오픈 상태 지속 시간 10초
+        permittedNumberOfCallsInHalfOpenState: 3 # half-open 상태에서 closed로 전환 하기 위한 테스트 호출 수
+        recordExceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - java.io.IOException

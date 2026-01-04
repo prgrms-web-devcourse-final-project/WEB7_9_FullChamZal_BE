@@ -1,10 +1,10 @@
-package back.fcz.domain.capsule.service;
+package back.fcz.domain.storytrack.service;
 
-import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentUploadResponse;
-import back.fcz.domain.capsule.entity.CapsuleAttachment;
-import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
 import back.fcz.domain.openai.moderation.entity.ModerationActionType;
 import back.fcz.domain.openai.moderation.service.CapsuleImageModerationService;
+import back.fcz.domain.storytrack.dto.response.StorytrackAttachmentUploadResponse;
+import back.fcz.domain.storytrack.entity.StorytrackAttachment;
+import back.fcz.domain.storytrack.repository.StorytrackAttachmentRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.infra.storage.FileStorage;
@@ -23,15 +23,15 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CapsuleAttachmentServerUploadService {
+public class StorytrackAttachmentUploadService {
 
     private final FileStorage fileStorage;
-    private final CapsuleAttachmentRepository capsuleAttachmentRepository;
     private final PresignedUrlProvider presignedUrlProvider;
     private final CapsuleImageModerationService capsuleImageModerationService;
+    private final StorytrackAttachmentRepository storytrackAttachmentRepository;
 
     @Transactional
-    public CapsuleAttachmentUploadResponse uploadTemp (Long uploaderId, MultipartFile file){
+    public StorytrackAttachmentUploadResponse uploadTemp (Long uploaderId, MultipartFile file){
         StoredFile stored = null;
         try {
             // 파일 유효성 검사
@@ -43,7 +43,7 @@ public class CapsuleAttachmentServerUploadService {
 
             // s3에 파일 업로드
             FileUploadCommand cmd = new FileUploadCommand(
-                    "capsules/" + uploaderId,
+                    "storytrack/" + uploaderId,
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getInputStream(),
@@ -57,16 +57,16 @@ public class CapsuleAttachmentServerUploadService {
             capsuleImageModerationService.validateImageUrl(uploaderId, ModerationActionType.CAPSULE_CREATE,imageUrl);
 
             // DB에 메타데이터 저장
-            CapsuleAttachment attachment = CapsuleAttachment.createTemp(
+            StorytrackAttachment attachment = StorytrackAttachment.createTemp(
                     uploaderId,
                     stored.key(),
                     stored.filename(),
                     stored.size(),
                     stored.contentType()
             );
-            capsuleAttachmentRepository.save(attachment);
+            storytrackAttachmentRepository.save(attachment);
 
-            return new CapsuleAttachmentUploadResponse(
+            return new StorytrackAttachmentUploadResponse(
                     attachment.getId(),
                     null,
                     null,
@@ -95,7 +95,7 @@ public class CapsuleAttachmentServerUploadService {
         String ext = "";
         int idx = fileName.lastIndexOf(".");
         if (idx > -1) ext = fileName.substring(idx).toLowerCase();
-        return "capsules/" + uploaderId + "/" + UUID.randomUUID() + ext;
+        return "storytrack/" + uploaderId + "/" + UUID.randomUUID() + ext;
     }
 }
 

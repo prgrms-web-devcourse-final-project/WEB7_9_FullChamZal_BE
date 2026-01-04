@@ -22,7 +22,8 @@ public record StorytrackDashBoardResponse(
         int completeParticipant,
         StorytrackMemberType memberType,
         PageResponse<PathResponse> paths,
-        List<Long> completedCapsuleId
+        List<Long> completedCapsuleId,
+        String imageUrl
 ){
     public static StorytrackDashBoardResponse of(
             Storytrack storytrack,
@@ -30,7 +31,8 @@ public record StorytrackDashBoardResponse(
             int totalParticipant,
             int completeProgress,
             StorytrackMemberType memberType,
-            List<Long> completedCapsuleId
+            List<Long> completedCapsuleId,
+            String imageUrl
     ) {
         return new StorytrackDashBoardResponse(
                 storytrack.getStorytrackId(),
@@ -49,7 +51,8 @@ public record StorytrackDashBoardResponse(
 
                 new PageResponse<> (paths),
 
-                completedCapsuleId
+                completedCapsuleId,
+                imageUrl
         );
     }
 }
