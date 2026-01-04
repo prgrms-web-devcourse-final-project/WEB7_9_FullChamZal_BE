@@ -164,9 +164,7 @@ public class CapsuleReadController {
             @AuthenticationPrincipal Long memberId,
             @RequestParam int year
     ) {
-        List<MonthlyCapsuleStat> yearlyCapsule = capsuleDashBoardService.readYearlyCapsule(memberId, year);
-        YearlyCapsuleResponse response = new YearlyCapsuleResponse(yearlyCapsule);
-        return  ResponseEntity.ok(ApiResponse.success(response));
+        return  ResponseEntity.ok(ApiResponse.success(capsuleDashBoardService.getYearlyCapsule(memberId, year)));
     }
 
     @Operation(summary = "오늘 해제 될 캡슐 조회",

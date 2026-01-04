@@ -13,7 +13,7 @@ public class CapsuleAttachment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch =  FetchType.LAZY)
     @JoinColumn(name = "capsule_id")
     private Capsule capsule;
 

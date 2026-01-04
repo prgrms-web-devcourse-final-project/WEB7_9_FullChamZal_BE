@@ -123,7 +123,7 @@ class StorytrackControllerTest {
                           "isPublic": 1,
                           "price": 0,
                           "capsuleList": [1,2,3],
-                          "attachmentId": []
+                          "attachmentId": null
                         }
                         """))
                 .andExpect(status().isOk())

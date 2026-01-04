@@ -11,7 +11,7 @@ import back.fcz.domain.sms.repository.PhoneVerificationRepository;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
-import back.fcz.infra.sms.CoolSmsClient;
+import back.fcz.infra.sms.SmsSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +30,10 @@ public class PhoneVerificationService {
     private static final int RESEND_COOLDOWN_SECONDS = 30;  // 재전송 쿨다운 시간
 
     private final PhoneVerificationRepository phoneVerificationRepository;
-    private final CoolSmsClient coolSmsClient;
+    private final SmsSender smsSender;
     private final PhoneCrypto phoneCrypto;
     private final PhoneVerificationAttemptService phoneVerificationAttemptService;
+    private final RedisDailyLimitService redisDailyLimitService;
 
     // 인증 코드 발송 로직
     @Transactional
@@ -54,6 +55,12 @@ public class PhoneVerificationService {
         if(recentCount > 0){
             throw new BusinessException(ErrorCode.SMS_RESEND_COOLDOWN);
         }
+        // 하루 제한(요청 1회 = 1회 차감)
+        long count = redisDailyLimitService.consumeOrReject(phoneNumberHash, 10);
+        if (count == 0) {
+            throw new BusinessException(ErrorCode.SMS_DAILY_LIMIT_EXCEEDED);
+        }
+
 
         // 최신 보류중인 인증 건 조회
         PhoneVerification latestPending = phoneVerificationRepository
@@ -94,7 +101,7 @@ public class PhoneVerificationService {
         // SMS 발송
         String prefix = request.resend() ? "[재전송]" : "";
         String message = prefix + "[Dear._] 인증번호 [" + code + "]를 입력해주세요. (유효시간 " + CODE_EXPIRATION_MINUTES + "분)";
-        coolSmsClient.sendSms(nomalizedPhoneNumber, message);
+        smsSender.send(nomalizedPhoneNumber, message);
 
         return new SendSmsCodeResponse(true, RESEND_COOLDOWN_SECONDS);
     }

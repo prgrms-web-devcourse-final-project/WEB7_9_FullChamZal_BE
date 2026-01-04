@@ -2,7 +2,6 @@ package back.fcz.domain.storytrack.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
@@ -15,12 +14,19 @@ public class StorytrackAttachment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "storytrack_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "storytrack_id")
     private Storytrack storytrack;
 
-    @Column(name = "file_url", nullable = false)
-    private String fileURL;
+    @Column(name = "s3_key", nullable = false)
+    private String s3Key;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "storytrack_status", nullable = false)
+    private StorytrackStatus status;
+
+    @Column(name = "uploader_id", nullable = false)
+    private Long uploaderId;
 
     @Column(name = "file_name", nullable = false)
     private String fileName;
@@ -34,14 +40,41 @@ public class StorytrackAttachment {
     @Column(name = "mime_type", nullable = false)
     private String mimeType;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "expired_at", nullable = false)
+    private LocalDateTime expiredAt;
+
+    public static StorytrackAttachment createTemp(
+            Long uploaderId,
+            String s3Key,
+            String fileName,
+            long size,
+            String mimeType
+    ) {
+        StorytrackAttachment attachment = new StorytrackAttachment();
+        attachment.uploaderId = uploaderId;
+        attachment.s3Key = s3Key;
+        attachment.fileName = fileName;
+        attachment.fileType = "IMAGE";
+        attachment.fileSize = size;
+        attachment.mimeType = mimeType;
+        attachment.status = StorytrackStatus.TEMP;
+        attachment.createdAt = LocalDateTime.now();
+        attachment.expiredAt = LocalDateTime.now().plusMinutes(15);
+        return attachment;
+    }
+
     public void markDeleted(){
         this.deletedAt = java.time.LocalDateTime.now();
+    }
+
+    public void attachToStorytrack(Storytrack storytrack){
+        this.storytrack = storytrack;
+        this.status = StorytrackStatus.THUMBNAIL;
     }
 }

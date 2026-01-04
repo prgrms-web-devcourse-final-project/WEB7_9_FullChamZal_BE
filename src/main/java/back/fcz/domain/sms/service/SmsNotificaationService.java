@@ -1,6 +1,6 @@
 package back.fcz.domain.sms.service;
 
-import back.fcz.infra.sms.CoolSmsClient;
+import back.fcz.infra.sms.SmsSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SmsNotificaationService {
 
-    private final CoolSmsClient coolSmsClient;
+    private final SmsSender smsSender;
 
     public void sendCapsuleCreatedNotification(
             String receiverPhoneNumber,
@@ -20,7 +20,7 @@ public class SmsNotificaationService {
     ) {
         String message = buildMessage(senderName, capsuleTitle);
 
-        coolSmsClient.sendSms(
+        smsSender.send(
                 receiverPhoneNumber,
                 message
         );
