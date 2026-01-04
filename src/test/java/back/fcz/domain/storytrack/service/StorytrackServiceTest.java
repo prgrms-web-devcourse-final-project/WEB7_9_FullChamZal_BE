@@ -14,11 +14,13 @@ import back.fcz.domain.storytrack.dto.response.JoinStorytrackResponse;
 import back.fcz.domain.storytrack.entity.Storytrack;
 import back.fcz.domain.storytrack.entity.StorytrackProgress;
 import back.fcz.domain.storytrack.entity.StorytrackStep;
+import back.fcz.domain.storytrack.repository.StorytrackAttachmentRepository;
 import back.fcz.domain.storytrack.repository.StorytrackProgressRepository;
 import back.fcz.domain.storytrack.repository.StorytrackRepository;
 import back.fcz.domain.storytrack.repository.StorytrackStepRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.infra.storage.PresignedUrlProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,12 +46,13 @@ class StorytrackServiceTest {
     private StorytrackService storytrackService;
 
     @Mock private StorytrackRepository storytrackRepository;
-    @Mock
-    private StorytrackProgressRepository storytrackProgressRepository;
+    @Mock private StorytrackProgressRepository storytrackProgressRepository;
     @Mock private StorytrackStepRepository storytrackStepRepository;
     @Mock private CapsuleRepository capsuleRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private CapsuleReadService capsuleReadService;
+    @Mock private StorytrackAttachmentRepository storytrackAttachmentRepository;
+    @Mock private PresignedUrlProvider presignedUrlProvider;
 
     @Test
     @DisplayName("스토리트랙 생성 성공")
@@ -72,7 +75,7 @@ class StorytrackServiceTest {
                 1,
                 0,
                 List.of(10L),
-                List.of()
+                null
         );
 
         given(memberRepository.findById(memberId))
@@ -92,6 +95,9 @@ class StorytrackServiceTest {
         assertThat(response.title()).isEqualTo("title");
         assertThat(response.totalSteps()).isEqualTo(1);
         assertThat(response.capsuleList()).containsExactly(10L);
+
+        verify(storytrackAttachmentRepository, never()).save(any());
+        verify(storytrackAttachmentRepository,never()).saveAll(any());
 
     }
 
@@ -114,7 +120,7 @@ class StorytrackServiceTest {
                 1,
                 0,
                 List.of(10L),
-                List.of()
+                null
         );
 
         given(memberRepository.findById(memberId))
@@ -154,7 +160,7 @@ class StorytrackServiceTest {
                 1,
                 0,
                 List.of(1L, 2L),
-                List.of()
+                null
         );
 
         given(memberRepository.findById(memberId))
@@ -192,7 +198,7 @@ class StorytrackServiceTest {
                 1,
                 0,
                 List.of(2L, 1L),
-                List.of()
+                null
         );
 
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
