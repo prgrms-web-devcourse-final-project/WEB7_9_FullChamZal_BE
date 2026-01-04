@@ -7,6 +7,7 @@ import back.fcz.domain.capsule.service.CapsuleAttachmentServerUploadService;
 import back.fcz.domain.member.service.CurrentUserContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,6 +46,9 @@ public class CapsuleAttachmentControllerTest {
 
     @MockitoBean
     private AttachmentService attachmentService;
+
+    @MockitoBean
+    private RedissonClient redissonClient;
 
     @Test
     @DisplayName("파일 서버 업로드 API 성공")

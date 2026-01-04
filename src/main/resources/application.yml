@@ -20,7 +20,7 @@ spring:
       hibernate:
         connection:
           isolation: 2                 # READ_COMMITTED 격리 수준
-      javax:
+      jakarta:
         persistence:
           lock:
             timeout: 3000              # 비관적 락 타임아웃
@@ -61,3 +61,67 @@ management:
   endpoint:
     health:
       show-details: never
+
+sanction:
+  rate-limit:
+    window-seconds:
+      LOW: 60
+      MEDIUM: 30
+      HIGH: 10
+
+    max-requests:
+      LOW: 60
+      MEDIUM: 30
+      HIGH: 10
+
+    cooldown-seconds:
+      LOW: 0
+      MEDIUM: 300
+      HIGH: 1800
+
+  monitoring:
+    suspicion-ttl: 7d
+    thresholds:
+      warning: 50
+      limit: 100
+
+    anomaly-scores:
+      NONE: 0
+      SUSPICIOUS_PATTERN: 10
+      RAPID_RETRY: 20
+      LOCATION_RETRY: 15
+      IMPOSSIBLE_MOVEMENT: 50
+      TIME_MANIPULATION: 30
+
+
+resilience4j:
+  ratelimiter:
+    instances:
+      coolsmsSend:
+        limitForPeriod: 10          # period당 허용 호출 수   5초에 10번 허용 -> 보수적으로 설정
+        limitRefreshPeriod: 5s      # period
+        timeoutDuration: 0          # 토큰 없으면 즉시 실패(대기 X)
+  retry:
+    instances:
+      coolsmsSend:
+        maxAttempts: 3               # 총 3번 시도 (최초 호출 + 2번 재시도)
+        waitDuration: 300ms
+        retryExceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - java.io.IOException
+        ignoreExceptions:
+          - back.fcz.global.exception.BusinessException
+  circuitbreaker:
+    instances:
+      coolsmsSend:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s             # 오픈 상태 지속 시간 10초
+        permittedNumberOfCallsInHalfOpenState: 3 # half-open 상태에서 closed로 전환 하기 위한 테스트 호출 수
+        recordExceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - java.io.IOException

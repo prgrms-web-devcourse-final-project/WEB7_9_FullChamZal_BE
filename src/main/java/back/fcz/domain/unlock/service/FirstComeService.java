@@ -1,9 +1,12 @@
 package back.fcz.domain.unlock.service;
 
-import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.entity.PublicCapsuleRecipient;
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
+import back.fcz.domain.capsule.entity.*;
+import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
+import back.fcz.domain.member.entity.Member;
+import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +16,6 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 // 선착순 캡슐 조회수 관리 서비스
@@ -26,6 +28,8 @@ public class FirstComeService {
     private final CapsuleRepository capsuleRepository;
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final RedissonClient redissonClient;
+    private final MemberRepository memberRepository;
+    private final CapsuleOpenLogRepository capsuleOpenLogRepository;
 
     private static final String FIRST_COME_LOCK_PREFIX = "capsule:firstcome:lock:";
     private static final long LOCK_WAIT_TIME = 5L;  // 락 획득 대기 시간 (초)
@@ -51,7 +55,7 @@ public class FirstComeService {
     public boolean tryIncrementViewCountAndSaveRecipient(
             Long capsuleId,
             Long memberId,
-            LocalDateTime unlockedAt
+            CapsuleConditionRequestDTO requestDto
     ) {
         String lockKey = FIRST_COME_LOCK_PREFIX + capsuleId;
         RLock lock = redissonClient.getLock(lockKey);
@@ -67,7 +71,7 @@ public class FirstComeService {
 
             log.debug("락 획득 성공. capsuleId={}, memberId={}", capsuleId, memberId);
 
-            return processFirstComeWithLock(capsuleId, memberId, unlockedAt);
+            return processFirstComeWithLock(capsuleId, memberId, requestDto);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("락 획득 중 인터럽트 발생. capsuleId={}", capsuleId, e);
@@ -85,7 +89,7 @@ public class FirstComeService {
     public boolean processFirstComeWithLock(
             Long capsuleId,
             Long memberId,
-            LocalDateTime unlockedAt
+            CapsuleConditionRequestDTO requestDto
     ) {
         // 이미 조회한 사용자인지 중복 체크
         boolean alreadyViewed = publicCapsuleRecipientRepository
@@ -100,31 +104,40 @@ public class FirstComeService {
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        // 선착순 제한이 있다면 마감 체크
-        if (hasFirstComeLimit(capsule)) {
-            log.info("선착순 제한 있음 - 원자적 조회수 증가 시도. capsuleId={}, current={}/{}",
-                    capsuleId, capsule.getCurrentViewCount(), capsule.getMaxViewCount());
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-            // UPDATE 쿼리로 원자적으로 증가 및 마감 체크
-            int updatedRows = capsuleRepository.incrementViewCountIfAvailable(capsuleId);
+        // UPDATE 쿼리로 원자적으로 증가 및 마감 체크
+        int updatedRows = capsuleRepository.incrementViewCountIfAvailable(capsuleId);
 
-            if (updatedRows == 0) {
-                // 업데이트된 행이 없다 = 이미 마감됨
-                log.info("선착순 마감. capsuleId={}", capsuleId);
-                throw new BusinessException(ErrorCode.FIRST_COME_CLOSED);
-            }
-
-            log.info("선착순 조회수 증가 성공. capsuleId={}", capsuleId);
-        } else {
-            log.info("선착순 제한 없음 - 마감 체크 생략. capsuleId={}", capsuleId);
-            capsule.increasedViewCount();
+        if (updatedRows == 0) {
+            // 업데이트된 행이 없다 = 이미 마감됨
+            log.info("선착순 마감. capsuleId={}", capsuleId);
+            throw new BusinessException(ErrorCode.FIRST_COME_CLOSED);
         }
+
+        log.info("선착순 조회수 증가 성공. capsuleId={}", capsuleId);
+
+        // 성공 로그 저장
+        CapsuleOpenLog openLog = CapsuleOpenLog.builder()
+                .capsuleId(capsule)
+                .memberId(member)
+                .viewerType("MEMBER")
+                .status(CapsuleOpenStatus.SUCCESS)
+                .anomalyType(AnomalyType.NONE)
+                .openedAt(requestDto.unlockAt())
+                .currentLat(requestDto.locationLat())
+                .currentLng(requestDto.locationLng())
+                .userAgent(requestDto.userAgent())
+                .ipAddress(requestDto.ipAddress())
+                .build();
+        capsuleOpenLogRepository.save(openLog);
 
         //수신자 정보 저장
         PublicCapsuleRecipient recipient = PublicCapsuleRecipient.builder()
                 .capsuleId(capsule)
                 .memberId(memberId)
-                .unlockedAt(unlockedAt)
+                .unlockedAt(requestDto.unlockAt())
                 .build();
 
         publicCapsuleRecipientRepository.save(recipient);
@@ -135,15 +148,52 @@ public class FirstComeService {
         return true;
     }
 
-    // 일반 공개 캡슐 조회수 증가
     @Transactional
-    public void incrementViewCount(Long capsuleId) {
+    public void saveRecipientWithoutFirstCome(
+            Long capsuleId,
+            Long memberId,
+            CapsuleConditionRequestDTO requestDto
+    ) {
+        boolean alreadyViewed = publicCapsuleRecipientRepository
+                .existsByCapsuleId_CapsuleIdAndMemberId(capsuleId, memberId);
+
+        if (alreadyViewed) {
+            log.info("이미 조회한 사용자 - 선착순 없음 재조회. capsuleId={}, memberId={}", capsuleId, memberId);
+            return;
+        }
+
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 조회수 증가
         capsule.increasedViewCount();
 
-        log.debug("일반 조회수 증가. capsuleId={}, newCount={}",
-                capsuleId, capsule.getCurrentViewCount());
+        // SUCCESS 로그 저장
+        CapsuleOpenLog openLog = CapsuleOpenLog.builder()
+                .capsuleId(capsule)
+                .memberId(member)
+                .viewerType("MEMBER")
+                .status(CapsuleOpenStatus.SUCCESS)
+                .anomalyType(AnomalyType.NONE)
+                .openedAt(requestDto.unlockAt())
+                .currentLat(requestDto.locationLat())
+                .currentLng(requestDto.locationLng())
+                .userAgent(requestDto.userAgent())
+                .ipAddress(requestDto.ipAddress())
+                .build();
+        capsuleOpenLogRepository.save(openLog);
+
+        // 수신자 정보 저장
+        PublicCapsuleRecipient recipient = PublicCapsuleRecipient.builder()
+                .capsuleId(capsule)
+                .memberId(memberId)
+                .unlockedAt(requestDto.unlockAt())
+                .build();
+        publicCapsuleRecipientRepository.save(recipient);
+
+        log.info("선착순 없음 - 첫 조회 성공. capsuleId={}, memberId={}", capsuleId, memberId);
     }
 }

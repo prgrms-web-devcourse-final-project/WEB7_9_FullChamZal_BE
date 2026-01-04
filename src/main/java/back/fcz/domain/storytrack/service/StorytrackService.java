@@ -13,15 +13,15 @@ import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
 import back.fcz.domain.storytrack.dto.response.*;
-import back.fcz.domain.storytrack.entity.Storytrack;
-import back.fcz.domain.storytrack.entity.StorytrackProgress;
-import back.fcz.domain.storytrack.entity.StorytrackStep;
+import back.fcz.domain.storytrack.entity.*;
+import back.fcz.domain.storytrack.repository.StorytrackAttachmentRepository;
 import back.fcz.domain.storytrack.repository.StorytrackProgressRepository;
 import back.fcz.domain.storytrack.repository.StorytrackRepository;
 import back.fcz.domain.storytrack.repository.StorytrackStepRepository;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.infra.storage.PresignedUrlProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,9 +31,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -46,8 +49,10 @@ public class StorytrackService {
     private final StorytrackStepRepository storytrackStepRepository;
     private final CapsuleRepository capsuleRepository;
     private final MemberRepository memberRepository;
+    private final StorytrackAttachmentRepository storytrackAttachmentRepository;
 
     private final CapsuleReadService capsuleReadService;
+    private final PresignedUrlProvider presignedUrlProvider;
 
     // 삭제
     // 생성자 : 스토리트랙 삭제
@@ -78,6 +83,14 @@ public class StorytrackService {
         for (StorytrackStep step : targetSteps) {
             step.markDeleted();
         }
+
+        // 스토리트랙 이미지 삭제
+        List<StorytrackAttachment> targetImage = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndStatus(storytrackId, StorytrackStatus.THUMBNAIL);
+
+        for (StorytrackAttachment image : targetImage){
+            image.markDeleted();
+        }
+        storytrackAttachmentRepository.saveAll(targetImage);
 
         // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
         // storytrackRepository.save(targetStorytrack);
@@ -151,8 +164,6 @@ public class StorytrackService {
                 .isDeleted(0)
                 .build();
 
-        storytrackRepository.save(storytrack);
-
         int stepOrder = 1;
 
         // 스토리트랙 스탭 생성
@@ -174,6 +185,10 @@ public class StorytrackService {
 
             storytrack.addStep(step);
         }
+        storytrackRepository.save(storytrack);
+        attachFiles(memberId, storytrack, request.attachmentId());
+
+
 
         return CreateStorytrackResponse.from(storytrack);
     }
@@ -238,7 +253,28 @@ public class StorytrackService {
         Page<TotalStorytrackResponse> responsePage =
                 storytrackRepository.findPublicStorytracksWithMemberType(memberId, pageable);
 
-        return new PageResponse<>(responsePage);
+        // 스토리트랙 목록 추출
+        List<Long> storytrackIds = responsePage.getContent().stream()
+                .map(TotalStorytrackResponse::storytrackId)
+                .toList();
+
+        // 스토리트랙 당 image
+        Map<Long, String> imageUrlMap =
+                storytrackAttachmentRepository.findActiveImagesByStorytrackIds(storytrackIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getStorytrack().getStorytrackId(),
+                                this::buildPresignedUrl,
+                                (oldV, newV) -> newV // 혹시 중복 방어
+                        ));
+
+        // DTO에 이미지 url 넣기
+        Page<TotalStorytrackResponse> finalPage =
+                responsePage.map(dto ->
+                        dto.withImage(imageUrlMap.get(dto.storytrackId()))
+                );
+
+        return new PageResponse<>(finalPage);
     }
 
     // 스토리트랙 조회 -> 스토리트랙에 대한 간략한 조회 : 삭제된 스토리트랙은 미조회
@@ -254,7 +290,7 @@ public class StorytrackService {
                 .findByStorytrackIdAndIsDeleted(storytrackId, 0)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_NOT_FOUND));
 
-        int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackId(storytrackId);
+        int totalParticipant = storytrackProgressRepository.countByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
         int completeProgress = storytrackProgressRepository.countByStorytrack_StorytrackIdAndCompletedAtIsNotNull(storytrackId);
 
         // 로그인한 사용자가 해당 대시보드와 어떤 관계인지 표시
@@ -267,6 +303,9 @@ public class StorytrackService {
                 Sort.by(Sort.Direction.ASC, "stepOrder")
         );
 
+        // 스토리트랙 이미지 조회
+        List<StorytrackAttachment> image = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
+
         Page<StorytrackStep> paths = storytrackStepRepository.findStepsWithCapsule(storytrackId, pageable);
 
         Page<PathResponse> responsePage =
@@ -278,13 +317,16 @@ public class StorytrackService {
                         memberId
                 );
 
+        String imageUrl = buildAttachmentViews(storytrackId);
+
         return StorytrackDashBoardResponse.of(
                 storytrack,
                 responsePage,
                 totalParticipant,
                 completeProgress,
                 memberType,
-                completedCapsuleIds
+                completedCapsuleIds,
+                imageUrl
         );
     }
 
@@ -375,7 +417,27 @@ public class StorytrackService {
                         pageable
                 );
 
-        return new PageResponse<> (responsePage);
+        // 스토리트랙 id 리스트 추출
+        List<Long> storytrackIds = responsePage.getContent().stream()
+                .map(CreaterStorytrackListResponse::storytrackId)
+                .toList();
+
+        Map<Long, String> imageUrlMap =
+                storytrackAttachmentRepository.findActiveImagesByStorytrackIds(storytrackIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getStorytrack().getStorytrackId(),
+                                this::buildPresignedUrl,
+                                (oldV, newV) -> newV // 혹시 중복 방어
+                        ));
+
+        // DTO에 스토리트랙 이미지url 넣기
+        Page<CreaterStorytrackListResponse> finalPage =
+                responsePage.map(dto ->
+                        dto.withImageUrl(imageUrlMap.get(dto.storytrackId()))
+                );
+
+        return new PageResponse<> (finalPage);
     }
 
     // 참여자 : 참여한 스토리트랙 목록 조회 -> 삭제된 스토리트랙 목록 미조회 추가
@@ -395,7 +457,28 @@ public class StorytrackService {
                 storytrackProgressRepository
                         .findJoinedStorytracksWithMemberCount(memberId, pageable);
 
-        return new PageResponse<> (responsePage);
+        // storytrackId 목록 추출
+        List<Long> storytrackIds = responsePage.getContent().stream()
+                .map(ParticipantStorytrackListResponse::storytrackId)
+                .toList();
+
+        // 대표 이미지 조회 (active image)
+        Map<Long, String> imageUrlMap =
+                storytrackAttachmentRepository.findActiveImagesByStorytrackIds(storytrackIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getStorytrack().getStorytrackId(),
+                                this::buildPresignedUrl,
+                                (oldV, newV) -> newV // 혹시 중복 방어
+                        ));
+
+        // DTO에 imageUrl 주입
+        Page<ParticipantStorytrackListResponse> finalPage =
+                responsePage.map(dto ->
+                        dto.withImageUrl(imageUrlMap.get(dto.storytrackId()))
+                );
+
+        return new PageResponse<> (finalPage);
     }
 
     // 참여자 : 스토리트랙 진행 상세 조회 -> 삭제된 스토리트랙 미조회 추가
@@ -406,7 +489,14 @@ public class StorytrackService {
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
-        return ParticipantProgressResponse.from(progress);
+        List<StorytrackAttachment> image = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
+
+        String imageUrl = buildAttachmentViews(storytrackId);
+
+        return ParticipantProgressResponse.from(
+                progress,
+                imageUrl
+        );
     }
 
     // 스토리트랙 캡슐 열람 전 참여자 검증
@@ -489,4 +579,41 @@ public class StorytrackService {
 
         return response;
     }
+
+    private void attachFiles(Long memberId, Storytrack storytrack, Long attachmentId) {
+        if (attachmentId == null) return ;
+
+        StorytrackAttachment attachment =
+                storytrackAttachmentRepository.findByIdAndUploaderIdAndStatusAndDeletedAtIsNull(attachmentId, memberId, StorytrackStatus.TEMP)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN));
+
+        storytrackAttachmentRepository
+                .findByStorytrackAndStatusAndDeletedAtIsNull(
+                        storytrack,
+                        StorytrackStatus.THUMBNAIL
+                )
+                .ifPresent(StorytrackAttachment::markDeleted);
+
+            attachment.attachToStorytrack(storytrack);
+            storytrackAttachmentRepository.save(attachment);
+    }
+
+    private String buildAttachmentViews(Long storytrackId) {
+        return storytrackAttachmentRepository
+                .findByStorytrack_StorytrackIdAndStatusAndDeletedAtIsNull(
+                        storytrackId,
+                        StorytrackStatus.THUMBNAIL
+                )
+                .map(this::buildPresignedUrl)
+                .orElse(null);
+    }
+
+
+    private String buildPresignedUrl(StorytrackAttachment attachment) {
+        return presignedUrlProvider.presignGet(
+                attachment.getS3Key(),
+                Duration.ofMinutes(15)
+        );
+    }
+
 }

@@ -1,9 +1,6 @@
 package back.fcz.domain.capsule.service;
 
-import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
-import back.fcz.domain.capsule.DTO.response.DailyUnlockedCapsuleResponse;
-import back.fcz.domain.capsule.DTO.response.MonthlyCapsuleStat;
-import back.fcz.domain.capsule.DTO.response.UnlockedCapsuleResponse;
+import back.fcz.domain.capsule.DTO.response.*;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleRecipient;
 import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
@@ -33,6 +30,7 @@ public class CapsuleDashBoardService {
     private final CapsuleRepository capsuleRepository;
     private final CapsuleRecipientRepository capsuleRecipientRepository;
     private final MemberRepository memberRepository;
+    private final CapsuleCacheService capsuleCacheService;
 
     // 사용자가 전송한 캡슐 목록 조회
     public Page<CapsuleDashBoardResponse> readSendCapsuleList(Long memberId, Pageable pageable) {
@@ -59,37 +57,45 @@ public class CapsuleDashBoardService {
     }
 
 
-    public List<MonthlyCapsuleStat> readYearlyCapsule(Long memberId, int year) {
+    public YearlyCapsuleResponse getYearlyCapsule(Long memberId, int year) {
+
         String phoneHash = memberRepository.findById(memberId).orElseThrow(() ->
                 new BusinessException(ErrorCode.MEMBER_NOT_FOUND)).getPhoneHash();  // 사용자의 해시된 폰 번호
 
-        // 1. 1월~12월까지 0으로 초기화된 리스트 생성
+        int currentYear = LocalDate.now().getYear();
+        int currentMonth = LocalDate.now().getMonthValue();
+
+        // 1월~12월까지 0으로 초기화된 리스트 생성
         List<MonthlyCapsuleStat> stats = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            stats.add(new MonthlyCapsuleStat(i + "월", 0, 0));
+
+        if(year < currentYear){
+            //지나간 해의 데이터는 (1월~12월까지 계산, 캐싱된 데이터)
+            stats.addAll(capsuleCacheService.getCachedPastStats(memberId, year, 12, phoneHash).data());
+        }else{
+            //이전 달 까진 캐싱된 데이터를 사용
+            stats.addAll(capsuleCacheService.getCachedPastStats(memberId, year, currentMonth - 1, phoneHash).data());
+
+            //이번 달은 데이터 정확성을 위해 직접 계산
+            stats.add(getRealTimeStat(memberId, year, currentMonth, phoneHash));
+
+            //미래의 달(다음달~12월)은 0으로 채우기
+            for (int i = currentMonth + 1; i <= 12; i++) {
+                stats.add(new MonthlyCapsuleStat(i + "월", 0, 0));
+            }
         }
 
-        // 2. DB 데이터 가져오기 (List<Object[]>)
-        List<Object[]> sendData = capsuleRepository.countMonthlySendCapsules(memberId, year);
-        List<Object[]> receiveData = capsuleRecipientRepository.countMonthlyReceiveCapsules(phoneHash, year);
-
-        // 3. 송신 데이터 채우기 (row[0]은 월, row[1]은 개수)
-        for (Object[] row : sendData) {
-            int month = ((Number) row[0]).intValue();
-            long count = ((Number) row[1]).longValue();
-            stats.get(month - 1).setSend(count); // 리스트 인덱스는 0부터 시작하므로 month - 1
-        }
-
-        // 4. 수신 데이터 채우기
-        for (Object[] row : receiveData) {
-            int month = ((Number) row[0]).intValue();
-            long count = ((Number) row[1]).longValue();
-            stats.get(month - 1).setReceive(count);
-        }
-
-        return stats;
-
+        return new YearlyCapsuleResponse(stats);
     }
+
+    private MonthlyCapsuleStat getRealTimeStat(Long memberId, int year, int month, String phoneHash) {
+        // 이번 달의 송신/수신 개수를 각각 조회
+        long sendCount = capsuleRepository.countSpecificMonthSend(memberId, year, month);
+        long receiveCount = capsuleRecipientRepository.countSpecificMonthReceive(phoneHash, year, month);
+
+        // 결과 객체 생성 및 반환
+        return new MonthlyCapsuleStat(month + "월", receiveCount, sendCount);
+    }
+
 
     public DailyUnlockedCapsuleResponse dailyUnlockedCapsule(Long memberId) {
         String phoneHash = memberRepository.findById(memberId).orElseThrow(() ->
@@ -119,7 +125,7 @@ public class CapsuleDashBoardService {
         Pageable pageable = createPageable(
                 page,
                 size,
-                Sort.by(Sort.Direction.ASC, "capsuleId")
+                Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "capsuleId")
         );
 
         Page<Capsule> capsulePage =

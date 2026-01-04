@@ -52,14 +52,14 @@ public class NearbyOpenCapsuleServiceTest {
         Capsule capsule3 = createCapsule(3L, 37.5845, 127.0000);
         List<Capsule> mockCapsules = Arrays.asList(capsule1, capsule2, capsule3);
 
-        when(capsuleRepository.findOpenCapsule("PUBLIC", 0)).thenReturn(mockCapsules);
+        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble())).thenReturn(mockCapsules);
 
         // 사용자와 capsule1 사이의 거리: 100m, 사용자와 capsule2 사이의 거리: 500m, 사용자와 capsule3 사이의 거리: 2000m
-        when(unlockService.calculateDistanceInMeters(eq(capsule1.getLocationLat()), eq(capsule1.getLocationLng()), eq(userLat), eq(userLng)))
+        when(unlockService.calculateDistanceInMeters(eq(37.5674), eq(126.9780), eq(userLat), eq(userLng)))
                 .thenReturn(100.0);
-        when(unlockService.calculateDistanceInMeters(eq(capsule2.getLocationLat()), eq(capsule2.getLocationLng()), eq(userLat), eq(userLng)))
+        when(unlockService.calculateDistanceInMeters(eq(37.5709), eq(126.9780), eq(userLat), eq(userLng)))
                 .thenReturn(500.0);
-        when(unlockService.calculateDistanceInMeters(eq(capsule3.getLocationLat()), eq(capsule3.getLocationLng()), eq(userLat), eq(userLng)))
+        when(unlockService.calculateDistanceInMeters(eq(37.5845), eq(127.0000), eq(userLat), eq(userLng)))
                 .thenReturn(2000.0);
 
         // Request DTO 생성 (반경 1000m 설정)
@@ -87,7 +87,8 @@ public class NearbyOpenCapsuleServiceTest {
                 .thenReturn(java.util.Set.of(1L));
 
         Capsule capsule = createCapsule(1L, 37.5709, 126.9780);
-        when(capsuleRepository.findOpenCapsule("PUBLIC", 0)).thenReturn(List.of(capsule));
+        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(capsule));
 
         // 사용자와 capsule 사이의 거리: 500m
         when(unlockService.calculateDistanceInMeters(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
@@ -103,7 +104,6 @@ public class NearbyOpenCapsuleServiceTest {
         // 기본값 1000m 내에 500m 캡슐이 있으므로 결과가 포함되어야 함
         assertThat(result).hasSize(1);
     }
-
 
     // 테스트용 엔티티 생성
     private Capsule createCapsule(Long id, double lat, double lng) {

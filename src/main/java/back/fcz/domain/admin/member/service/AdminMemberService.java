@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +42,7 @@ public class AdminMemberService {
 
     /**
      * 관리자 회원 목록 조회 + 통계(신고당함/보호캡슐/캡슐수)
+     * [성능 개선] 3개의 별도 쿼리 → 1개의 JOIN 쿼리로 통합
      */
     public PageResponse<AdminMemberSummaryResponse> searchMembers(AdminMemberSearchRequest cond) {
 
@@ -65,22 +67,26 @@ public class AdminMemberService {
                 .map(Member::getMemberId)
                 .toList();
 
-        Map<Long, Long> capsuleCountMap = toCountMap(capsuleRepository.countActiveByMemberIds(memberIds));
-        Map<Long, Long> blockedCapsuleCountMap = toCountMap(
-                capsuleRepository.countProtectedActiveByMemberIds(memberIds, PROTECTED)
-        );
-        Map<Long, Long> reportedCountMap = toCountMap(reportRepository.countReportedByMemberIds(memberIds));
+        // ✅ 성능 개선: 3개의 쿼리를 1개의 JOIN 쿼리로 통합
+        Map<Long, AdminMemberStatistics> statsMap = memberRepository
+                .getMemberStatisticsBatch(memberIds, PROTECTED)
+                .stream()
+                .collect(Collectors.toMap(
+                        AdminMemberStatistics::getMemberId,
+                        stats -> stats
+                ));
 
         Page<AdminMemberSummaryResponse> mapped = page.map(member -> {
-            long reportedCount = reportedCountMap.getOrDefault(member.getMemberId(), 0L);
-            long blockedCapsuleCount = blockedCapsuleCountMap.getOrDefault(member.getMemberId(), 0L);
-            long capsuleCount = capsuleCountMap.getOrDefault(member.getMemberId(), 0L);
+            AdminMemberStatistics stats = statsMap.getOrDefault(
+                    member.getMemberId(),
+                    new AdminMemberStatistics(member.getMemberId(), 0L, 0L, 0L)
+            );
 
             return AdminMemberSummaryResponse.of(
                     member,
-                    reportedCount,
-                    blockedCapsuleCount,
-                    capsuleCount
+                    stats.getReportedCount(),
+                    stats.getProtectedCapsuleCount(),
+                    stats.getTotalCapsuleCount()
             );
         });
 
@@ -89,43 +95,51 @@ public class AdminMemberService {
 
     /**
      * 회원 상세 조회
-     * - 최근 캡슐 5개(미삭제)
-     * - 최근 전화번호 인증 5개
-     * - 통계(캡슐수/보호캡슐수/신고당함 수)
+     * [성능 개선] 7개 쿼리 → 4개 쿼리로 감소
+     * - 쿼리 1: 회원 조회
+     * - 쿼리 2: 통계 정보 통합 조회 (캡슐수/보호캡슐수/신고당함수)
+     * - 쿼리 3: 최근 캡슐 5개 + 신고수 (Fetch Join)
+     * - 쿼리 4: 전화번호 인증 5개
      */
     public AdminMemberDetailResponse getMemberDetail(Long memberId) {
 
+        // 쿼리 1: 회원 조회
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_MEMBER_NOT_FOUND));
 
-        long totalCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeleted(memberId, NOT_DELETED);
-        long totalBlockedCapsuleCount = capsuleRepository.countByMemberId_MemberIdAndIsDeletedAndIsProtected(
-                memberId, NOT_DELETED, PROTECTED
+        // ✅ 성능 개선: 쿼리 2 - 통계 정보 통합 조회 (3개 쿼리 → 1개 쿼리)
+        Object[] statistics = capsuleRepository.getMemberDetailStatistics(
+                memberId,
+                NOT_DELETED,
+                PROTECTED
         );
-        long totalReportCount = reportRepository.countReportedByMemberId(memberId);
+        
+        long totalCapsuleCount = ((Number) statistics[0]).longValue();
+        long totalBlockedCapsuleCount = ((Number) statistics[1]).longValue();
+        long totalReportCount = ((Number) statistics[2]).longValue();
 
-        List<Capsule> recentCapsules = capsuleRepository
-                .findTop5ByMemberId_MemberIdAndIsDeletedOrderByCreatedAtDesc(memberId, NOT_DELETED);
+        // ✅ 성능 개선: 쿼리 3 - 최근 캡슐 5개 + 신고 수 한 번에 조회 (N+1 해결)
+        List<Object[]> recentCapsulesWithReportCount = capsuleRepository
+                .findTop5WithReportCountByMemberId(memberId, NOT_DELETED);
 
-        List<Long> capsuleIds = recentCapsules.stream().map(Capsule::getCapsuleId).toList();
-        Map<Long, Long> reportCountByCapsule = new HashMap<>();
-        for (Object[] row : reportRepository.countByCapsuleIds(capsuleIds)) {
-            reportCountByCapsule.put((Long) row[0], (Long) row[1]);
-        }
-
-        List<AdminMemberDetailResponse.RecentCapsuleSummary> recentCapsuleDtos = recentCapsules.stream()
-                .map(c -> AdminMemberDetailResponse.RecentCapsuleSummary.builder()
-                        .id(c.getCapsuleId())
-                        .title(c.getTitle())
-                        .status("ACTIVE") // 지금은 미삭제만 가져오므로 ACTIVE 고정
-                        .visibility(c.getVisibility())
-                        .createdAt(c.getCreatedAt())
-                        .openCount(c.getCurrentViewCount())
-                        .reportCount(reportCountByCapsule.getOrDefault(c.getCapsuleId(), 0L))
-                        .build()
-                )
+        List<AdminMemberDetailResponse.RecentCapsuleSummary> recentCapsuleDtos = recentCapsulesWithReportCount.stream()
+                .map(row -> {
+                    Capsule c = (Capsule) row[0];
+                    Long reportCount = ((Number) row[1]).longValue();
+                    
+                    return AdminMemberDetailResponse.RecentCapsuleSummary.builder()
+                            .id(c.getCapsuleId())
+                            .title(c.getTitle())
+                            .status("ACTIVE") // 미삭제만 가져오므로 ACTIVE 고정
+                            .visibility(c.getVisibility())
+                            .createdAt(c.getCreatedAt())
+                            .openCount(c.getCurrentViewCount())
+                            .reportCount(reportCount)
+                            .build();
+                })
                 .toList();
 
+        // 쿼리 4: 전화번호 인증 5개
         List<PhoneVerification> phoneLogs = phoneVerificationRepository
                 .findTop5ByPhoneNumberHashOrderByCreatedAtDesc(member.getPhoneHash());
 
@@ -154,7 +168,7 @@ public class AdminMemberService {
                 .lastNicknameChangedAt(member.getNicknameChangedAt())
 
                 .totalCapsuleCount(totalCapsuleCount)
-                .totalReportCount(totalReportCount)              // ✅ 신고당한 수
+                .totalReportCount(totalReportCount)
                 .totalBookmarkCount(0L)                          // TODO
                 .totalBlockedCapsuleCount(totalBlockedCapsuleCount)
                 .storyTrackCount(0L)                             // TODO

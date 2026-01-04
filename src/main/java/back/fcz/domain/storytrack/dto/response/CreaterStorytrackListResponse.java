@@ -12,5 +12,22 @@ public record CreaterStorytrackListResponse(
         int price,
         int totalSteps,
         LocalDateTime createdAt,
-        Long totalMemberCount
-){ }
+        Long totalMemberCount,
+        String imageUrl
+){
+    public CreaterStorytrackListResponse withImageUrl(String imageUrl) {
+        return new CreaterStorytrackListResponse(
+                storytrackId,
+                creatorNickname,
+                title,
+                description,
+                trackType,
+                isPublic,
+                price,
+                totalSteps,
+                createdAt,
+                totalMemberCount,
+                imageUrl
+        );
+    }
+}

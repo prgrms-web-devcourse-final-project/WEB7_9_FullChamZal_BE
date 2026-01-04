@@ -11,7 +11,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "report")   // 스키마 이름에 맞게 조정 가능
+@Table(name = "report", indexes = {
+        @Index(name = "idx_report_capsule_id", columnList = "capsule_id"),
+        @Index(name = "idx_report_reporter_id", columnList = "reporter_id"),
+        @Index(name = "idx_report_status", columnList = "status"),
+        @Index(name = "idx_report_created_at", columnList = "created_at")
+})   // 스키마 이름에 맞게 조정 가능
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report {

@@ -10,7 +10,8 @@ public record CreateStorytrackRequest(
         String trackType,
         int isPublic,
         int price,
-        List<Long> capsuleList
+        List<Long> capsuleList,
+        Long attachmentId
 ){
     public Storytrack toEntity() {
         return Storytrack.builder()

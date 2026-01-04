@@ -29,7 +29,7 @@ public class NearbyOpenCapsuleService {
     private final int DEFAULT_RADIUS_M = 1000;  // 기본 반경 값 1km
 
     // 사용자 근처 공개 캡슐 리스트 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<NearbyOpenCapsuleResponse> getNearbyOpenCapsules(long memberId, NearbyOpenCapsuleRequest request) {
 
         LocalDateTime currentTime = LocalDateTime.now();
@@ -41,9 +41,18 @@ public class NearbyOpenCapsuleService {
             throw new BusinessException(ErrorCode.INVALID_RADIUS);
         }
 
+        // bounding box 계산
+        double latOffset = searchRadiusM / 111_000.0;
+        double lngOffset = searchRadiusM / (111_000.0 * Math.cos(Math.toRadians(currentLat)));
+
+        double minLat = currentLat - latOffset;
+        double maxLat = currentLat + latOffset;
+        double minLng = currentLng - lngOffset;
+        double maxLng = currentLng + lngOffset;
+
         // 공개 캡슐은 위치 정보가 기본이므로, 해제 조건이 시간인지, 위치인지 필터링 불필요
-        // 공개 + 삭제되지 않은 캡슐 전체 조회
-        List<Capsule> capsules = capsuleRepository.findOpenCapsule("PUBLIC", 0);
+        // 공개 + 삭제되지 않은 + bounding box 범위 내 공개 캡슐 조회
+        List<Capsule> capsules = capsuleRepository.findNearbyCapsules(minLat, maxLat, minLng, maxLng);
 
         // 사용자가 열람한 공개 캡슐의 ID 목록 조회
         Set<Long> viewedCapsuleIds = publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId);
@@ -67,7 +76,7 @@ public class NearbyOpenCapsuleService {
                     boolean isViewed = viewedCapsuleIds.contains(capsule.getCapsuleId());
 
                     // 사용자가 해당 캡슐을 열람할 수 있는 지, 확인 (열람할 수 있다면 true, 열람 불가하다면 false)
-                    boolean isUnlockable = unlockService.validateTimeAndLocationConditions(
+                    boolean isUnlockable = unlockService.validateNearbyCapsuleConditions(
                             capsule, currentTime, currentLat, currentLng
                     );
 

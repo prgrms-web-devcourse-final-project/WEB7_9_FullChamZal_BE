@@ -6,11 +6,14 @@ import back.fcz.domain.capsule.DTO.response.*;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.capsule.service.CapsuleReadService;
 import back.fcz.domain.capsule.service.CapsuleSaveButtonService;
+import back.fcz.domain.sanction.util.RequestInfoExtractor;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -21,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -76,13 +81,31 @@ public class CapsuleReadController {
             ErrorCode.CAPSULE_PASSWORD_REQUIRED,
             ErrorCode.MEMBER_NOT_FOUND,
             ErrorCode.RECIPIENT_NOT_FOUND,
-            ErrorCode.UNAUTHORIZED
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.LOCATION_REQUIRED
     })
     @PostMapping("/read")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> conditionAndReadCapsule(
-            @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto
+            @RequestBody CapsuleConditionRequestDTO capsuleConditionRequestDto,
+            HttpServletRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.conditionAndRead(capsuleConditionRequestDto)));
+        String ipAddress = RequestInfoExtractor.extractIp(request);
+        String userAgent = RequestInfoExtractor.extractUserAgent(request);
+
+        LocalDateTime serverTime = LocalDateTime.now(ZoneOffset.UTC);
+
+        CapsuleConditionRequestDTO plusDto = new CapsuleConditionRequestDTO(
+                capsuleConditionRequestDto.capsuleId(),
+                capsuleConditionRequestDto.unlockAt(),
+                capsuleConditionRequestDto.locationLat(),
+                capsuleConditionRequestDto.locationLng(),
+                capsuleConditionRequestDto.password(),
+                userAgent,
+                ipAddress,
+                serverTime
+        );
+        return ResponseEntity.ok(ApiResponse.success(capsuleReadService.conditionAndRead(plusDto)));
     }
 
     //캡슐 저장 버튼(비회원이 CapsuleRecipient기록을 남길때 호출됩니다.)
@@ -141,9 +164,7 @@ public class CapsuleReadController {
             @AuthenticationPrincipal Long memberId,
             @RequestParam int year
     ) {
-        List<MonthlyCapsuleStat> yearlyCapsule = capsuleDashBoardService.readYearlyCapsule(memberId, year);
-        YearlyCapsuleResponse response = new YearlyCapsuleResponse(yearlyCapsule);
-        return  ResponseEntity.ok(ApiResponse.success(response));
+        return  ResponseEntity.ok(ApiResponse.success(capsuleDashBoardService.getYearlyCapsule(memberId, year)));
     }
 
     @Operation(summary = "오늘 해제 될 캡슐 조회",

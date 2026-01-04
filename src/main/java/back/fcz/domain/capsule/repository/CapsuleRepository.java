@@ -37,6 +37,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
 """)
     int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
+
     // TODO: 작성자, 기간, 키워드 검색 등은 추후 QueryDsl / Specification 으로 확장
     // 공개 캡슐이고 삭제되지 않았으며, 위치 정보가 유효한 캡슐 조회
     @Query("SELECT c FROM Capsule c " +
@@ -190,6 +191,13 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             "WHERE c.memberId.memberId = :memberId AND year(c.createdAt) = :year " +
             "GROUP BY month(c.createdAt)")
     List<Object[]> countMonthlySendCapsules(@Param("memberId") Long memberId, @Param("year") int year);
+
+    // 송신 캡슐 특정 월 카운트
+    @Query("SELECT count(c) FROM Capsule c " +
+            "WHERE c.memberId.memberId = :memberId " +
+            "AND year(c.createdAt) = :year " +
+            "AND month(c.createdAt) = :month")
+    long countSpecificMonthSend(@Param("memberId") Long memberId, @Param("year") int year, @Param("month") int month);
            
     @Query("""
     SELECT c FROM Capsule c
@@ -203,5 +211,64 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             @Param("isPublic") String isPublic,
             @Param("types") List<String> types,
             Pageable pageable
+    );
+
+    @Modifying
+    @Query("UPDATE Capsule c SET c.currentViewCount = c.currentViewCount + 1 WHERE c.capsuleId = :id")
+    void incrementViewCount(@Param("id") Long capsuleId);
+
+    /**
+     * 회원 상세 조회 최적화: 최근 캡슐 5개 + 신고 수 Fetch Join
+     * [성능 개선] N+1 문제 해결
+     */
+    @Query("""
+        select c, coalesce(count(distinct r.id), 0)
+        from Capsule c
+        left join Report r on r.capsule.capsuleId = c.capsuleId
+        where c.memberId.memberId = :memberId
+          and c.isDeleted = :isDeleted
+        group by c
+        order by c.createdAt desc
+        limit 5
+        """)
+    List<Object[]> findTop5WithReportCountByMemberId(
+            @Param("memberId") Long memberId,
+            @Param("isDeleted") int isDeleted
+    );
+
+    /**
+     * 회원 상세 조회 최적화: 통계 정보 한 번에 조회
+     * - 전체 캡슐 수, 보호 캡슐 수, 신고당한 수
+     * [성능 개선] 3개 쿼리 → 1개 쿼리
+     */
+    @Query("""
+        select 
+            coalesce(sum(case when c.isDeleted = :isDeleted then 1 else 0 end), 0),
+            coalesce(sum(case when c.isDeleted = :isDeleted and c.isProtected = :protectedValue then 1 else 0 end), 0),
+            coalesce(count(distinct r.id), 0)
+        from Capsule c
+        left join Report r on r.capsule.capsuleId = c.capsuleId
+        where c.memberId.memberId = :memberId
+        """)
+    Object[] getMemberDetailStatistics(
+            @Param("memberId") Long memberId,
+            @Param("isDeleted") int isDeleted,
+            @Param("protectedValue") int protectedValue
+    );
+
+    // 위도, 경도 bounding box 범위 내의 삭제되지 않은 공개 캡슐 조회
+    @Query("""
+    SELECT c
+    FROM Capsule c
+    WHERE c.visibility = 'PUBLIC'
+    AND c.isDeleted = 0
+    AND c.locationLat BETWEEN :minLat AND :maxLat
+    AND c.locationLng BETWEEN :minLng AND :maxLng
+    """)
+    List<Capsule> findNearbyCapsules(
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("minLng") double minLng,
+            @Param("maxLng") double maxLng
     );
 }

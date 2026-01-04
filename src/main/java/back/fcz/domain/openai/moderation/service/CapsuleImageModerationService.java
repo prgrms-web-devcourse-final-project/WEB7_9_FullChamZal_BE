@@ -28,7 +28,7 @@ public class CapsuleImageModerationService {
     private final OpenAiModerationClient openAiModerationClient;
     private final ModerationAuditLogWriter auditLogWriter;
 
-    @Value("${openai.moderation.block-on-flagged:false}")
+    @Value("${openai.moderation.block-on-flagged:true}")
     private boolean blockOnFlagged;
 
     @Value("${openai.moderation.fail-closed:false}")
@@ -62,8 +62,8 @@ public class CapsuleImageModerationService {
             );
             Long auditId = auditLogWriter.saveAndReturnId(logEntity);
 
-            log.warn("[Moderation][IMAGE] flagged. actor={}, auditId={}, categories={}",
-                    actorMemberId, auditId, result.categories());
+            log.warn("[Moderation][IMAGE] flagged. actor={}, auditId={}, categories={}, blockOnFlagged={}",
+                    actorMemberId, auditId, result.categories(), blockOnFlagged);
 
             if (blockOnFlagged) {
                 CapsuleImageModerationBlockedPayload payload = CapsuleImageModerationBlockedPayload.builder()
