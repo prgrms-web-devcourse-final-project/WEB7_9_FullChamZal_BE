@@ -84,6 +84,12 @@ public class AnomalyDetector {
             return 0;
         }
 
+        // 동일 시간 + 위치 변경 - 조작 감지
+        if (timeDiffSeconds <= 0 && distance >= 0.001) {
+            log.warn("동일 시간 위치 변경 감지: {}km 이동, 시간차 {}초", distance, timeDiffSeconds);
+            return 3;  // 즉시 차단
+        }
+
         double speed = calculateSpeed(distance, timeDiffSeconds);
 
         // 시간 간격에 따라 임계값 조정
