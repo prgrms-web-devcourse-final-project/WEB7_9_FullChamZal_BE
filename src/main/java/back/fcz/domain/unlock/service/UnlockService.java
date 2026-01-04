@@ -3,7 +3,6 @@ package back.fcz.domain.unlock.service;
 import back.fcz.domain.capsule.entity.AnomalyType;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.entity.CapsuleOpenLog;
-import back.fcz.domain.capsule.entity.CapsuleOpenStatus;
 import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.sanction.constant.SanctionConstants;
@@ -231,9 +230,8 @@ public class UnlockService {
         // 4. 불가능한 이동 감지 (위치 정보가 있는 경우만)
         if (currentLat != null && currentLng != null) {
             Optional<CapsuleOpenLog> lastValidLog = recentLogs.stream()
-                    .filter(log -> log.getStatus() == CapsuleOpenStatus.SUCCESS)  // 성공한 요청만
-                    .filter(log -> log.getCurrentLat() != null && log.getCurrentLng() != null)  // 좌표가 있는 것만
-                    .findFirst(); // 가장 최근 것만
+                    .filter(log -> log.getCurrentLat() != null && log.getCurrentLng() != null)
+                    .findFirst();
 
             if (lastValidLog.isPresent()) {
                 CapsuleOpenLog baseLog = lastValidLog.get();
