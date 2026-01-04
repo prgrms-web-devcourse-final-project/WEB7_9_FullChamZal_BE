@@ -1,7 +1,10 @@
-package back.fcz.global.security.jwt.filter;
+package back.fcz.global.security.filter;
 
+import back.fcz.domain.member.entity.MemberStatus;
+import back.fcz.domain.member.service.MemberStatusCache;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
+import back.fcz.global.response.ApiResponse;
 import back.fcz.global.security.jwt.JwtProvider;
 import back.fcz.global.security.jwt.UserType;
 import back.fcz.global.security.jwt.service.TokenBlacklistService;
@@ -13,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,9 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -34,6 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final TokenBlacklistService tokenBlacklistService;
     private final ObjectMapper objectMapper;
+    private final MemberStatusCache memberStatusCache;
 
     @Override
     protected void doFilterInternal(
@@ -49,7 +52,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             Optional<String> tokenOpt = CookieUtil.getCookieValue(request, CookieUtil.ACCESS_TOKEN_COOKIE);
-
 
             if (tokenOpt.isEmpty()) {
                 log.debug("Access Token이 없습니다. URI: {}", request.getRequestURI());
@@ -68,6 +70,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long memberId = jwtProvider.extractMemberId(accessToken);
             String role = jwtProvider.extractRole(accessToken);
             UserType userType = jwtProvider.extractUserType(accessToken);
+
+            MemberStatus status = memberStatusCache.getStatus(memberId);
+
+            if (status == MemberStatus.STOP) {
+                log.warn("정지된 회원의 접근 시도: memberId={}, status=STOP, URI={}",
+                        memberId, request.getRequestURI());
+                throw new BusinessException(ErrorCode.MEMBER_SUSPENDED);
+            }
+
+            if (status == MemberStatus.EXIT) {
+                log.warn("탈퇴한 회원의 접근 시도: memberId={}, status=EXIT, URI={}",
+                        memberId, request.getRequestURI());
+                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+            }
 
             log.debug("JWT 인증 성공 - memberId: {}, role: {}, userType: {}", memberId, role, userType);
 
@@ -96,32 +112,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 400 에러 - 비즈니스 예외
     private void handleAuthenticationException(HttpServletResponse response, BusinessException e) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
+        ErrorCode errorCode = e.getErrorCode();
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("success", false);
-        errorResponse.put("errorCode", e.getErrorCode().name());
-        errorResponse.put("message", e.getMessage());
-        errorResponse.put("timestamp", System.currentTimeMillis());
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
 
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        ApiResponse<Object> apiResponse = ApiResponse.error(errorCode);
+
+        String json = objectMapper.writeValueAsString(apiResponse);
+        response.getWriter().write(json);
 
         log.info("인증 예외 응답 전송 완료 - ErrorCode: {}", e.getErrorCode());
     }
 
     // 500 에러 - 서버 오류
     private void handleUnexpectedException(HttpServletResponse response, Exception e) throws IOException {
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.setContentType("application/json;charset=UTF-8");
+        ErrorCode errorCode = ErrorCode.INTERNAL_ERROR;
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("success", false);
-        errorResponse.put("errorCode", "INTERNAL_ERROR");
-        errorResponse.put("message", "인증 처리 중 오류가 발생했습니다.");
-        errorResponse.put("timestamp", System.currentTimeMillis());
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
 
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        ApiResponse<Object> apiResponse = ApiResponse.error(errorCode);
+
+        String json = objectMapper.writeValueAsString(apiResponse);
+        response.getWriter().write(json);
 
         log.error("예상치 못한 예외 응답 전송 완료");
     }
@@ -131,13 +147,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
 
-        return path.startsWith("/static") ||
+        // 1. 정적 리소스 제외
+        if (path.startsWith("/static") ||
                 path.startsWith("/css") ||
                 path.startsWith("/js") ||
                 path.startsWith("/images") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs") ||
                 path.startsWith("/webjars") ||
-                path.startsWith("/actuator");
+                path.startsWith("/actuator") ||
+                path.startsWith("/h2-console")) {
+            return true;
+        }
+
+        // 2. 인증 생성/갱신 API 제외 (JWT 검증 자체가 불필요)
+        if (path.equals("/api/v1/auth/login") ||
+                path.equals("/api/v1/auth/signup") ||
+                path.equals("/api/v1/auth/refresh") ||
+                path.equals("/api/v1/auth/findUserId") ||
+                path.equals("/api/v1/auth/findPassword") ||
+                path.startsWith("/oauth2/authorization/google")) {
+            return true;
+        }
+
+        return false;
     }
 }

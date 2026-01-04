@@ -15,6 +15,14 @@ public enum ErrorCode {
     UNAUTHORIZED("CMN006", HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     TOO_MANY_REQUEST("CMN007", HttpStatus.TOO_MANY_REQUESTS, "현재 많은 사용자가 접속 중입니다. 잠시 후 다시 시도해 주세요."),
 
+    // ========== 보안 및 제재 에러 ==========
+    IP_BLOCKED("SEC001", HttpStatus.FORBIDDEN, "접근이 차단된 IP 주소입니다."),
+    RATE_LIMIT_EXCEEDED("SEC002", HttpStatus.TOO_MANY_REQUESTS, "요청 횟수 제한을 초과했습니다."),
+    RATE_LIMIT_COOLDOWN("SEC003", HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요."),
+    ANOMALY_DETECTED("SEC004", HttpStatus.FORBIDDEN, "비정상적인 접근이 감지되었습니다."),
+    GPS_SPOOFING_SUSPECTED("SEC005", HttpStatus.FORBIDDEN, "위치 정보 조작이 의심됩니다."),
+    SUSPICIOUS_ACCESS_PATTERN("SEC006", HttpStatus.FORBIDDEN, "의심스러운 접근 패턴이 감지되었습니다."),
+
     // ========== 암호화 에러 ==========
     ENCRYPTION_FAILED("CRY001", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 암호화에 실패했습니다."),
     DECRYPTION_FAILED("CRY002", HttpStatus.INTERNAL_SERVER_ERROR, "데이터 복호화에 실패했습니다."),
@@ -60,6 +68,7 @@ public enum ErrorCode {
     WITHDRAWN_USER_ID("AUTH007", HttpStatus.CONFLICT, "사용 불가능한 아이디입니다. 다른 아이디를 사용해 주세요."),
     WITHDRAWN_PHONE_NUMBER("AUTH008", HttpStatus.CONFLICT, "사용 불가능한 전화번호입니다. 다른 전화번호를 사용해 주세요."),
     PHONE_NOT_VERIFIED("AUTH009", HttpStatus.UNAUTHORIZED, "인증되지 않은 전화번호입니다."),
+    MEMBER_SUSPENDED("AUTH010", HttpStatus.FORBIDDEN,"정지된 회원입니다. 관리자에게 문의하세요."),
 
     // ========== 사용자 도메인 에러 ==========
     MEMBER_NOT_FOUND("MEM001", HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
@@ -91,6 +100,7 @@ public enum ErrorCode {
     NICKNAME_REQUIRED("CP020", HttpStatus.BAD_REQUEST, "캡슐 생성에 발신자 닉네임이 필요합니다."),
     PHONENUMBER_REQUIRED("CP021", HttpStatus.BAD_REQUEST, "캡슐 생성에 전화번호가 필요합니다."),
     NOT_PUBLIC("CPS022", HttpStatus.BAD_REQUEST, "공개 캡슐이 아닙니다."),
+    LOCATION_REQUIRED("CPS023", HttpStatus.BAD_REQUEST, "위치 정보가 필요합니다."),
 
     // ========== 캡슐 파일 업로드 ==========
     CAPSULE_FILE_NOT_FOUND("CPSF001", HttpStatus.NOT_FOUND, "캡슐 업로드 파일을 찾을 수 없습니다."),

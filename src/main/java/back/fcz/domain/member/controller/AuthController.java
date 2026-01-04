@@ -72,6 +72,9 @@ public class AuthController {
             @RequestBody MemberLoginRequest request,
             HttpServletResponse response
     ) {
+        // 기존 쿠키 삭제
+        CookieUtil.deleteAllTokenCookies(response, cookieProperties.isSecure(), cookieProperties.getSameSite(), cookieProperties.getDomain());
+
         LoginTokensResponse tokens = authService.login(request);
 
         ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", tokens.refreshToken())

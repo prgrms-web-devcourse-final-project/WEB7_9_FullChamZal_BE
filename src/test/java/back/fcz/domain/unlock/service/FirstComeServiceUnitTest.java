@@ -1,5 +1,6 @@
 package back.fcz.domain.unlock.service;
 
+import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.entity.Capsule;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.member.entity.Member;
@@ -88,6 +89,17 @@ public class FirstComeServiceUnitTest {
             final int index = i;
             executorService.submit(() -> {
                 try {
+                    CapsuleConditionRequestDTO requestDto = new CapsuleConditionRequestDTO(
+                            testCapsule.getCapsuleId(),
+                            LocalDateTime.now(),  // unlockAt
+                            37.5665,              // locationLat
+                            126.9780,             // locationLng
+                            null,                 // password
+                            "Mozilla/5.0",        // userAgent
+                            "192.168.1.1",        // ipAddress
+                            LocalDateTime.now()   // serverTime
+                    );
+
                     // 각 스레드마다 다른 회원으로 시도
                     Member member = Member.builder()
                             .userId("concurrent" + index)
@@ -102,7 +114,7 @@ public class FirstComeServiceUnitTest {
                     firstComeService.tryIncrementViewCountAndSaveRecipient(
                             testCapsule.getCapsuleId(),
                             member.getMemberId(),
-                            LocalDateTime.now()
+                            requestDto
                     );
                     successCount.incrementAndGet();
                 } catch (BusinessException e) {

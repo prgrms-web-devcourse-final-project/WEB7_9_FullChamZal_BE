@@ -1,7 +1,6 @@
 package back.fcz.domain.capsule.repository;
 
 import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -214,6 +213,10 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             Pageable pageable
     );
 
+    @Modifying
+    @Query("UPDATE Capsule c SET c.currentViewCount = c.currentViewCount + 1 WHERE c.capsuleId = :id")
+    void incrementViewCount(@Param("id") Long capsuleId);
+
     /**
      * 회원 상세 조회 최적화: 최근 캡슐 5개 + 신고 수 Fetch Join
      * [성능 개선] N+1 문제 해결
@@ -252,28 +255,17 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
             @Param("isDeleted") int isDeleted,
             @Param("protectedValue") int protectedValue
     );
-           
+
     // 위도, 경도 bounding box 범위 내의 삭제되지 않은 공개 캡슐 조회
     @Query("""
-    SELECT new back.fcz.domain.unlock.dto.response.projection.NearbyOpenCapsuleProjection(
-        c.capsuleId,
-        c.locationName,
-        c.nickname,
-        c.title,
-        c.content,
-        c.createdAt,
-        c.unlockType,
-        c.locationLat,
-        c.locationLng,
-        c.likeCount
-    )
+    SELECT c
     FROM Capsule c
     WHERE c.visibility = 'PUBLIC'
     AND c.isDeleted = 0
     AND c.locationLat BETWEEN :minLat AND :maxLat
     AND c.locationLng BETWEEN :minLng AND :maxLng
     """)
-    List<NearbyOpenCapsuleProjection> findNearbyCapsules(
+    List<Capsule> findNearbyCapsules(
             @Param("minLat") double minLat,
             @Param("maxLat") double maxLat,
             @Param("minLng") double minLng,

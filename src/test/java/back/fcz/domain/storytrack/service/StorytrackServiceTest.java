@@ -395,7 +395,7 @@ class StorytrackServiceTest {
                 .build();
 
         CapsuleConditionRequestDTO request =
-                new CapsuleConditionRequestDTO(10L, null, null, null, null);
+                new CapsuleConditionRequestDTO(10L, null, null, null, null, null, null, null);
 
         CapsuleConditionResponseDTO response =
                 mock(CapsuleConditionResponseDTO.class);

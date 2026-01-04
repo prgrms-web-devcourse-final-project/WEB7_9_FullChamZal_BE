@@ -7,6 +7,7 @@ import back.fcz.domain.member.dto.response.LoginTokensResponse;
 import back.fcz.domain.member.dto.response.MemberLoginIdResponse;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
+import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
@@ -99,6 +100,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.password(), member.getPasswordHash())) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.MEMBER_SUSPENDED);
         }
 
         String accessToken = jwtProvider.generateMemberAccessToken(

@@ -1,28 +1,22 @@
 package back.fcz.domain.unlock.service;
 
 import back.fcz.domain.capsule.entity.Capsule;
-import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class UnlockServiceTest {
-    @Mock
-    private CapsuleRepository capsuleRepository;
 
     @Spy
     @InjectMocks
@@ -72,11 +66,10 @@ public class UnlockServiceTest {
     void no_unlockUntil_and_isTimeConditionMet_true() {
         // given
         Capsule capsule = createTimeCapsule(null);
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 10, 5); // 캡슐 해제 시간 이후
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         //then
         assertThat(result).isTrue();
@@ -87,11 +80,10 @@ public class UnlockServiceTest {
     void no_unlockUntil_and_isTimeConditionMet_false() {
         // given
         Capsule capsule = createTimeCapsule(null);
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 9, 55); // 캡슐 해제 시간 이전
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         //then
         assertThat(result).isFalse();
@@ -102,11 +94,10 @@ public class UnlockServiceTest {
     void have_unlockUntil_and_isTimeConditionMet_true() {
         // given
         Capsule capsule = createTimeCapsule(LocalDateTime.of(2025, 1, 1, 11, 0));
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 10, 5);
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         //then
         assertThat(result).isTrue();
@@ -117,11 +108,10 @@ public class UnlockServiceTest {
     void have_unlockUntil_and_isTimeConditionMet_false() {
         // given
         Capsule capsule = createTimeCapsule(LocalDateTime.of(2025, 1, 1, 11, 0));
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.of(2025, 1, 1, 11, 5);
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         //then
         assertThat(result).isFalse();
@@ -132,11 +122,10 @@ public class UnlockServiceTest {
     void isTimeConditionMet_boundary_at_equal() {
         // given
         Capsule capsule = createTimeCapsule(null);
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = CAPSULE_UNLOCK_AT;
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         // then
         assertThat(result).isTrue();
@@ -148,11 +137,10 @@ public class UnlockServiceTest {
         // given
         LocalDateTime unlockUntil = LocalDateTime.of(2025, 1, 1, 11, 0);
         Capsule capsule = createTimeCapsule(unlockUntil);
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = unlockUntil;
 
         // when
-        boolean result = unlockService.isTimeConditionMet(CAPSULE_ID, currentTime);
+        boolean result = unlockService.isTimeConditionMet(capsule, currentTime);
 
         // then
         assertThat(result).isTrue();
@@ -163,12 +151,11 @@ public class UnlockServiceTest {
     void isTimeConditionMet_throws_exception_when_unlockUntil_before_or_equal_unlockAt() {
         // given
         Capsule capsule = createTimeCapsule(CAPSULE_UNLOCK_AT);
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.now();
 
         // when
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                unlockService.isTimeConditionMet(CAPSULE_ID, currentTime)
+                unlockService.isTimeConditionMet(capsule, currentTime)
         );
 
         // then
@@ -189,12 +176,11 @@ public class UnlockServiceTest {
                 .visibility("PRIVATE")
                 .unlockType("TIME")
                 .build();
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
         LocalDateTime currentTime = LocalDateTime.now();
 
         // when
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                unlockService.isTimeConditionMet(CAPSULE_ID, currentTime)
+                unlockService.isTimeConditionMet(capsule, currentTime)
         );
 
         // then
@@ -206,13 +192,12 @@ public class UnlockServiceTest {
     void is_location_condition_met_true() {
         // given
         Capsule capsule = createLocationCapsule();
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
 
         double currentLat = CAPSULE_LAT;
         double currentLng = CAPSULE_LNG;
 
         // when
-        boolean result = unlockService.isLocationConditionMet(CAPSULE_ID, currentLat, currentLng);
+        boolean result = unlockService.isLocationConditionMet(capsule, currentLat, currentLng);
 
         //then
         assertThat(result).isTrue();
@@ -223,14 +208,13 @@ public class UnlockServiceTest {
     void is_location_condition_met_false() {
         // given
         Capsule capsule = createLocationCapsule();
-        when(capsuleRepository.findById(CAPSULE_ID)).thenReturn(Optional.of(capsule));
 
         // 인천 공항 위도, 경도
         double currentLat = 37.4692;
         double currentLng = 126.451;
 
         // when
-        boolean result = unlockService.isLocationConditionMet(CAPSULE_ID, currentLat, currentLng);
+        boolean result = unlockService.isLocationConditionMet(capsule, currentLat, currentLng);
 
         //then
         assertThat(result).isFalse();

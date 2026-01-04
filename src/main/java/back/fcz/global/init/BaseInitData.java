@@ -62,7 +62,7 @@ public class BaseInitData implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (memberRepository.count() == 0) {
+        if (!memberRepository.existsByUserId("testuser")) {
             createTestMembers();
         }
 
@@ -95,6 +95,17 @@ public class BaseInitData implements CommandLineRunner {
     }
 
     private void createTestMembers() {
+        // 관리자
+        createMember(
+                "admin",
+                "admin123",
+                "관리자",
+                "어드민",
+                "00000000001",
+                MemberStatus.ACTIVE,
+                MemberRole.ADMIN
+        );
+
         // 일반 회원 1
         createMember(
                 "testuser",
@@ -115,17 +126,6 @@ public class BaseInitData implements CommandLineRunner {
                 "01023456789",
                 MemberStatus.ACTIVE,
                 MemberRole.USER
-        );
-
-        // 관리자
-        createMember(
-                "admin",
-                "admin123",
-                "관리자",
-                "어드민",
-                "01099999999",
-                MemberStatus.ACTIVE,
-                MemberRole.ADMIN
         );
 
         // 정지 회원
