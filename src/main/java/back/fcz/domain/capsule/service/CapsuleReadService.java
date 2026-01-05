@@ -687,4 +687,34 @@ public class CapsuleReadService {
                 ))
                 .toList();
     }
+
+    // 스토리트랙 캡슐 조회 시, 캡슐 재조회
+    @Transactional
+    public CapsuleConditionResponseDTO readAlreadyOpendeStorytrackCapsule(
+            Capsule capsule,
+            CapsuleConditionRequestDTO request,
+            Long memberId
+    ){
+        if(!"PUBLIC".equals(capsule.getVisibility())){
+            throw new BusinessException(ErrorCode.NOT_PUBLIC);
+        }
+
+        // 재조회 로그 기록
+        CapsuleOpenLog openLog = createOpenLog(
+                capsule,
+                request,
+                CapsuleOpenStatus.SUCCESS,
+                memberId,
+                "MEMBER"
+        );
+        capsuleOpenLogService.saveLogInNewTransaction(openLog);
+
+        // 조건 검증 없이 바로 읽기
+        return readPublicCapsule(
+                capsule,
+                request,
+                true // 재조회 플래그
+        );
+
+    }
 }

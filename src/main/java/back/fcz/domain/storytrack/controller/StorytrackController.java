@@ -10,6 +10,7 @@ import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
 import back.fcz.domain.storytrack.dto.response.*;
 import back.fcz.domain.storytrack.service.StorytrackService;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.ErrorCode;
@@ -84,6 +85,7 @@ public class StorytrackController {
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @PutMapping("/update")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<UpdatePathResponse>> updatePath(
             @RequestBody UpdatePathRequest request
     ){
@@ -277,6 +279,7 @@ public class StorytrackController {
             ErrorCode.INVALID_STEP_ORDER
     })
     @PostMapping("/participant/capsuleOpen")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> storytrackCapsuleOpen (
             @RequestParam Long storytrackId,
             @RequestBody CapsuleConditionRequestDTO request
