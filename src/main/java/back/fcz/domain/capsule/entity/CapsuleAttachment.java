@@ -50,7 +50,7 @@ public class CapsuleAttachment {
 
 
     // 임시 업로드 팩토리 메소드
-    public static CapsuleAttachment createTemp(
+    public static CapsuleAttachment createUploading(
             Long uploaderId,
             String s3Key,
             String fileName,
@@ -64,17 +64,19 @@ public class CapsuleAttachment {
         attachment.fileType = "IMAGE";
         attachment.fileSize = size;
         attachment.mimeType = mimeType;
-        attachment.status = CapsuleAttachmentStatus.TEMP;
+        attachment.status = CapsuleAttachmentStatus.UPLOADING;
         attachment.createdAt = LocalDateTime.now();
         attachment.expiredAt = LocalDateTime.now().plusMinutes(15);
         return attachment;
     }
-
+    public void markTemp(){this.status = CapsuleAttachmentStatus.TEMP;}
     public void markDeleted() {
         this.status = CapsuleAttachmentStatus.DELETED;
         this.deletedAt = LocalDateTime.now();
     }
-
+    public void markPending() {
+        this.status = CapsuleAttachmentStatus.PENDING;
+    }
     public void attachToCapsule(Capsule capsule) {
         this.capsule = capsule;
         this.status = CapsuleAttachmentStatus.USED;

@@ -1,12 +1,14 @@
-package back.fcz.domain.capsule.service;
+package back.fcz.domain.storytrack.service;
 
-
-import back.fcz.domain.capsule.DTO.request.CapsuleAttachmentUploadRequest;
 import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentStatusResponse;
-import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentUploadResponse;
 import back.fcz.domain.capsule.entity.CapsuleAttachment;
-import back.fcz.domain.capsule.entity.CapsuleAttachmentStatus;
-import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
+import back.fcz.domain.capsule.service.CapsuleImageModerationAsyncService;
+import back.fcz.domain.storytrack.dto.request.StorytrackAttachmentUploadRequest;
+import back.fcz.domain.storytrack.dto.response.StorytrackAttachmentStatusResponse;
+import back.fcz.domain.storytrack.dto.response.StorytrackAttachmentUploadResponse;
+import back.fcz.domain.storytrack.entity.StorytrackAttachment;
+import back.fcz.domain.storytrack.entity.StorytrackStatus;
+import back.fcz.domain.storytrack.repository.StorytrackAttachmentRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.infra.storage.PresignedUrlProvider;
@@ -24,27 +26,28 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CapsuleAttachmentPresignService {
+public class StorytrackAttachmentPresignService {
 
     private final PresignedUrlProvider presignedUrlProvider;
-    private final CapsuleAttachmentRepository capsuleAttachmentRepository;
+    private final StorytrackAttachmentRepository storytrackAttachmentRepository;
+    private final StorytrackImageModerationAsyncService StorytrackAttachmentImageModerationAsyncService;
     private final StoredObjectReader storedObjectReader;
-    private final CapsuleImageModerationAsyncService capsuleImageModerationAsyncService;
 
     private static final Duration PUT_EXPIRES = Duration.ofMinutes(5);
 
+
     @Transactional
-    public CapsuleAttachmentUploadResponse presignedUpload(Long uploaderId, CapsuleAttachmentUploadRequest request){
+    public StorytrackAttachmentUploadResponse presignedUpload(Long uploaderId, StorytrackAttachmentUploadRequest request){
         String key = generateKey(request.filename(), uploaderId);
 
-        CapsuleAttachment attachment = CapsuleAttachment.createUploading(
+        StorytrackAttachment attachment = StorytrackAttachment.createUploading(
                 uploaderId,
                 key,
                 request.filename(),
                 request.size(),
                 request.mimeType()
         );
-        capsuleAttachmentRepository.save(attachment);
+        storytrackAttachmentRepository.save(attachment);
 
         String putUrl = presignedUrlProvider.presignPut(
                 key,
@@ -53,7 +56,7 @@ public class CapsuleAttachmentPresignService {
                 PUT_EXPIRES
         );
 
-        return new CapsuleAttachmentUploadResponse(
+        return new StorytrackAttachmentUploadResponse(
                 attachment.getId(),
                 attachment.getS3Key(),
                 putUrl,
@@ -63,22 +66,22 @@ public class CapsuleAttachmentPresignService {
 
     @Transactional
     public void completeUpload(Long uploaderId, Long attachmentId){
-        CapsuleAttachment attachment = capsuleAttachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_NOT_FOUND));
+        StorytrackAttachment attachment = storytrackAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_FILE_NOT_FOUND));
 
         // 멱등성 혹은 불필요한 처리 방지
-        if(attachment.getStatus().equals(CapsuleAttachmentStatus.TEMP) ||
-                attachment.getStatus().equals(CapsuleAttachmentStatus.DELETED)){
+        if(attachment.getStatus().equals(StorytrackStatus.TEMP) ||
+                attachment.getStatus().equals(StorytrackStatus.DELETED)){
             return;
         }
 
         // 소유자 검증
         if(!attachment.getUploaderId().equals(uploaderId)){
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN);
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_ATTACH_FORBIDDEN);
         }
         // 상태 검증 ( 업로딩 중인 파일만 이미지 필터링 )
-        if(!attachment.getStatus().equals(CapsuleAttachmentStatus.UPLOADING)){
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS);
+        if(!attachment.getStatus().equals(StorytrackStatus.UPLOADING)){
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_ATTACH_INVALID_STATUS);
         }
 
         // S3 업로드 검증
@@ -86,15 +89,15 @@ public class CapsuleAttachmentPresignService {
         try {
             meta = storedObjectReader.head(attachment.getS3Key());
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_NOT_FINISHED);
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_UPLOAD_NOT_FINISHED);
         }
 
         // size 및 type 검증
         if(attachment.getFileSize() != null && attachment.getFileSize() != meta.size()){
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_SIZE_MISMATCH);
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_UPLOAD_SIZE_MISMATCH);
         }
         if(attachment.getFileType() != null && meta.contentType() != null && !attachment.getFileType().equalsIgnoreCase(meta.contentType())){
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_TYPE_MISMATCH);
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_UPLOAD_TYPE_MISMATCH);
         }
 
         attachment.markPending();
@@ -103,7 +106,7 @@ public class CapsuleAttachmentPresignService {
                 new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        capsuleImageModerationAsyncService
+                        StorytrackAttachmentImageModerationAsyncService
                                 .moderateAsync(attachment.getId(), uploaderId);
                     }
                 }
@@ -111,38 +114,24 @@ public class CapsuleAttachmentPresignService {
     }
 
     @Transactional(readOnly = true)
-    public CapsuleAttachmentStatusResponse getStatus(Long uploaderId, Long attachmentId){
-        CapsuleAttachment attachment = capsuleAttachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_NOT_FOUND));
+    public StorytrackAttachmentStatusResponse getStatus(Long uploaderId, Long attachmentId){
+        StorytrackAttachment attachment = storytrackAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_FILE_NOT_FOUND));
 
         // 소유자 검증
         if(!attachment.getUploaderId().equals(uploaderId)){
-            throw new BusinessException(ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN);
+            throw new BusinessException(ErrorCode.STORYTRACK_FILE_ATTACH_FORBIDDEN);
         }
 
-        return new CapsuleAttachmentStatusResponse(
+        return new StorytrackAttachmentStatusResponse(
                 attachment.getId(),
                 attachment.getStatus().name());
     }
-    // 캡슐 이미지 필터링 상태 한번에 확인 - 프론트에서 요청 시 구현
-//    @Transactional(readOnly = true)
-//    public List<AttachmentStatusResponse> getStatuses(Long uploaderId, List<Long> ids) {
-//
-//        List<CapsuleAttachment> list = capsuleAttachmentRepository.findAllById(ids);
-//
-//        return list.stream()
-//                .filter(a -> a.getUploaderId().equals(uploaderId))
-//                .map(a -> new AttachmentStatusResponse(
-//                        a.getId(),
-//                        a.getStatus().name()
-//                ))
-//                .toList();
-//    }
 
     private String generateKey(String fileName, Long uploaderId){
         String ext = "";
         int idx = fileName.lastIndexOf(".");
         if (idx > -1) ext = fileName.substring(idx).toLowerCase();
-        return "capsules/" + uploaderId + "/" + UUID.randomUUID() + ext;
+        return "storytracks/" + uploaderId + "/" + UUID.randomUUID() + ext;
     }
 }

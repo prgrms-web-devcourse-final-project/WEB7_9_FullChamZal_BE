@@ -49,7 +49,7 @@ public class StorytrackAttachment {
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt;
 
-    public static StorytrackAttachment createTemp(
+    public static StorytrackAttachment createUploading(
             Long uploaderId,
             String s3Key,
             String fileName,
@@ -63,16 +63,18 @@ public class StorytrackAttachment {
         attachment.fileType = "IMAGE";
         attachment.fileSize = size;
         attachment.mimeType = mimeType;
-        attachment.status = StorytrackStatus.TEMP;
+        attachment.status = StorytrackStatus.UPLOADING;
         attachment.createdAt = LocalDateTime.now();
         attachment.expiredAt = LocalDateTime.now().plusMinutes(15);
         return attachment;
     }
 
     public void markDeleted(){
+        this.status = StorytrackStatus.DELETED;
         this.deletedAt = java.time.LocalDateTime.now();
     }
-
+    public void markTemp() { this.status = StorytrackStatus.TEMP; }
+    public void markPending() { this.status = StorytrackStatus.PENDING; }
     public void attachToStorytrack(Storytrack storytrack){
         this.storytrack = storytrack;
         this.status = StorytrackStatus.THUMBNAIL;

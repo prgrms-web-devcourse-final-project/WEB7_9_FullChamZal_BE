@@ -92,7 +92,6 @@ public class StorytrackService {
         }
         storytrackAttachmentRepository.saveAll(targetImage);
 
-        // 트랜잭션으로 인해 삭제 후 다시 DB 저장 문제 해결을 위해 삭제
         // storytrackRepository.save(targetStorytrack);
         return new DeleteStorytrackResponse(
                 storytrackId,
@@ -301,9 +300,6 @@ public class StorytrackService {
                 size,
                 Sort.by(Sort.Direction.ASC, "stepOrder")
         );
-
-        // 스토리트랙 이미지 조회
-        List<StorytrackAttachment> image = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
 
         Page<StorytrackStep> paths = storytrackStepRepository.findStepsWithCapsule(storytrackId, pageable);
 

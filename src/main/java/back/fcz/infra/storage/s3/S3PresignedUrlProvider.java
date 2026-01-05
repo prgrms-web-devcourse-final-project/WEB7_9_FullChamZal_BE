@@ -12,7 +12,6 @@ import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
-
 public class S3PresignedUrlProvider implements PresignedUrlProvider {
 
     private final S3Presigner s3Presigner;

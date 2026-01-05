@@ -15,10 +15,11 @@ public interface CapsuleAttachmentRepository extends JpaRepository<CapsuleAttach
 
     List<CapsuleAttachment> findAllByCapsule_CapsuleIdAndStatus(Long capsuleId, CapsuleAttachmentStatus status);
 
-    List<CapsuleAttachment> findTop1000ByStatusAndExpiredAtBeforeOrderByIdAsc(
-            CapsuleAttachmentStatus status,
-            LocalDateTime time
-    );
+    List<CapsuleAttachment> findTop1000ByStatusAndExpiredAtBeforeOrderByIdAsc(CapsuleAttachmentStatus status, LocalDateTime time);
 
     List<CapsuleAttachment> findTop1000ByStatusOrderByIdAsc(CapsuleAttachmentStatus status);
+
+    List<CapsuleAttachment> findTop1000ByStatusAndCreatedAtBeforeOrderByIdAsc(CapsuleAttachmentStatus status, LocalDateTime localDateTime);
+
+    List<CapsuleAttachment> findTop1000ByStatusOrderByDeletedAtAsc(CapsuleAttachmentStatus status);
 }

@@ -16,7 +16,4 @@ RUN microdnf install -y tzdata && microdnf clean all
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 
 COPY --from=builder /app/build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
-
-# prod profile
-# ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
+ENTRYPOINT ["java","-jar", "-Dspring.profiles.active=prod", "app.jar"]

@@ -41,25 +41,60 @@ public class CapsuleAttachmentDeleteScheduler {
         log.info("[CapsuleAttachmentDeleteScheduler] TEMP -> DELETED: {}건", expired.size());
     }
 
-    @Scheduled(cron = "0 30 4 * * *") // temp -> deleted 작업 후 30분 뒤 실행
     @Transactional
-    public void hardDeletedFromS3(){
-        List<CapsuleAttachment> targets = capsuleAttachmentRepository.findTop1000ByStatusOrderByIdAsc(
-                CapsuleAttachmentStatus.DELETED
-        );
-        if (targets.isEmpty()) return ;
+    @Scheduled(cron = "0 10 4 * * *")
+    public void markExpiredUploadingOrPendingAsDeleted() {
+        LocalDateTime now = LocalDateTime.now();
 
-        for(CapsuleAttachment att : targets){
-            try{
-                fileStorage.delete(att.getS3Key());
-                capsuleAttachmentRepository.delete(att);
-            } catch (Exception e){
-                log.error("[CapsuleAttachmentDeleteScheduler] S3 삭제 실패 - attachmentId: {}, s3Key: {}, error: {}",
-                        att.getId(),
-                        att.getS3Key(),
-                        e.getMessage()
+        // 예: createdAt 기준 30분 초과 UPLOADING 정리
+        List<CapsuleAttachment> uploadingExpired =
+                capsuleAttachmentRepository.findTop1000ByStatusAndCreatedAtBeforeOrderByIdAsc(
+                        CapsuleAttachmentStatus.UPLOADING,
+                        now.minusMinutes(30)
                 );
+
+        // 예: 20분 초과 PENDING
+        List<CapsuleAttachment> pendingExpired =
+                capsuleAttachmentRepository.findTop1000ByStatusAndExpiredAtBeforeOrderByIdAsc(
+                        CapsuleAttachmentStatus.PENDING,
+                        now.minusMinutes(20)
+                );
+
+        uploadingExpired.forEach(CapsuleAttachment::markDeleted);
+        pendingExpired.forEach(CapsuleAttachment::markDeleted);
+
+        capsuleAttachmentRepository.saveAll(uploadingExpired);
+        capsuleAttachmentRepository.saveAll(pendingExpired);
+
+        log.info("[CapsuleAttachmentDeleteScheduler] UPLOADING->DELETED: {}, PENDING->DELETED: {}",
+                uploadingExpired.size(), pendingExpired.size());
+    }
+
+    @Scheduled(cron = "0 30 4 * * *")
+    @Transactional
+    public void hardDeletedFromS3() {
+        List<CapsuleAttachment> targets =
+                capsuleAttachmentRepository.findTop1000ByStatusOrderByDeletedAtAsc(
+                        CapsuleAttachmentStatus.DELETED
+                );
+        if (targets.isEmpty()) return;
+
+        List<Long> successIds = new java.util.ArrayList<>();
+
+        for (CapsuleAttachment att : targets) {
+            try {
+                fileStorage.delete(att.getS3Key());
+                successIds.add(att.getId());
+            } catch (Exception e) {
+                log.error("[CapsuleAttachmentDeleteScheduler] S3 삭제 실패 - attachmentId: {}, s3Key: {}, error: {}",
+                        att.getId(), att.getS3Key(), e.getMessage());
             }
         }
+
+        if (!successIds.isEmpty()) {
+            capsuleAttachmentRepository.deleteAllByIdInBatch(successIds);
+            log.info("[CapsuleAttachmentDeleteScheduler] hard deleted: {}", successIds.size());
+        }
     }
+
 }

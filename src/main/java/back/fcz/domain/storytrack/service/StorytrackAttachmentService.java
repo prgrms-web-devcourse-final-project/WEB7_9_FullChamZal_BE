@@ -19,7 +19,7 @@ public class StorytrackAttachmentService {
     @Transactional
     public void deleteTemp(Long memberId, Long attachmentId){
         StorytrackAttachment attachment = storytrackAttachmentRepository.findByIdAndUploaderIdAndStatusAndDeletedAtIsNull(attachmentId, memberId, StorytrackStatus.TEMP)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_DELETE_FORBIDDEN));
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_FILE_DELETE_FORBIDDEN));
 
         attachment.markDeleted();
         storytrackAttachmentRepository.save(attachment);

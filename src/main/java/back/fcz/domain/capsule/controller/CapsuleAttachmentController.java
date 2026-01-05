@@ -2,6 +2,7 @@ package back.fcz.domain.capsule.controller;
 
 
 import back.fcz.domain.capsule.DTO.request.CapsuleAttachmentUploadRequest;
+import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentStatusResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentUploadResponse;
 import back.fcz.domain.capsule.service.AttachmentService;
 import back.fcz.domain.capsule.service.CapsuleAttachmentPresignService;
@@ -59,6 +60,43 @@ public class CapsuleAttachmentController {
         CapsuleAttachmentUploadResponse response = capsuleAttachmentPresignService.presignedUpload(memberId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS,
+            ErrorCode.CAPSULE_FILE_UPLOAD_NOT_FINISHED,
+            ErrorCode.CAPSULE_FILE_UPLOAD_SIZE_MISMATCH,
+            ErrorCode.CAPSULE_FILE_UPLOAD_TYPE_MISMATCH,
+            ErrorCode.CAPSULE_CONTENT_BLOCKED,
+            ErrorCode.OPENAI_MODERATION_FAILED
+    })
+    public ResponseEntity<ApiResponse<Void>> completeUpload(
+            @PathVariable Long attachmentId
+    ){
+        Long memberId = currentUserContext.getCurrentMemberId();
+        capsuleAttachmentPresignService.completeUpload(memberId, attachmentId);
+        return ResponseEntity.ok(ApiResponse.noContent());
+    }
+
+    @GetMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN
+    })
+    public ResponseEntity<ApiResponse<CapsuleAttachmentStatusResponse>> getStatus(
+            @PathVariable Long attachmentId
+    ){
+        Long memberId = currentUserContext.getCurrentMemberId();
+        CapsuleAttachmentStatusResponse response = capsuleAttachmentPresignService.getStatus(memberId, attachmentId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
 
     @Operation(summary = "임시 파일 삭제", description = "업로드한 임시 파일을 삭제합니다.")
     @ApiErrorCodeExample({

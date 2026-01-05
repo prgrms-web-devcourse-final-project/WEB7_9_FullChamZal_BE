@@ -31,4 +31,8 @@ public class ApiResponse <T> {
     public static <T> ApiResponse<T> error(ErrorCode code) {
         return new ApiResponse<>(code.getCode(), code.getMessage(), null);
     }
+
+    public static <T> ApiResponse<T> noContent() {
+        return new ApiResponse<>(ResponseCode.NO_CONTENT.getCode(), ResponseCode.NO_CONTENT.getMessage(), null);
+    }
 }

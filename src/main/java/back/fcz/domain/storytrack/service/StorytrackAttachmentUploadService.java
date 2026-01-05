@@ -57,7 +57,7 @@ public class StorytrackAttachmentUploadService {
             capsuleImageModerationService.validateImageUrl(uploaderId, ModerationActionType.CAPSULE_CREATE,imageUrl);
 
             // DB에 메타데이터 저장
-            StorytrackAttachment attachment = StorytrackAttachment.createTemp(
+            StorytrackAttachment attachment = StorytrackAttachment.createUploading(
                     uploaderId,
                     stored.key(),
                     stored.filename(),

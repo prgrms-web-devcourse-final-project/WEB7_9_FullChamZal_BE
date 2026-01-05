@@ -57,7 +57,7 @@ public class CapsuleAttachmentServerUploadService {
             capsuleImageModerationService.validateImageUrl(uploaderId, ModerationActionType.CAPSULE_CREATE,imageUrl);
 
             // DB에 메타데이터 저장
-            CapsuleAttachment attachment = CapsuleAttachment.createTemp(
+            CapsuleAttachment attachment = CapsuleAttachment.createUploading(
                     uploaderId,
                     stored.key(),
                     stored.filename(),
