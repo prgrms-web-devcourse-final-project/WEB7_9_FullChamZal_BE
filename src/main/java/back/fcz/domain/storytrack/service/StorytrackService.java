@@ -626,7 +626,7 @@ public class StorytrackService {
                     requestedStep
             );
 
-            if (progress.isStepCompleted(requestedStep)) { // 완료된 단계인지 확인
+            if (progress.isStepCompleted(requestedStep)) { // 완료된 단계인지 확인 -> 재조회
                 log.info(
                         "[StorytrackOpen][FREE] 이미 완료된 단계 재조회 stepOrder={}",
                         requestedStep
