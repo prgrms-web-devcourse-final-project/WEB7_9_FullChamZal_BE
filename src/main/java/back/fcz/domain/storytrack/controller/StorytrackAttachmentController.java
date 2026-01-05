@@ -60,6 +60,18 @@ public class StorytrackAttachmentController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
     @PostMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.STORYTRACK_FILE_NOT_FOUND,
+            ErrorCode.STORYTRACK_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.STORYTRACK_FILE_ATTACH_INVALID_STATUS,
+            ErrorCode.STORYTRACK_FILE_UPLOAD_NOT_FINISHED,
+            ErrorCode.STORYTRACK_FILE_UPLOAD_SIZE_MISMATCH,
+            ErrorCode.STORYTRACK_FILE_UPLOAD_TYPE_MISMATCH,
+            ErrorCode.CAPSULE_CONTENT_BLOCKED,
+            ErrorCode.OPENAI_MODERATION_FAILED
+    })
     public ResponseEntity<ApiResponse<Void>> completeUpload(
             @PathVariable Long attachmentId
     ){
@@ -69,6 +81,12 @@ public class StorytrackAttachmentController {
     }
 
     @GetMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.STORYTRACK_FILE_NOT_FOUND,
+            ErrorCode.STORYTRACK_FILE_ATTACH_FORBIDDEN
+    })
     public ResponseEntity<ApiResponse<StorytrackAttachmentStatusResponse>> getStatus(
             @PathVariable Long attachmentId
     ){
@@ -79,10 +97,9 @@ public class StorytrackAttachmentController {
 
     @Operation(summary = "임시 파일 삭제", description = "업로드한 임시 파일을 삭제합니다.")
     @ApiErrorCodeExample({
-            ErrorCode.CAPSULE_FILE_DELETE_FORBIDDEN,
-            ErrorCode.CAPSULE_FILE_DELETE_INVALID_STATUS,
             ErrorCode.UNAUTHORIZED,
-            ErrorCode.TOKEN_INVALID
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.STORYTRACK_FILE_DELETE_FORBIDDEN
     })
     @DeleteMapping("/{attachmentId}")
     public ResponseEntity<ApiResponse<Void>> deleteTempFile(

@@ -157,6 +157,7 @@ public enum ErrorCode {
     STORYTRACK_FILE_UPLOAD_NOT_FINISHED("STF004", HttpStatus.BAD_REQUEST, "스토리트랙 파일 업로드가 완료되지 않았습니다."),
     STORYTRACK_FILE_UPLOAD_SIZE_MISMATCH("STF005", HttpStatus.BAD_REQUEST, "스토리트랙 파일 업로드 크기 불일치 오류입니다."),
     STORYTRACK_FILE_UPLOAD_TYPE_MISMATCH("STF006", HttpStatus.BAD_REQUEST, "스토리트랙 파일 업로드 타입 불일치 오류입니다."),
+    STORYTRACK_FILE_DELETE_FORBIDDEN("STF007", HttpStatus.FORBIDDEN, "본인이 업로드 한 파일만 삭제할 수 있습니다."),
 
     // ========== AI(OpenAI) / Moderation ==========
     OPENAI_MODERATION_FAILED("AI001", HttpStatus.SERVICE_UNAVAILABLE, "콘텐츠 검증에 실패했습니다. 잠시 후 다시 시도해주세요."),

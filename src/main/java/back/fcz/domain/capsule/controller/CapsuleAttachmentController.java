@@ -62,6 +62,18 @@ public class CapsuleAttachmentController {
     }
 
     @PostMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN,
+            ErrorCode.CAPSULE_FILE_ATTACH_INVALID_STATUS,
+            ErrorCode.CAPSULE_FILE_UPLOAD_NOT_FINISHED,
+            ErrorCode.CAPSULE_FILE_UPLOAD_SIZE_MISMATCH,
+            ErrorCode.CAPSULE_FILE_UPLOAD_TYPE_MISMATCH,
+            ErrorCode.CAPSULE_CONTENT_BLOCKED,
+            ErrorCode.OPENAI_MODERATION_FAILED
+    })
     public ResponseEntity<ApiResponse<Void>> completeUpload(
             @PathVariable Long attachmentId
     ){
@@ -71,6 +83,12 @@ public class CapsuleAttachmentController {
     }
 
     @GetMapping("/presign/{attachmentId}")
+    @ApiErrorCodeExample({
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.TOKEN_INVALID,
+            ErrorCode.CAPSULE_FILE_NOT_FOUND,
+            ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN
+    })
     public ResponseEntity<ApiResponse<CapsuleAttachmentStatusResponse>> getStatus(
             @PathVariable Long attachmentId
     ){
