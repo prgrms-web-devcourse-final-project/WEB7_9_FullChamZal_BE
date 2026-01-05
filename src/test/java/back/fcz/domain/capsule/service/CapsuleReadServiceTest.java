@@ -9,7 +9,6 @@ import back.fcz.domain.member.dto.response.MemberDetailResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
-import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
 import back.fcz.domain.sanction.constant.SanctionConstants;
@@ -59,9 +58,6 @@ class CapsuleReadServiceTest {
 
     @Mock
     private PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
-
-    @Mock
-    private MemberRepository memberRepository;
 
     @Mock
     private BookmarkRepository bookmarkRepository;
@@ -126,7 +122,6 @@ class CapsuleReadServiceTest {
                 phoneCrypto,
                 unlockService,
                 firstComeService,
-                memberRepository,
                 publicCapsuleRecipientRepository,
                 capsuleOpenLogRepository,
                 memberService,

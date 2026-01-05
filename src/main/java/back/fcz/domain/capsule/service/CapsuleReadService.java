@@ -8,7 +8,6 @@ import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.entity.*;
 import back.fcz.domain.capsule.repository.*;
 import back.fcz.domain.member.dto.response.MemberDetailResponse;
-import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
 import back.fcz.domain.sanction.service.MonitoringService;
@@ -46,7 +45,6 @@ public class CapsuleReadService {
     private final PhoneCrypto phoneCrypto;
     private final UnlockService unlockService;
     private final FirstComeService firstComeService;
-    private final MemberRepository memberRepository;
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final CapsuleOpenLogRepository capsuleOpenLogRepository;
     private final MemberService memberService;
@@ -57,12 +55,13 @@ public class CapsuleReadService {
     private final PresignedUrlProvider presignedUrlProvider;
     private final CapsuleOpenLogService capsuleOpenLogService;
 
-    // 첨부파일 Redis 캐싱
+    // PresignedUrl, 개인 캡슐 조회수 Redis 캐싱
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String PRESIGNED_URL_KEY_PREFIX = "presigned:attachment:";
     private static final Duration PRESIGNED_URL_TTL = Duration.ofMinutes(14);
     private static final Duration PRESIGNED_URL_VALIDITY = Duration.ofMinutes(15);
+    private static final String VIEW_COUNT_KEY_PREFIX = "capsule:view:";
 
     private final ExecutorService s3ExecutorService = Executors.newFixedThreadPool(10);
 
@@ -544,7 +543,7 @@ public class CapsuleReadService {
                 capsuleRecipientRepository.save(recipient);
             }
 
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
@@ -564,7 +563,7 @@ public class CapsuleReadService {
 
         // 첫 조회일 때만 조회수 증가
         if (shouldIncrement) {
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
@@ -582,7 +581,7 @@ public class CapsuleReadService {
 
         // 처음 조회하면 조회수 증가
         if (shouldIncrement) {
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
         var attachments = buildAttachmentViews(capsule.getCapsuleId());
         return CapsuleConditionResponseDTO.from(capsule, attachments);
@@ -636,23 +635,21 @@ public class CapsuleReadService {
                 .build();
     }
 
-    private void logExceptionCase(Capsule capsule, CapsuleConditionRequestDTO requestDto, BusinessException e) {
-        try {
-            boolean isLoggedIn = isUserLoggedIn();
-            Long memberId = isLoggedIn ? currentUserContext.getCurrentMemberId() : null;
-            String viewerType = isLoggedIn ? "MEMBER" : "GUEST";
+    // Redis 이용 조회수 증가
+    private void incrementViewCountViaRedis(Long capsuleId) {
+        String key = VIEW_COUNT_KEY_PREFIX + capsuleId;
 
-            CapsuleOpenLog exceptionLog = createOpenLog(
-                    capsule,
-                    requestDto,
-                    CapsuleOpenStatus.FAIL_BOTH,
-                    memberId,
-                    viewerType
-            );
-            capsuleOpenLogService.saveLogInNewTransaction(exceptionLog);
-        } catch (Exception logError) {
-            log.error("예외 로그 저장 실패", logError);
-            // 로그 저장 실패는 무시 (원래 예외를 던져야 함)
+        try {
+            redisTemplate.opsForValue().increment(key);
+        } catch (Exception e) {
+            log.error("Redis 장애 발생 - DB 직접 업데이트로 폴백. capsuleId: {}", capsuleId, e);
+
+            try {
+                capsuleRepository.incrementViewCount(capsuleId);
+                log.info("DB 직접 업데이트 성공 - capsuleId: {}", capsuleId);
+            } catch (Exception dbError) {
+                log.error("DB 업데이트도 실패 - capsuleId: {}", capsuleId, dbError);
+            }
         }
     }
 

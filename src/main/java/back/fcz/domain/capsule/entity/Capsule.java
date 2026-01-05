@@ -109,8 +109,8 @@ public class Capsule extends BaseEntity {
         this.content = content;
     }
 
-    public void increasedViewCount() {
-        this.currentViewCount++;
+    public void increasedViewCount(int count) {
+        this.currentViewCount += count;
     }
 
     public void decreasedViewCount() {
