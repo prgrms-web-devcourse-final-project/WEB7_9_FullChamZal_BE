@@ -13,7 +13,6 @@ import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
 import back.fcz.domain.sanction.constant.SanctionConstants;
-import back.fcz.domain.sanction.properties.SanctionProperties;
 import back.fcz.domain.sanction.service.MonitoringService;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.domain.unlock.service.FirstComeService;
@@ -31,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -94,7 +94,7 @@ class CapsuleReadServiceTest {
     private SanctionConstants sanctionConstants;
 
     @Mock
-    private SanctionProperties sanctionProperties;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Mock
     private PresignedUrlProvider presignedUrlProvider;
@@ -136,7 +136,7 @@ class CapsuleReadServiceTest {
                 capsuleAttachmentRepository,
                 presignedUrlProvider,
                 capsuleOpenLogService,
-                sanctionConstants
+                redisTemplate
         );
 
         lenient().when(capsuleAttachmentRepository.findAllByCapsule_CapsuleIdAndStatus(

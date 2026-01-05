@@ -11,7 +11,6 @@ import back.fcz.domain.member.dto.response.MemberDetailResponse;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
-import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.service.MonitoringService;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.domain.unlock.service.FirstComeService;
@@ -21,15 +20,22 @@ import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.infra.storage.PresignedUrlProvider;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +56,16 @@ public class CapsuleReadService {
     private final CapsuleAttachmentRepository capsuleAttachmentRepository;
     private final PresignedUrlProvider presignedUrlProvider;
     private final CapsuleOpenLogService capsuleOpenLogService;
-    private final SanctionConstants sanctionConstants;
+
+    // 첨부파일 Redis 캐싱
+    private final RedisTemplate<String, String> redisTemplate;
+
+    private static final String PRESIGNED_URL_KEY_PREFIX = "presigned:attachment:";
+    private static final Duration PRESIGNED_URL_TTL = Duration.ofMinutes(14);
+    private static final Duration PRESIGNED_URL_VALIDITY = Duration.ofMinutes(15);
+
+    private final ExecutorService s3ExecutorService = Executors.newFixedThreadPool(10);
+
 
     public CapsuleConditionResponseDTO capsuleRead(Long capsuleId){
         //자신이 작성한 캡슐이면 검증 없이 읽기
@@ -714,14 +729,84 @@ public class CapsuleReadService {
 
     // 캡슐 첨부파일 Presigned URL 생성
     private List<CapsuleAttachmentViewResponse> buildAttachmentViews(Long capsuleId) {
-        var list = capsuleAttachmentRepository
+        List<CapsuleAttachment> list = capsuleAttachmentRepository
                 .findAllByCapsule_CapsuleIdAndStatus(capsuleId, CapsuleAttachmentStatus.USED);
 
-        return list.stream()
-                .map(a -> new CapsuleAttachmentViewResponse(
-                        presignedUrlProvider.presignGet(a.getS3Key(), Duration.ofMinutes(15)),
-                        a.getId()
+        if (list.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<CompletableFuture<CapsuleAttachmentViewResponse>> futures =  list.stream()
+                .map(attachment -> CompletableFuture.supplyAsync(
+                        () -> getPresignedUrlWithCache(attachment),
+                        s3ExecutorService
                 ))
                 .toList();
+
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+    }
+
+    private CapsuleAttachmentViewResponse getPresignedUrlWithCache(
+            CapsuleAttachment attachment
+    ) {
+        String cacheKey = PRESIGNED_URL_KEY_PREFIX + attachment.getS3Key();
+
+        try {
+            // 1. 캐시 조회
+            String cachedUrl = redisTemplate.opsForValue().get(cacheKey);
+
+            if (cachedUrl != null) {
+                log.debug("Presigned URL 캐시 히트 - S3Key: {}", attachment.getS3Key());
+                return new CapsuleAttachmentViewResponse(cachedUrl, attachment.getId());
+            }
+
+            // 2. 캐시 미스 - S3 API 호출
+            log.debug("Presigned URL 캐시 미스 - S3 API 호출 - S3Key: {}",
+                    attachment.getS3Key());
+
+            String presignedUrl = presignedUrlProvider.presignGet(
+                    attachment.getS3Key(),
+                    PRESIGNED_URL_VALIDITY
+            );
+
+            // 3. 캐시 저장
+            redisTemplate.opsForValue().set(
+                    cacheKey,
+                    presignedUrl,
+                    PRESIGNED_URL_TTL
+            );
+
+            return new CapsuleAttachmentViewResponse(presignedUrl, attachment.getId());
+
+        } catch (Exception e) {
+            log.error("Redis 캐시 오류 - 폴백: S3 직접 호출 - S3Key: {}",
+                    attachment.getS3Key(), e);
+
+            String presignedUrl = presignedUrlProvider.presignGet(
+                    attachment.getS3Key(),
+                    PRESIGNED_URL_VALIDITY
+            );
+
+            return new CapsuleAttachmentViewResponse(presignedUrl, attachment.getId());
+        }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("S3 ExecutorService 종료 시작");
+        s3ExecutorService.shutdown();
+
+        try {
+            if (!s3ExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                log.warn("S3 ExecutorService 정상 종료 실패 - 강제 종료");
+                s3ExecutorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.error("S3 ExecutorService 종료 중 인터럽트 발생", e);
+            s3ExecutorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }
