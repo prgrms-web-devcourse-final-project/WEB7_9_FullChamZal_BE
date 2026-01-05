@@ -642,6 +642,11 @@ public class StorytrackService {
                 requestedStep
         );
 
+        log.info(
+                "[StorytrackOpen] 최초 열람 unlockAt={}, capsuleId={}",
+                request.unlockAt() , request.capsuleId()
+        );
+
         CapsuleConditionResponseDTO response =
                 capsuleReadService.conditionAndRead(request);
 
