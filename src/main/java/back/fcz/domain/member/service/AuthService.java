@@ -9,6 +9,7 @@ import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberStatus;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
@@ -65,16 +66,15 @@ public class AuthService {
             throw new BusinessException(ErrorCode.WITHDRAWN_PHONE_NUMBER);
         }
 
-        // TODO: 번호 인증 메서드 추가
-//        boolean verification =
-//                phoneVerificationService.isPhoneVerified(
-//                        phoneNumber,
-//                        PhoneVerificationPurpose.SIGNUP
-//                );
-//
-//        if(!verification) {
-//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-//        }
+        boolean verification =
+                phoneVerificationService.isPhoneVerified(
+                        phoneNumber,
+                        PhoneVerificationPurpose.SIGNUP
+                );
+
+        if(!verification) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String phoneEncrypted = phoneCrypto.encrypt(phoneNumber);
         String encryptedPassword = passwordEncoder.encode(request.password());
@@ -126,16 +126,15 @@ public class AuthService {
     }
 
     public MemberLoginIdResponse findUserId(String phoneNumber) {
-        // TODO: 번호 인증 확인
-//        boolean verification =
-//                phoneVerificationService.isPhoneVerified(
-//                        phoneNumber,
-//                        PhoneVerificationPurpose.FIND_ID
-//                );
-//
-//        if(!verification) {
-//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-//        }
+        boolean verification =
+                phoneVerificationService.isPhoneVerified(
+                        phoneNumber,
+                        PhoneVerificationPurpose.FIND_ID
+                );
+
+        if(!verification) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         Member member = memberRepository.findByPhoneHash(phoneCrypto.hash(phoneNumber))
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -145,16 +144,15 @@ public class AuthService {
 
     @Transactional
     public void findPassword(MemberLoginPwRequest memberLoginPwRequest) {
-        // TODO: 번호 인증 확인
-//        boolean verification =
-//                phoneVerificationService.isPhoneVerified(
-//                        memberLoginPwRequest.phoneNum(),
-//                        PhoneVerificationPurpose.FIND_PW
-//                );
-//
-//        if(!verification) {
-//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-//        }
+        boolean verification =
+                phoneVerificationService.isPhoneVerified(
+                        memberLoginPwRequest.phoneNum(),
+                        PhoneVerificationPurpose.FIND_PW
+                );
+
+        if(!verification) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String phoneHash = phoneCrypto.hash(memberLoginPwRequest.phoneNum());
 

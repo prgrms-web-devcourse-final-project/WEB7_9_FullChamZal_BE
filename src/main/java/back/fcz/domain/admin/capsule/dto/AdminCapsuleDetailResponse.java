@@ -41,7 +41,7 @@ public class AdminCapsuleDetailResponse {
     private final boolean unlocked;        // 조회 여부
 
     private final long reportCount;
-    private final long bookmarkCount; // TODO
+    private final long bookmarkCount; //
 
     private final LocalDateTime createdAt;
 

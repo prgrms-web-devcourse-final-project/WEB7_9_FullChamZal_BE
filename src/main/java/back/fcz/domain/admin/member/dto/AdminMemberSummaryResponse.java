@@ -20,9 +20,9 @@ public class AdminMemberSummaryResponse {
     private final MemberStatus status;     // ACTIVE / STOP / EXIT
     private final String phoneNumber;      // 마스킹된 전화번호 "010-****-1234"
 
-    private final long reportCount;        // 신고 누적 횟수 (TODO: 구현 시 집계)
-    private final long blockedCapsuleCount;// 차단된(블라인드) 캡슐 수 (TODO)
-    private final long capsuleCount;       // 전체 작성 캡슐 수 (TODO)
+    private final long reportCount;        // 신고 누적 횟수
+    private final long blockedCapsuleCount;// 차단된(블라인드) 캡슐 수
+    private final long capsuleCount;       // 전체 작성 캡슐 수
 
     private final LocalDateTime createdAt; // 가입일시
 

@@ -11,6 +11,7 @@ import back.fcz.domain.member.entity.NicknameHistory;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.repository.NicknameHistoryRepository;
 import back.fcz.domain.member.util.PhoneMaskingUtil;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.dto.InServerMemberResponse;
@@ -177,15 +178,14 @@ public class MemberService {
             throw new BusinessException(ErrorCode.INVALID_PHONENUM);
         }
 
-        // TODO: 번호 인증 확인
-//        boolean verified = phoneVerificationService.isPhoneVerified(
-//                newPhoneNumber,
-//                PhoneVerificationPurpose.CHANGE_PHONE
-//        );
-//
-//        if (!verified) {
-//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-//        }
+        boolean verified = phoneVerificationService.isPhoneVerified(
+                newPhoneNumber,
+                PhoneVerificationPurpose.CHANGE_PHONE
+        );
+
+        if (!verified) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String newPhoneHash = phoneCrypto.hash(newPhoneNumber);
 

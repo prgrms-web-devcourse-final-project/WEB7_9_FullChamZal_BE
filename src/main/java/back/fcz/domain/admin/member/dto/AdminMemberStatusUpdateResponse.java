@@ -18,7 +18,7 @@ public class AdminMemberStatusUpdateResponse {
     private final String nickname;         // 닉네임
     private final MemberStatus status;     // 변경된 상태
 
-    // 아직 DB 컬럼은 없지만, 프론트 표시용/향후 확장용으로 포함 (TODO)
+    // 아직 DB 컬럼은 없지만, 프론트 표시용/향후 확장용으로 포함
     private final String reason;
     private final LocalDateTime sanctionUntil;
 

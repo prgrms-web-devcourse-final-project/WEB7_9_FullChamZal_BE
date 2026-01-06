@@ -49,7 +49,7 @@ public class AdminMemberDetailResponse {
                 .updatedAt(member.getUpdatedAt())
                 .lastNicknameChangedAt(member.getNicknameChangedAt())
 
-                // 아직 통계/로그는 안 붙였으니 0 + emptyList 로 채워둠 (TODO)
+                // 아직 통계/로그는 안 붙였으니 0 + emptyList 로 채워둠
                 .totalCapsuleCount(0L)
                 .totalReportCount(0L)
                 .totalBookmarkCount(0L)

@@ -76,7 +76,7 @@ public class AdminCapsuleService {
                     c,
                     recipientName,
                     reportCount,
-                    0L, // TODO bookmark,
+                    0L,
                     isUnlocked
             );
         });
@@ -110,7 +110,7 @@ public class AdminCapsuleService {
                 capsule,
                 recipientName,
                 reportCount,
-                0L, // TODO bookmark
+                0L,
                 isUnlocked
         );
     }

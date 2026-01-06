@@ -38,7 +38,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
 """)
     int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
 
-    // TODO: 작성자, 기간, 키워드 검색 등은 추후 QueryDsl / Specification 으로 확장
+
     // 공개 캡슐이고 삭제되지 않았으며, 위치 정보가 유효한 캡슐 조회
     @Query("SELECT c FROM Capsule c " +
             "WHERE c.visibility = :visibility " +
