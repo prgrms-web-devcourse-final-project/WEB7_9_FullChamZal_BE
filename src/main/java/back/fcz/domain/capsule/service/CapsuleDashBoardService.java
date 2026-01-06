@@ -35,9 +35,7 @@ public class CapsuleDashBoardService {
     // 사용자가 전송한 캡슐 목록 조회
     public Page<CapsuleDashBoardResponse> readSendCapsuleList(Long memberId, Pageable pageable) {
         Page<Capsule> capsules = capsuleRepository.findActiveCapsulesByMemberId(memberId, pageable);
-        return capsules.map(capsule -> {
-            return new CapsuleDashBoardResponse(capsule);
-        });
+        return capsules.map(capsule -> new CapsuleDashBoardResponse(capsule));
     }
 
     // 사용자가 수신한 캡슐 목록 조회

@@ -40,7 +40,7 @@ public class CapsuleCreateService {
     private final PublicCapsuleRecipientRepository publicRecipientRepository;
     private final SmsNotificaationService smsNotificaationService;
 
-    // ✅ moderation
+    // moderation
     private final CapsuleModerationService capsuleModerationService;
 
     // 캡슐 첨부 파일
@@ -81,7 +81,7 @@ public class CapsuleCreateService {
     /**
      * 공개 캡슐 생성
      * - moderation flagged이면 생성 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌 (CapsuleModerationService에서 처리)
-     * - ✅ PASS/SKIPPED는 로그 저장 안 함, 실패만 저장
+     * - PASS/SKIPPED는 로그 저장 안 함, 실패만 저장
      */
     @Transactional
     public CapsuleCreateResponseDTO publicCapsuleCreate(CapsuleCreateRequestDTO capsuleCreate) {
@@ -90,7 +90,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ 저장 직전 moderation 검사 (flagged면 서비스에서 예외 던짐 / PASS는 아무것도 저장 안 함)
+        // 저장 직전 moderation 검사 (flagged면 서비스에서 예외 던짐 / PASS는 아무것도 저장 안 함)
         capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
@@ -155,7 +155,7 @@ public class CapsuleCreateService {
             throw new BusinessException(ErrorCode.RECEIVERNICKNAME_IS_REQUIRED);
         }
 
-        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        // moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
         capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
@@ -201,7 +201,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(capsuleCreate.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        // moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
         capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
@@ -220,7 +220,7 @@ public class CapsuleCreateService {
 
             isCapsuleProfileIncomplete(capsule);
 
-            capsule.setProtected(1); // ✅ 보호=1
+            capsule.setProtected(1); // 보호=1
             Capsule saved = capsuleRepository.save(capsule);
 
             CapsuleRecipient recipientRecord = CapsuleRecipient.builder()
@@ -247,7 +247,7 @@ public class CapsuleCreateService {
 
             isCapsuleProfileIncomplete(capsule);
 
-            capsule.setProtected(0); // ✅ 미보호=0
+            capsule.setProtected(0); // 미보호=0
             Capsule saved = capsuleRepository.save(capsule);
             // 첨부파일 캡슐에 연결
             attachFiles(member.getMemberId(), saved, capsuleCreate.attachmentIds());
@@ -271,7 +271,7 @@ public class CapsuleCreateService {
         Member member = memberRepository.findById(requestDTO.memberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // ✅ moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
+        // moderation (저장 직전 / flagged면 예외 / PASS는 저장 안 함)
         capsuleModerationService.validateCapsuleText(
                 member.getMemberId(),
                 ModerationActionType.CAPSULE_CREATE,
@@ -310,7 +310,7 @@ public class CapsuleCreateService {
      * - 열람 전(조회수=0)만 수정 가능
      * - moderation flagged이면 수정 자체를 막고(CPS011) payload로 위반 필드/카테고리 내려줌
      *
-     * ✅ 수정은 capsuleId가 이미 있으므로,
+     * 수정은 capsuleId가 이미 있으므로,
      *    실패(예외) 때 payload의 auditId를 뽑아서 attach해두면 관리자 추적이 좋아짐
      */
     @Transactional
@@ -331,7 +331,7 @@ public class CapsuleCreateService {
             actorId = targetCapsule.getMemberId().getMemberId();
         }
 
-        // ✅ 수정 저장 전 moderation (flagged/error면 예외)
+        // 수정 저장 전 moderation (flagged/error면 예외)
         try {
             capsuleModerationService.validateCapsuleText(
                     actorId,

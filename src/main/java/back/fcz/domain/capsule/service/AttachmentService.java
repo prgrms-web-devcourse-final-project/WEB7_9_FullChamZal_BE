@@ -6,7 +6,6 @@ import back.fcz.domain.capsule.entity.CapsuleAttachmentStatus;
 import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
-import back.fcz.infra.storage.FileStorage;
 import back.fcz.infra.storage.PresignedUrlProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,14 +18,13 @@ import java.time.Duration;
 public class AttachmentService {
 
     private final CapsuleAttachmentRepository capsuleAttachmentRepository;
-    private final FileStorage fileStorage;
     private final PresignedUrlProvider presignedUrlProvider;
 
     private static final Duration GET_EXPIRES = Duration.ofMinutes(15); // 이미지 다운로드용 presign URL 만료 시간
 
 
     @Transactional(readOnly = true)
-    public CapsuleAttachmentViewResponse presignedDownload(Long memberId, Long attachmentId){
+    public CapsuleAttachmentViewResponse presignedDownload(Long attachmentId){
         CapsuleAttachment attachment = capsuleAttachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_NOT_FOUND));
 
