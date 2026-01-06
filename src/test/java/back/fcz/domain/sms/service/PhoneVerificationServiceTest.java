@@ -1,5 +1,6 @@
 package back.fcz.domain.sms.service;
 
+import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.sms.dto.request.ConfirmSmsCodeRequest;
 import back.fcz.domain.sms.dto.request.SendSmsCodeRequest;
 import back.fcz.domain.sms.dto.response.ConfirmSmsCodeResponse;
@@ -41,6 +42,9 @@ class PhoneVerificationServiceTest {
     private SmsSender smsSender;
 
     @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
     private RedisDailyLimitService redisDailyLimitService;
 
 
@@ -60,6 +64,9 @@ class PhoneVerificationServiceTest {
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
         when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
                 .thenReturn(1L);
+        when(memberRepository.existsByPhoneHashAndDeletedAtIsNull("hashedPhoneNumber"))
+                .thenReturn(false);
+
 
 
         //when
@@ -94,6 +101,8 @@ class PhoneVerificationServiceTest {
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
         when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
                 .thenReturn(1L);
+        when(memberRepository.existsByPhoneHashAndDeletedAtIsNull("hashedPhoneNumber"))
+                .thenReturn(false);
 
 
         //when
@@ -130,6 +139,8 @@ class PhoneVerificationServiceTest {
         when(phoneCrypto.hash(anyString())).thenReturn("hashedPhoneNumber");
         when(redisDailyLimitService.consumeOrReject(anyString(), eq(10)))
                 .thenReturn(1L);
+        when(memberRepository.existsByPhoneHashAndDeletedAtIsNull("hashedPhoneNumber"))
+                .thenReturn(false);
 
 
         //when
@@ -156,6 +167,8 @@ class PhoneVerificationServiceTest {
         when(phoneVerificationRepository
                 .countByPhoneNumberHashAndPurposeAndCreatedAtAfter(anyString(),any(),any()))
                 .thenReturn(1L);
+        when(memberRepository.existsByPhoneHashAndDeletedAtIsNull("hashedPhoneNumber"))
+                .thenReturn(false);
 
 
         //when & then
