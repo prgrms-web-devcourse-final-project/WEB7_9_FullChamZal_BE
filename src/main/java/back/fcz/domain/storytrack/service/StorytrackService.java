@@ -122,6 +122,11 @@ public class StorytrackService {
     // 스토리트랙 경로 수정
     @Transactional
     public UpdatePathResponse updatePath(UpdatePathRequest request, Long loginMemberId) {
+        // 스토리트랙 참여자가 존재하면 미 수정
+        if (storytrackProgressRepository.countActiveParticipants(request.storytrackId()) > 0) {
+            throw new BusinessException(ErrorCode.PARTICIPANT_EXISTS);
+        }
+
         // 스토리트랙 경로 조회
         StorytrackStep targetStep = (StorytrackStep) storytrackStepRepository.findByStorytrack_StorytrackIdAndStepOrder(request.storytrackId(), request.stepOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORYTRACK_PAHT_NOT_FOUND));
