@@ -4,6 +4,7 @@ import back.fcz.domain.member.dto.request.OAuthSignupRequest;
 import back.fcz.domain.member.dto.response.MemberSignupResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
+import back.fcz.domain.sms.entity.PhoneVerificationPurpose;
 import back.fcz.domain.sms.service.PhoneVerificationService;
 import back.fcz.global.crypto.PhoneCrypto;
 import back.fcz.global.exception.BusinessException;
@@ -42,16 +43,15 @@ public class OAuthService {
             throw new BusinessException(ErrorCode.WITHDRAWN_PHONE_NUMBER);
         }
 
-        // TODO: 번호 인증 메서드 추가
-//        boolean verification =
-//                phoneVerificationService.isPhoneVerified(
-//                        phoneNumber,
-//                        PhoneVerificationPurpose.SIGNUP
-//                );
-//
-//        if(!verification) {
-//            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-//        }
+        boolean verification =
+                phoneVerificationService.isPhoneVerified(
+                        phoneNumber,
+                        PhoneVerificationPurpose.SIGNUP
+                );
+
+        if(!verification) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
+        }
 
         String phoneEncrypted = phoneCrypto.encrypt(phoneNumber);
 

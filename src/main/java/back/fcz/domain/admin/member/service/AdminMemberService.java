@@ -169,12 +169,12 @@ public class AdminMemberService {
 
                 .totalCapsuleCount(totalCapsuleCount)
                 .totalReportCount(totalReportCount)
-                .totalBookmarkCount(0L)                          // TODO
+                .totalBookmarkCount(0L)
                 .totalBlockedCapsuleCount(totalBlockedCapsuleCount)
-                .storyTrackCount(0L)                             // TODO
+                .storyTrackCount(0L)
 
                 .recentCapsules(recentCapsuleDtos)
-                .recentNotifications(Collections.emptyList())    // TODO
+                .recentNotifications(Collections.emptyList())
                 .recentPhoneVerifications(phoneLogDtos)
                 .build();
     }

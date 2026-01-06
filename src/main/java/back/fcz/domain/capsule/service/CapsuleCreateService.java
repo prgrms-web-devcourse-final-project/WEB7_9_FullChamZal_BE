@@ -455,7 +455,6 @@ public class CapsuleCreateService {
     }
 
     // 첨부파일 캡슐에 연결
-    //TODO: 에러 코드 변경 및 반환 타입 수정 (attachmentIds 줄지 void로 할지)
     private List<Long> attachFiles(Long memberId, Capsule capsule, List<Long> attachmentIds) {
         if (attachmentIds == null || attachmentIds.isEmpty()) return List.of();
 

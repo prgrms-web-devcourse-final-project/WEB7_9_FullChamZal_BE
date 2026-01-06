@@ -1,5 +1,7 @@
 package back.fcz.domain.capsule.entity;
 
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -30,8 +32,10 @@ public class CapsuleAttachment {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "file_type", nullable = false)
-    private String fileType;
+    private FileType fileType;
+
 
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
@@ -61,7 +65,7 @@ public class CapsuleAttachment {
         attachment.uploaderId = uploaderId;
         attachment.s3Key = s3Key;
         attachment.fileName = fileName;
-        attachment.fileType = "IMAGE";
+        attachment.fileType = FileType.fromContentType(mimeType);
         attachment.fileSize = size;
         attachment.mimeType = mimeType;
         attachment.status = CapsuleAttachmentStatus.UPLOADING;
@@ -81,4 +85,12 @@ public class CapsuleAttachment {
         this.capsule = capsule;
         this.status = CapsuleAttachmentStatus.USED;
     }
+
+    public void validateContentType(String contentType) {
+        if (this.fileType != null && contentType != null && !this.fileType.matches(contentType)) {
+            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_TYPE_MISMATCH);
+        }
+    }
+
+
 }

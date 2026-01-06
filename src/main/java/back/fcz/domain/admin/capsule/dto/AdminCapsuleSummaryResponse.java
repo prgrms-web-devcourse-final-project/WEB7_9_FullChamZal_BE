@@ -37,7 +37,7 @@ public class AdminCapsuleSummaryResponse {
     private final boolean unlocked; // 조회 여부
 
     private final long reportCount;        // 캡슐 신고 수
-    private final long bookmarkCount;      // TODO
+    private final long bookmarkCount;      //
 
     private final LocalDateTime createdAt;
 

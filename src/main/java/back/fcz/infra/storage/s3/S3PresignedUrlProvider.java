@@ -24,8 +24,6 @@ public class S3PresignedUrlProvider implements PresignedUrlProvider {
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
-                .contentType(contentType)
-                .contentLength(size)
                 .build();
 
         return s3Presigner.presignPutObject(p-> p
