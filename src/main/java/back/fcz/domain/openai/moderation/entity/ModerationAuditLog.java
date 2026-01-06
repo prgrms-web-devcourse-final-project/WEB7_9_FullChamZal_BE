@@ -43,7 +43,7 @@ public class ModerationAuditLog extends BaseEntity {
 
     // OpenAI 응답을 그대로 저장(관리자 검토/추적용)
     @Lob
-    @Column(name = "raw_response_json")
+    @Column(name = "raw_response_json", columnDefinition = "TEXT")
     private String rawResponseJson;
 
     @Column(name = "error_message", length = 1000)
