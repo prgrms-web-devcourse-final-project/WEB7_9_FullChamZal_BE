@@ -20,11 +20,6 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
 
     boolean existsByCapsuleId_CapsuleIdAndRecipientPhoneHash(Long capsuleId, String recipientPhoneHash);
 
-    boolean existsByCapsuleId_CapsuleId(Long capsuleId);
-
-    // 회원 탈퇴 시
-    List<CapsuleRecipient> findAllByRecipientPhoneHash(String recipientPhoneHash);
-
     @Modifying
     @Query("""
         UPDATE CapsuleRecipient pcr
@@ -48,9 +43,6 @@ public interface CapsuleRecipientRepository extends JpaRepository<CapsuleRecipie
     """)
     List<CapsuleRecipient> findAllByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 
-
-    @Query("SELECT c FROM CapsuleRecipient c WHERE c.capsuleId.capsuleId = :capsuleId")
-    Optional<CapsuleRecipient> findByCapsuleId(@Param("capsuleId") Long capsuleId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from CapsuleRecipient cr where cr.capsuleId.capsuleId in :capsuleIds")

@@ -113,17 +113,7 @@ public class Capsule extends BaseEntity {
         this.currentViewCount += count;
     }
 
-    public void decreasedViewCount() {
-        if (this.currentViewCount > 0) {
-            this.currentViewCount--;
-        }
-    }
-
     public void setIsDeleted(int i) {
         this.isDeleted = i;
-    }
-
-    public void increaseLikeCount() {
-        this.likeCount++;
     }
 }

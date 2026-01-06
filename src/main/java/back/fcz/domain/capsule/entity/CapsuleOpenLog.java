@@ -66,10 +66,6 @@ public class CapsuleOpenLog {
     @Column(name = "anomaly_type", length = 50)
     private AnomalyType anomalyType;
 
-    public void updateStatus(CapsuleOpenStatus status) {
-        this.status = status;
-    }
-
     public void markAsAnomaly(AnomalyType anomalyType) {
         this.anomalyType = anomalyType;
         this.status = CapsuleOpenStatus.SUSPICIOUS;
