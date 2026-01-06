@@ -96,7 +96,6 @@ public class CapsuleReadService {
         // 공개인지 비공개인지
         if(capsule.getVisibility().equals("PUBLIC")){
             // PUBLIC 캡슐 로직
-            log.info("공개 캡슐 로직 진입 - capsuleId: {}", capsule.getCapsuleId());
             return publicCapsuleLogic(capsule, requestDto);
         }else{
             // PRIVATE와 SELF 모두 개인 캡슐 로직으로 동일하게 처리
@@ -106,7 +105,6 @@ public class CapsuleReadService {
 
     //공개 캡슐
     public CapsuleConditionResponseDTO publicCapsuleLogic(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
-        log.info("=== 공개 캡슐 로직 시작 - capsuleId: {} ===", capsule.getCapsuleId());
 
         // 공개 캡슐은 회원만 조회 가능 - 로그인 체크
         if (!isUserLoggedIn()) {
@@ -114,7 +112,6 @@ public class CapsuleReadService {
         }
         
         Long currentMemberId = currentUserContext.getCurrentMemberId();
-        log.info("로그인 회원 - memberId: {}", currentMemberId);
 
         // 성공 기록이 있는지 확인
         boolean hasSuccessfullyViewed = capsuleOpenLogRepository
@@ -125,11 +122,9 @@ public class CapsuleReadService {
                 );
 
         if (hasSuccessfullyViewed) {
-            log.info("이전 성공 기록 존재, 재조회 - 로그 기록 및 이상 감지만 수행");
             return handlePublicReview(capsule, requestDto, currentMemberId);
         }
 
-        log.info("이전 성공 기록 미존재, 첫 조회 - 검증 시작");
 
         // 시간/위치 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateTimeAndLocationConditions(
@@ -168,7 +163,6 @@ public class CapsuleReadService {
 
         // 조건 검증 성공 시
         if (firstComeService.hasFirstComeLimit(capsule)) {
-            log.info("선착순 제한 있음 - maxViewCount: {}", capsule.getMaxViewCount());
 
             boolean isNewView = firstComeService.tryIncrementViewCountAndSaveRecipient(
                     capsule.getCapsuleId(),
@@ -176,10 +170,8 @@ public class CapsuleReadService {
                     requestDto
             );
 
-            log.info("선착순 검증 및 저장 완료");
             return readPublicCapsule(capsule, requestDto, !isNewView);
         } else {
-            log.info("선착순 없음 - 바로 저장");
 
             // 로그 생성
             CapsuleOpenLog successLog = createOpenLog(
@@ -198,7 +190,6 @@ public class CapsuleReadService {
                     requestDto
             );
 
-            log.info("=== 공개 캡슐 로직 종료 ===");
             return readPublicCapsule(capsule, requestDto, false);
         }
     }
@@ -209,8 +200,6 @@ public class CapsuleReadService {
             CapsuleConditionRequestDTO requestDto,
             Long currentMemberId
     ) {
-        log.info("공개 캡슐 재조회 - capsuleId: {}, memberId: {}", capsule.getCapsuleId(), currentMemberId);
-
         CapsuleOpenLog openLog = createOpenLog(
                 capsule,
                 requestDto,
@@ -220,7 +209,6 @@ public class CapsuleReadService {
         );
         capsuleOpenLogRepository.save(openLog);
 
-        log.info("공개 캡슐 재조회 완료");
         return readPublicCapsule(capsule, requestDto, true);
     }
 
@@ -230,23 +218,18 @@ public class CapsuleReadService {
         boolean hasPassword = !(requestDto.password() == null || requestDto.password().isBlank());
         boolean isLoggedIn = isUserLoggedIn();
 
-        log.info("개인 캡슐 검증 시작 - hasPassword: {}, isLoggedIn: {}, isProtected: {}",
-                hasPassword, isLoggedIn, capsule.getIsProtected());
 
         if (capsule.getIsProtected() == 1) {
             // JWT 인증 필수 (전화번호 전송 방식 OR URL+비밀번호에서 저장 버튼 누른 경우)
-            log.info("isProtected=1 캡슐 - JWT 인증 필수");
             return handleProtectedCapsule(capsule, requestDto);
         } else {
             // 비밀번호 인증 (URL+비밀번호 방식, 아직 저장 안 함)
-            log.info("isProtected=0 캡슐 - 비밀번호 인증");
             return handleUnprotectedCapsule(capsule, requestDto);
         }
     }
 
     // isProtected = 1 처리: JWT 인증 + 전화번호 해시 검증
     private CapsuleConditionResponseDTO handleProtectedCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
-        log.info("보호된 캡슐 접근 처리 - capsuleId: {}", capsule.getCapsuleId());
 
         if (!isUserLoggedIn()) {
             log.warn("비로그인 상태로 isProtected=1 캡슐 접근 시도");
@@ -281,7 +264,6 @@ public class CapsuleReadService {
             }
         }
 
-        log.info("수신자 본인 확인 완료");
 
         // 성공 기록이 있는지 확인
         boolean hasSuccessfullyViewed = capsuleOpenLogRepository
@@ -292,11 +274,9 @@ public class CapsuleReadService {
                 );
 
         if (hasSuccessfullyViewed) {
-            log.info("이전 성공 기록 존재, 재조회 - 로그 기록 및 이상 감지만 수행");
             return handleProtectedReview(capsule, requestDto, currentMemberId, recipient);
         }
 
-        log.info("이전 성공 기록 미존재, 첫 조회 - 검증 시작");
 
         // 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateUnlockConditionsForPrivate(
@@ -342,7 +322,6 @@ public class CapsuleReadService {
         );
         capsuleOpenLogRepository.save(successLog);
 
-        log.info("시간/위치 조건 통과 - 캡슐 조회 허용");
         return readMemberCapsule(capsule, requestDto, true, recipient);
     }
 
@@ -353,7 +332,6 @@ public class CapsuleReadService {
             Long currentMemberId,
             CapsuleRecipient recipient
     ) {
-        log.info("보호된 캡슐 재조회 - capsuleId: {}, memberId: {}", capsule.getCapsuleId(), currentMemberId);
 
         CapsuleOpenLog openLog = createOpenLog(
                 capsule,
@@ -364,13 +342,11 @@ public class CapsuleReadService {
         );
         capsuleOpenLogRepository.save(openLog);
 
-        log.info("보호된 캡슐 재조회 완료");
         return readMemberCapsule(capsule, requestDto, false, recipient);
     }
 
     // isProtected=0 처리: 비밀번호 검증 (로그인 여부는 로그 타입에만 영향)
     private CapsuleConditionResponseDTO handleUnprotectedCapsule(Capsule capsule, CapsuleConditionRequestDTO requestDto) {
-        log.info("비보호 캡슐 접근 처리 - capsuleId: {}", capsule.getCapsuleId());
 
         if (requestDto.password() == null || requestDto.password().isBlank()) {
             log.warn("비밀번호 미입력");
@@ -398,16 +374,11 @@ public class CapsuleReadService {
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH);
         }
 
-        log.info("비밀번호 검증 통과");
-
         boolean hasAlreadyViewed = hasAlreadyOpenedUnprotected(capsule.getCapsuleId(), memberId, requestDto.ipAddress());
 
         if (hasAlreadyViewed) {
-            log.info("재조회 - 로그 기록 및 이상 감지, 로그인 여부: {}", isLoggedIn);
             return handleUnprotectedReview(capsule, requestDto, memberId, viewerType);
         }
-
-        log.info("첫 조회 - 조건 검증 시작");
 
         // 조건 검증 + 이상 감지
         UnlockValidationResult validationResult = unlockService.validateUnlockConditionsForPrivate(
@@ -459,7 +430,6 @@ public class CapsuleReadService {
             throwAnomalyException(validationResult, memberId);
         }
 
-        log.info("시간/위치 조건 통과 - 캡슐 읽기 허용, 로그인 여부: {}", isLoggedIn);
 
         if (isLoggedIn) {
             return readMemberCapsuleWithoutRecipient(capsule, requestDto, true);
@@ -475,7 +445,6 @@ public class CapsuleReadService {
             Long memberId,
             String viewerType
     ) {
-        log.info("비보호 캡슐 재조회 - capsuleId: {}, memberId: {}", capsule.getCapsuleId(), memberId);
 
         CapsuleOpenLog openLog = createOpenLog(
                 capsule,
@@ -486,7 +455,6 @@ public class CapsuleReadService {
         );
         capsuleOpenLogRepository.save(openLog);
 
-        log.info("비보호 캡슐 재조회 완료");
 
         boolean isLoggedIn = (memberId != null);
         if (isLoggedIn) {
@@ -558,8 +526,6 @@ public class CapsuleReadService {
 
     // 개인 캡슐 읽기 - isProtected=0, 로그인 상태 (CapsuleRecipient 없음)
     private CapsuleConditionResponseDTO readMemberCapsuleWithoutRecipient(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement) {
-        log.info("회원 캡슐 읽기 (CapsuleRecipient 없음) - capsuleId: {}, shouldIncrement: {}",
-                capsule.getCapsuleId(), shouldIncrement);
 
         Long currentMemberId = currentUserContext.getCurrentMemberId();
 
@@ -578,8 +544,6 @@ public class CapsuleReadService {
 
     //개인 캡슐 읽기 - 수신자가 비회원인 경우(로그만 남김)
     public CapsuleConditionResponseDTO readCapsuleAsGuest(Capsule capsule, CapsuleConditionRequestDTO requestDto, boolean shouldIncrement){
-        log.info("비회원 캡슐 읽기 - capsuleId: {}, shouldIncrement: {}",
-                capsule.getCapsuleId(), shouldIncrement);
 
         // 처음 조회하면 조회수 증가
         if (shouldIncrement) {
