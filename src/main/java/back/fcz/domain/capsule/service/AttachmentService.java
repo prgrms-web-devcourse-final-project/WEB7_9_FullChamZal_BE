@@ -24,7 +24,7 @@ public class AttachmentService {
 
 
     @Transactional(readOnly = true)
-    public CapsuleAttachmentViewResponse presignedDownload(Long memberId, Long attachmentId){
+    public CapsuleAttachmentViewResponse presignedDownload(Long attachmentId){
         CapsuleAttachment attachment = capsuleAttachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_FILE_NOT_FOUND));
 

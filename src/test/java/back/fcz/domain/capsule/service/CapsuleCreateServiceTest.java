@@ -8,7 +8,10 @@ import back.fcz.domain.capsule.DTO.response.CapsuleDeleteResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleUpdateResponseDTO;
 import back.fcz.domain.capsule.DTO.response.SecretCapsuleCreateResponseDTO;
 import back.fcz.domain.capsule.entity.*;
-import back.fcz.domain.capsule.repository.*;
+import back.fcz.domain.capsule.repository.CapsuleAttachmentRepository;
+import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
+import back.fcz.domain.capsule.repository.CapsuleRepository;
+import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.openai.moderation.service.CapsuleModerationService;
@@ -51,13 +54,11 @@ class CapsuleCreateServiceTest {
     @Mock
     PhoneCrypto phoneCrypto;
     @Mock
-    CapsuleOpenLogRepository capsuleOpenLogRepository;
-    @Mock
     CapsuleModerationService capsuleModerationService;
     @Mock
-    SmsNotificaationService smsNotificaationService;
-    @Mock
     CapsuleAttachmentRepository capsuleAttachmentRepository;
+    @Mock
+    private SmsNotificaationService smsNotificaationService;
 
 
     @InjectMocks
@@ -70,7 +71,7 @@ class CapsuleCreateServiceTest {
     void setup() {
         member = Member.testMember(1L, "testUser", "Test User");
 
-        // ✅ 모든 테스트에서 moderation이 반드시 호출되진 않아서 lenient로 처리
+        // 모든 테스트에서 moderation이 반드시 호출되진 않아서 lenient로 처리
         lenient().when(capsuleModerationService.validateCapsuleText(
                 any(), any(), any(), any(), any(), any(), any()
         )).thenReturn(null);
@@ -342,6 +343,7 @@ class CapsuleCreateServiceTest {
         );
     }
 
+    @Test
     @DisplayName("비공개 캡슐 생성 - 전화번호와 비밀번호 둘 다 없으면 예외 발생")
     void createPrivateCapsule_bothNull_throwsException() {
         // given

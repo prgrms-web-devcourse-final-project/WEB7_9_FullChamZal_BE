@@ -30,15 +30,6 @@ public interface StorytrackStepRepository extends JpaRepository<StorytrackStep, 
 
     Optional<StorytrackStep> findByCapsule_CapsuleIdAndStorytrack_StorytrackId(Long capsuleId, Long storytrackId);
 
-    @Query("""
-        select case when count(s) > 0 then true else false end
-        from StorytrackStep s
-        where s.storytrack.storytrackId = :storytrackId
-          and s.stepOrder = :stepOrder
-    """)
-    boolean existsByStorytrackIdAndStepOrder(@Param("storytrackId") Long storytrackId,
-                                             @Param("stepOrder") int stepOrder);
-
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from StorytrackStep ss where ss.capsule.capsuleId in :capsuleIds")
     int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);

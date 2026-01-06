@@ -1,8 +1,5 @@
 package back.fcz.domain.storytrack.service;
 
-import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentStatusResponse;
-import back.fcz.domain.capsule.entity.CapsuleAttachment;
-import back.fcz.domain.capsule.service.CapsuleImageModerationAsyncService;
 import back.fcz.domain.storytrack.dto.request.StorytrackAttachmentUploadRequest;
 import back.fcz.domain.storytrack.dto.response.StorytrackAttachmentStatusResponse;
 import back.fcz.domain.storytrack.dto.response.StorytrackAttachmentUploadResponse;

@@ -484,8 +484,6 @@ public class StorytrackService {
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
-        List<StorytrackAttachment> image = storytrackAttachmentRepository.findByStorytrack_StorytrackIdAndDeletedAtIsNull(storytrackId);
-
         String imageUrl = buildAttachmentViews(storytrackId);
 
         return ParticipantProgressResponse.from(
@@ -542,73 +540,31 @@ public class StorytrackService {
             CapsuleConditionRequestDTO request
     ) {
 
-        log.info(
-                "[StorytrackOpen] 요청 시작 memberId={}, storytrackId={}, capsuleId={}",
-                memberId, storytrackId, request.capsuleId()
-        );
-
         // 참여자 진행 정보 조회
         StorytrackProgress progress =
                 storytrackProgressRepository
                         .findByStorytrack_StorytrackIdAndMember_MemberIdAndDeletedAtIsNull(storytrackId, memberId)
-                        .orElseThrow(() ->{
-                            log.warn(
-                                    "[StorytrackOpen] 참여자 아님 memberId={}, storytrackId={}",
-                                    memberId, storytrackId
-                            );
+                        .orElseThrow(() -> new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
-                            return new BusinessException(ErrorCode.PARTICIPANT_NOT_FOUND);
-                        });
-
-        log.debug(
-                "[StorytrackOpen] 진행 정보 조회 완료 lastCompletedStep={}, completedSteps={}",
-                progress.getLastCompletedStep(),
-                progress.getCompletedSteps()
-        );
         // 캡슐이 이 단계의 캡슐인지 확인
         StorytrackStep step =
                 storytrackStepRepository
                         .findByCapsule_CapsuleIdAndStorytrack_StorytrackId(
                                 request.capsuleId(), storytrackId
                         )
-                        .orElseThrow(() ->{
-                            log.warn(
-                                    "[StorytrackOpen] 스텝 없음 capsuleId={}, storytrackId={}",
-                                    request.capsuleId(), storytrackId
-                            );
-
-                            return new BusinessException(ErrorCode.STEP_NOT_FOUND);
-                        });
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STEP_NOT_FOUND));
 
         String trackType = progress.getStorytrack().getTrackType();
         int requestedStep = step.getStepOrder();
 
-        log.info(
-                "[StorytrackOpen] 스텝 확인 trackType={}, requestedStep={}",
-                trackType, requestedStep
-        );
-
         if("SEQUENTIAL".equals(trackType)){
-            log.debug(
-                    "[StorytrackOpen][SEQUENTIAL] lastCompletedStep={}, expectedNextStep={}",
-                    progress.getLastCompletedStep(),
-                    progress.getLastCompletedStep() + 1
-            );
             // 아직 열 수 없는 단계
             if (requestedStep > progress.getLastCompletedStep() + 1) {
-                log.warn(
-                        "[StorytrackOpen][SEQUENTIAL] 순서 위반 requestedStep={}, lastCompletedStep={}",
-                        requestedStep, progress.getLastCompletedStep()
-                );
                 throw new BusinessException(ErrorCode.INVALID_STEP_ORDER);
             }
 
             // 이미 완료한 단계 -> 재조회
             if (requestedStep <= progress.getLastCompletedStep()) {
-                log.info(
-                        "[StorytrackOpen][SEQUENTIAL] 이미 완료된 단계 재조회 stepOrder={}",
-                        requestedStep
-                );
                 return capsuleReadService.readAlreadyOpendeStorytrackCapsule(
                         step.getCapsule(),
                         request,
@@ -616,17 +572,7 @@ public class StorytrackService {
                 );
             }
         } else if ("FREE".equals(trackType)){
-
-            log.debug(
-                    "[StorytrackOpen][FREE] 단계 완료 여부 확인 stepOrder={}",
-                    requestedStep
-            );
-
             if (progress.isStepCompleted(requestedStep)) { // 완료된 단계인지 확인 -> 재조회
-                log.info(
-                        "[StorytrackOpen][FREE] 이미 완료된 단계 재조회 stepOrder={}",
-                        requestedStep
-                );
                 return capsuleReadService.readAlreadyOpendeStorytrackCapsule(
                         step.getCapsule(),
                         request,
@@ -636,30 +582,10 @@ public class StorytrackService {
         }
 
         // 지금 열 차례인 단계 -> 최초 열람
-
-        log.info(
-                "[StorytrackOpen] 최초 열람 시도 stepOrder={}",
-                requestedStep
-        );
-
-        log.info(
-                "[StorytrackOpen] 최초 열람 unlockAt={}, capsuleId={}",
-                request.unlockAt() , request.capsuleId()
-        );
-
         CapsuleConditionResponseDTO response =
                 capsuleReadService.conditionAndRead(request);
 
-        log.debug(
-                "[StorytrackOpen] 캡슐 열람 결과 result={}",
-                response.result()
-        );
-
         if (!"SUCCESS".equals(response.result())) {
-            log.warn(
-                    "[StorytrackOpen] 캡슐 열람 실패 stepOrder={}, result={}",
-                    requestedStep, response.result()
-            );
             return response;
         }
 
@@ -667,12 +593,6 @@ public class StorytrackService {
         progress.completeStep(
                 step,
                 progress.getStorytrack().getTotalSteps()
-        );
-
-        log.info(
-                "[StorytrackOpen] 단계 완료 처리 완료 stepOrder={}, totalCompletedSteps={}",
-                requestedStep,
-                progress.getCompletedSteps()
         );
 
         return response;

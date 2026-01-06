@@ -20,8 +20,6 @@ public interface CapsuleLikeRepository extends JpaRepository<CapsuleLike, Long> 
             "AND c.memberId.memberId = :memberId")
     boolean existsByCapsuleIdMemberId(@Param("capsuleId") Long capsuleId, @Param("memberId") Long memberId);
 
-    void deleteByCapsuleId_CapsuleIdAndMemberId_MemberId(Long capsuleId, Long memberId);
-
     // 특정 사용자가 좋아요를 누른 캡슐의 ID 리스트 조회
     @Query("SELECT c.capsuleId.capsuleId FROM CapsuleLike c WHERE c.memberId.memberId = :memberId")
     Set<Long> findAllLikedCapsuleIdsByMemberId(@Param("memberId") Long memberId);

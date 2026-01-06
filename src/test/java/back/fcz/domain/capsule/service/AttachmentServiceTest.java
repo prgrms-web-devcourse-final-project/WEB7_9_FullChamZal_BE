@@ -40,7 +40,6 @@ public class AttachmentServiceTest {
     @Test
     @DisplayName("presignedDownload - URL 발급 성공")
     void presignedDownload_success() {
-        Long memberId = 10L;
         Long attachmentId = 1L;
 
         CapsuleAttachment attachment = mock(CapsuleAttachment.class);
@@ -52,7 +51,7 @@ public class AttachmentServiceTest {
         given(presignedUrlProvider.presignGet(eq("capsules/10/uuid.png"), any(Duration.class)))
                 .willReturn("https://get-url");
 
-        CapsuleAttachmentViewResponse url = service.presignedDownload(memberId, attachmentId);
+        CapsuleAttachmentViewResponse url = service.presignedDownload(attachmentId);
 
         assertThat(url.presignedUrl()).isEqualTo("https://get-url");
         verify(presignedUrlProvider).presignGet(eq("capsules/10/uuid.png"), any(Duration.class));

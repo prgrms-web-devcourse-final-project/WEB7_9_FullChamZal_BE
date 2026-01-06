@@ -13,11 +13,7 @@ import java.util.Optional;
 
 public interface StorytrackRepository extends JpaRepository<Storytrack, Long> {
 
-    Page<Storytrack> findByIsPublic(int isPublic, Pageable pageable);
-
     Optional<Storytrack> findByStorytrackIdAndIsDeleted(Long id, int isDeleted);
-
-    Page<Storytrack> findByMember_MemberId(Long memberId, Pageable pageable);
 
     // 스토리트랙 목록 조회 시, 참여자 수 조회를 위해서
     @Query("""
