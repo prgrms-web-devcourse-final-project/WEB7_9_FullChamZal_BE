@@ -18,11 +18,6 @@ public class RedisDailyLimitService {
 
     private final StringRedisTemplate redisTemplate;
 
-    /**
-     * return:
-     *  - 1..limit : 현재 카운트(허용)
-     *  - 0        : limit 초과(차단)
-     */
     private final DefaultRedisScript<Long> consumeScript = new DefaultRedisScript<>(
             """
             local current = redis.call('INCR', KEYS[1])

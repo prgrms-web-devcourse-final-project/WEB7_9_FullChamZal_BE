@@ -72,6 +72,7 @@ public class StorytrackAttachmentController {
             ErrorCode.CAPSULE_CONTENT_BLOCKED,
             ErrorCode.OPENAI_MODERATION_FAILED
     })
+    @Operation(summary = "파일 업로드 완료 요청", description = "Presigned URL 방식으로 업로드한 파일의 업로드 완료를 알립니다.")
     public ResponseEntity<ApiResponse<Void>> completeUpload(
             @PathVariable Long attachmentId
     ){
@@ -87,6 +88,7 @@ public class StorytrackAttachmentController {
             ErrorCode.STORYTRACK_FILE_NOT_FOUND,
             ErrorCode.STORYTRACK_FILE_ATTACH_FORBIDDEN
     })
+    @Operation(summary = "파일 업로드 상태 조회", description = "업로드한 파일의 상태를 조회합니다.")
     public ResponseEntity<ApiResponse<StorytrackAttachmentStatusResponse>> getStatus(
             @PathVariable Long attachmentId
     ){

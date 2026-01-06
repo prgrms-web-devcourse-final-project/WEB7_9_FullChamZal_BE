@@ -84,7 +84,6 @@ public class CapsuleAttachmentServerUploadService {
     private void safeDeleteStoredFile(String key) {
         try {
             fileStorage.delete(key);
-            log.info("[S3] deleted key={}", key);
         } catch (Exception ex) {
             log.warn("[S3] delete failed key={}", key, ex);
         }

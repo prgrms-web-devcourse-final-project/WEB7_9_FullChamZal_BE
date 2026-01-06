@@ -13,15 +13,11 @@ import java.util.Optional;
 
 public interface PhoneVerificationRepository extends JpaRepository<PhoneVerification,Long> {
 
-    long countByPhoneNumberHash(String phoneNumberHash);
-
     long countByPhoneNumberHashAndPurposeAndCreatedAtAfter(
             String phoneNumberHash,
             PhoneVerificationPurpose purpose,
             LocalDateTime cooldownThreshold
     );
-
-    // ✅ JPQL limit 금지 -> 파생 쿼리로 최신 1건
     Optional<PhoneVerification> findTop1ByPhoneNumberHashAndPurposeOrderByCreatedAtDesc(
             String phoneNumberHash,
             PhoneVerificationPurpose purpose
@@ -42,7 +38,6 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
         );
     }
 
-    // ✅ 최근 5개 로그
     List<PhoneVerification> findTop5ByPhoneNumberHashOrderByCreatedAtDesc(String phoneNumberHash);
 
     Page<PhoneVerification> findByPurpose(PhoneVerificationPurpose purpose, Pageable pageable);

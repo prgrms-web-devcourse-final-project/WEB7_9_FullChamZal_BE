@@ -24,7 +24,7 @@ public class CapsuleAttachmentDeleteScheduler {
     private final FileStorage fileStorage;
 
     @Transactional
-    @Scheduled(cron = "0 0 4 * * *") //
+    @Scheduled(cron = "0 30 4 * * *") //
     public void markExpiredTempAsDeleted(){
         LocalDateTime now = LocalDateTime.now();
 
@@ -42,7 +42,7 @@ public class CapsuleAttachmentDeleteScheduler {
     }
 
     @Transactional
-    @Scheduled(cron = "0 10 4 * * *")
+    @Scheduled(cron = "0 40 4 * * *")
     public void markExpiredUploadingOrPendingAsDeleted() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -70,7 +70,7 @@ public class CapsuleAttachmentDeleteScheduler {
                 uploadingExpired.size(), pendingExpired.size());
     }
 
-    @Scheduled(cron = "0 30 4 * * *")
+    @Scheduled(cron = "0 00 5 * * *")
     @Transactional
     public void hardDeletedFromS3() {
         List<CapsuleAttachment> targets =

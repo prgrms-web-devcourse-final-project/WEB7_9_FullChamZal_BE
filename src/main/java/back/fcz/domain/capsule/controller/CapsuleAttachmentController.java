@@ -74,6 +74,7 @@ public class CapsuleAttachmentController {
             ErrorCode.CAPSULE_CONTENT_BLOCKED,
             ErrorCode.OPENAI_MODERATION_FAILED
     })
+    @Operation(summary = "파일 업로드 완료 요청", description = "클라이언트에서 s3 업로드가 완료된 후, 업로드 완료를 알립니다.")
     public ResponseEntity<ApiResponse<Void>> completeUpload(
             @PathVariable Long attachmentId
     ){
@@ -89,6 +90,7 @@ public class CapsuleAttachmentController {
             ErrorCode.CAPSULE_FILE_NOT_FOUND,
             ErrorCode.CAPSULE_FILE_ATTACH_FORBIDDEN
     })
+    @Operation(summary = "파일 상태 조회", description = "파일의 현재 상태를 조회합니다.")
     public ResponseEntity<ApiResponse<CapsuleAttachmentStatusResponse>> getStatus(
             @PathVariable Long attachmentId
     ){

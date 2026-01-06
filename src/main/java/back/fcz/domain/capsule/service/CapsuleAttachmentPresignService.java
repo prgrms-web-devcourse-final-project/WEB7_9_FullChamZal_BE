@@ -123,7 +123,7 @@ public class CapsuleAttachmentPresignService {
                 attachment.getId(),
                 attachment.getStatus().name());
     }
-    // 캡슐 이미지 필터링 상태 한번에 확인 - 프론트에서 요청 시 구현
+    // TODO: 캡슐 이미지 필터링 상태 한번에 확인 - 프론트에서 요청 시 구현
 //    @Transactional(readOnly = true)
 //    public List<AttachmentStatusResponse> getStatuses(Long uploaderId, List<Long> ids) {
 //

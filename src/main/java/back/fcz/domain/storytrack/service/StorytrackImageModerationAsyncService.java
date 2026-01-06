@@ -39,7 +39,7 @@ public class StorytrackImageModerationAsyncService {
         try {
             storytrackImageModerationService.validateImageUrl(
                     uploaderId,
-                    ModerationActionType.CAPSULE_CREATE,
+                    ModerationActionType.STORYTRACK_CREATE,
                     url
             );
             attachment.markTemp();
