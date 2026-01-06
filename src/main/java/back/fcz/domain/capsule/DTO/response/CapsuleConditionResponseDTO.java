@@ -135,8 +135,8 @@ public record CapsuleConditionResponseDTO(
                 capsule.getUnlockAt(),
                 capsule.getUnlockUntil(),
                 capsule.getLocationName(),
-                null,
-                null,
+                capsule.getLocationLat(),
+                capsule.getLocationLng(),
                 0,
 
                 false,
