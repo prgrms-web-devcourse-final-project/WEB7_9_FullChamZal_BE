@@ -34,7 +34,7 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     UPDATE Capsule c 
     SET c.currentViewCount = c.currentViewCount + 1 
     WHERE c.capsuleId = :capsuleId 
-    AND (c.maxViewCount IS NULL OR c.currentViewCount < c.maxViewCount)
+    AND (c.maxViewCount = 0 OR c.currentViewCount < c.maxViewCount)
 """)
     int incrementViewCountIfAvailable(@Param("capsuleId") Long capsuleId);
 

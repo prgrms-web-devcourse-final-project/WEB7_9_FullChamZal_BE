@@ -5,17 +5,17 @@ import back.fcz.domain.capsule.entity.*;
 import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
 import back.fcz.domain.capsule.repository.CapsuleRepository;
 import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
-import back.fcz.domain.member.entity.Member;
-import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 // 선착순 캡슐 조회수 관리 서비스
@@ -28,12 +28,18 @@ public class FirstComeService {
     private final CapsuleRepository capsuleRepository;
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final RedissonClient redissonClient;
-    private final MemberRepository memberRepository;
     private final CapsuleOpenLogRepository capsuleOpenLogRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
+
+    // 선착순 Redisson 락 관련 상수
     private static final String FIRST_COME_LOCK_PREFIX = "capsule:firstcome:lock:";
     private static final long LOCK_WAIT_TIME = 5L;  // 락 획득 대기 시간 (초)
     private static final long LOCK_LEASE_TIME = 2L;  // 락 자동 해제 시간 (초)
+
+    // Redis 조회수 관리 상수
+    private static final String VIEW_COUNT_KEY_PREFIX = "capsule:view:";
+    private static final Duration VIEW_COUNT_TTL = Duration.ofMinutes(30);
 
     // 선착순 제한이 있는 캡슐인지 확인
     public boolean hasFirstComeLimit(Capsule capsule) {
@@ -104,9 +110,6 @@ public class FirstComeService {
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         // UPDATE 쿼리로 원자적으로 증가 및 마감 체크
         int updatedRows = capsuleRepository.incrementViewCountIfAvailable(capsuleId);
 
@@ -121,7 +124,7 @@ public class FirstComeService {
         // 성공 로그 저장
         CapsuleOpenLog openLog = CapsuleOpenLog.builder()
                 .capsuleId(capsule)
-                .memberId(member)
+                .memberId(memberId)
                 .viewerType("MEMBER")
                 .status(CapsuleOpenStatus.SUCCESS)
                 .anomalyType(AnomalyType.NONE)
@@ -148,6 +151,7 @@ public class FirstComeService {
         return true;
     }
 
+    // 일반 공개 캡슐
     @Transactional
     public void saveRecipientWithoutFirstCome(
             Long capsuleId,
@@ -165,26 +169,8 @@ public class FirstComeService {
         Capsule capsule = capsuleRepository.findById(capsuleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CAPSULE_NOT_FOUND));
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         // 조회수 증가
-        capsule.increasedViewCount();
-
-        // SUCCESS 로그 저장
-        CapsuleOpenLog openLog = CapsuleOpenLog.builder()
-                .capsuleId(capsule)
-                .memberId(member)
-                .viewerType("MEMBER")
-                .status(CapsuleOpenStatus.SUCCESS)
-                .anomalyType(AnomalyType.NONE)
-                .openedAt(requestDto.unlockAt())
-                .currentLat(requestDto.locationLat())
-                .currentLng(requestDto.locationLng())
-                .userAgent(requestDto.userAgent())
-                .ipAddress(requestDto.ipAddress())
-                .build();
-        capsuleOpenLogRepository.save(openLog);
+        incrementViewCountViaRedis(capsuleId);
 
         // 수신자 정보 저장
         PublicCapsuleRecipient recipient = PublicCapsuleRecipient.builder()
@@ -195,5 +181,25 @@ public class FirstComeService {
         publicCapsuleRecipientRepository.save(recipient);
 
         log.info("선착순 없음 - 첫 조회 성공. capsuleId={}, memberId={}", capsuleId, memberId);
+    }
+
+    // Redis 활용한 조회수 증가
+    private void incrementViewCountViaRedis(Long capsuleId) {
+        String key = VIEW_COUNT_KEY_PREFIX + capsuleId;
+
+        try {
+            Long newCount = redisTemplate.opsForValue().increment(key);
+
+            if (newCount != null && newCount == 1) {
+                redisTemplate.expire(key, VIEW_COUNT_TTL);
+                log.debug("Redis 조회수 TTL 설정 - capsuleId: {}, TTL: {}분",
+                        capsuleId, VIEW_COUNT_TTL.toMinutes());
+            }
+
+            log.debug("Redis 조회수 증가 성공 - capsuleId: {}", capsuleId);
+        } catch (Exception e) {
+            log.error("Redis 장애 발생 - DB 직접 업데이트로 폴백. capsuleId: {}", capsuleId, e);
+            capsuleRepository.incrementViewCount(capsuleId);
+        }
     }
 }

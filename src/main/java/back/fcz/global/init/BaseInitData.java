@@ -34,7 +34,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -91,7 +96,7 @@ public class BaseInitData implements CommandLineRunner {
 
         createHardDeleteCandidates(member1);
 
-//        generateTokensForK6();
+        generateTokensForK6();
     }
 
     private void createTestMembers() {
@@ -774,57 +779,57 @@ public class BaseInitData implements CommandLineRunner {
      * - testuser1 ~ testuser100의 Access Token을 tokens.csv로 저장
      * - 프로젝트 루트에 생성됨
      */
-//    private void generateTokensForK6() {
-//
-//        // 이미 생성되어 있으면 스킵
-//        Path tokensPath = Paths.get("tokens.csv");
-//        if (Files.exists(tokensPath)) {
-//            return;
-//        }
-//
-//        log.info("=== K6 테스트용 토큰 CSV 생성 시작 ===");
-//
-//        List<String> csvRows = new ArrayList<>();
-//        csvRows.add("user_id,access_token"); // CSV 헤더
-//
-//        for (int i = 1; i <= 100; i++) {
-//            String userId = "testuser" + i;
-//
-//            // 회원 조회
-//            Member member = memberRepository.findByUserId(userId)
-//                    .orElse(null);
-//
-//            if (member == null) {
-//                log.warn("회원 없음: {}", userId);
-//                continue;
-//            }
-//
-//            // Access Token 생성
-//            String accessToken;
-//            if (member.getRole() == MemberRole.ADMIN) {
-//                accessToken = jwtProvider.generateAdminAccessToken(member.getMemberId());
-//            } else {
-//                accessToken = jwtProvider.generateMemberAccessToken(
-//                        member.getMemberId(),
-//                        member.getRole().name()
-//                );
-//            }
-//
-//            csvRows.add(userId + "," + accessToken);
-//
-//            if (i % 10 == 0) {
-//                log.info("토큰 생성 진행: {}/100", i);
-//            }
-//        }
-//
-//        // CSV 파일 저장
-//        try {
-//            Files.write(tokensPath, csvRows);
-//            log.info("=== tokens.csv 생성 완료: {} ===", tokensPath.toAbsolutePath());
-//        } catch (IOException e) {
-//            log.error("CSV 저장 실패: {}", e.getMessage());
-//        }
-//    }
+    private void generateTokensForK6() {
+
+        // 이미 생성되어 있으면 스킵
+        Path tokensPath = Paths.get("tokens.csv");
+        if (Files.exists(tokensPath)) {
+            return;
+        }
+
+        log.info("=== K6 테스트용 토큰 CSV 생성 시작 ===");
+
+        List<String> csvRows = new ArrayList<>();
+        csvRows.add("user_id,access_token"); // CSV 헤더
+
+        for (int i = 1; i <= 100; i++) {
+            String userId = "testuser" + i;
+
+            // 회원 조회
+            Member member = memberRepository.findByUserId(userId)
+                    .orElse(null);
+
+            if (member == null) {
+                log.warn("회원 없음: {}", userId);
+                continue;
+            }
+
+            // Access Token 생성
+            String accessToken;
+            if (member.getRole() == MemberRole.ADMIN) {
+                accessToken = jwtProvider.generateAdminAccessToken(member.getMemberId());
+            } else {
+                accessToken = jwtProvider.generateMemberAccessToken(
+                        member.getMemberId(),
+                        member.getRole().name()
+                );
+            }
+
+            csvRows.add(userId + "," + accessToken);
+
+            if (i % 10 == 0) {
+                log.info("토큰 생성 진행: {}/100", i);
+            }
+        }
+
+        // CSV 파일 저장
+        try {
+            Files.write(tokensPath, csvRows);
+            log.info("=== tokens.csv 생성 완료: {} ===", tokensPath.toAbsolutePath());
+        } catch (IOException e) {
+            log.error("CSV 저장 실패: {}", e.getMessage());
+        }
+    }
 
     private void createTestStorytracks() {
 

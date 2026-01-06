@@ -1,6 +1,5 @@
 package back.fcz.domain.capsule.service;
 
-import back.fcz.domain.bookmark.repository.BookmarkRepository;
 import back.fcz.domain.capsule.DTO.request.CapsuleConditionRequestDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.entity.*;
@@ -16,12 +15,14 @@ import back.fcz.global.exception.ErrorCode;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,7 +52,7 @@ class CapsuleReadServiceIntegrationTest {
     private MemberRepository memberRepository;
 
     @Autowired
-    private BookmarkRepository bookmarkRepository;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private PhoneCrypto phoneCrypto;
@@ -59,6 +60,8 @@ class CapsuleReadServiceIntegrationTest {
     private Member testSender;
     private Member testRecipient;
     private Member otherMember;
+
+    private static final String VIEW_COUNT_KEY_PREFIX = "capsule:view:";
 
     @BeforeEach
     void setUp() {
@@ -68,6 +71,11 @@ class CapsuleReadServiceIntegrationTest {
         capsuleRecipientRepository.deleteAll();
         capsuleRepository.deleteAll();
         memberRepository.deleteAll();
+
+        Set<String> keys = redisTemplate.keys(VIEW_COUNT_KEY_PREFIX + "*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
 
         // 테스트 회원 생성
         testSender = createAndSaveMember("sender", "발신자", "01011111111");
@@ -83,6 +91,11 @@ class CapsuleReadServiceIntegrationTest {
         capsuleRecipientRepository.deleteAll();
         capsuleRepository.deleteAll();
         memberRepository.deleteAll();
+
+        Set<String> keys = redisTemplate.keys(VIEW_COUNT_KEY_PREFIX + "*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
     // ========== 헬퍼 메서드 ==========
@@ -206,6 +219,12 @@ class CapsuleReadServiceIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
+    private int getRedisViewCount(Long capsuleId) {
+        String key = VIEW_COUNT_KEY_PREFIX + capsuleId;
+        String value = redisTemplate.opsForValue().get(key);
+        return value != null ? Integer.parseInt(value) : 0;
+    }
+
     // ========== 공개 캡슐 통합 테스트 ==========
 
     @Nested
@@ -233,16 +252,20 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).getStatus()).isEqualTo(CapsuleOpenStatus.SUCCESS);
             assertThat(logs.get(0).getViewerType()).isEqualTo("MEMBER");
-            assertThat(logs.get(0).getMemberId().getMemberId()).isEqualTo(testRecipient.getMemberId());
+            assertThat(logs.get(0).getMemberId()).isEqualTo(testRecipient.getMemberId());
 
             // 공개 캡슐 수신자 정보 확인
             List<PublicCapsuleRecipient> recipients = publicCapsuleRecipientRepository.findAll();
             assertThat(recipients).hasSize(1);
             assertThat(recipients.get(0).getMemberId()).isEqualTo(testRecipient.getMemberId());
 
-            // 조회수 증가 확인
-            Capsule updatedCapsule = capsuleRepository.findById(publicCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updatedCapsule.getCurrentViewCount()).isEqualTo(1);
+            // Redis에서 조회수 확인
+            int redisViewCount = getRedisViewCount(publicCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(1);
+
+            // DB엔 아직 조회수 0
+            Capsule dbCapsule = capsuleRepository.findById(publicCapsule.getCapsuleId()).orElseThrow();
+            assertThat(dbCapsule.getCurrentViewCount()).isEqualTo(0);
         }
 
         @Test
@@ -257,7 +280,7 @@ class CapsuleReadServiceIntegrationTest {
             // 첫 조회
             capsuleReadService.conditionAndRead(requestDto);
             Capsule afterFirst = capsuleRepository.findById(publicCapsule.getCapsuleId()).orElseThrow();
-            int firstViewCount = afterFirst.getCurrentViewCount();
+            int firstRedisCount = getRedisViewCount(publicCapsule.getCapsuleId());
 
             // When - 재조회
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -274,8 +297,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs).hasSize(2);
 
             // 조회수는 증가하지 않음 (재조회이므로)
-            Capsule afterSecond = capsuleRepository.findById(publicCapsule.getCapsuleId()).orElseThrow();
-            assertThat(afterSecond.getCurrentViewCount()).isEqualTo(firstViewCount);
+            int secondRedisCount = getRedisViewCount(publicCapsule.getCapsuleId());
+            assertThat(secondRedisCount).isEqualTo(firstRedisCount);
         }
 
         @Test
@@ -324,8 +347,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs).hasSize(2);
 
             // 조회수는 2로 증가
-            Capsule updated = capsuleRepository.findById(publicCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updated.getCurrentViewCount()).isEqualTo(2);
+            int redisViewCount = getRedisViewCount(publicCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(2);
         }
     }
 
@@ -363,8 +386,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(recipient.getUnlockedAt()).isNotNull();
 
             // 조회수 증가 확인
-            Capsule updated = capsuleRepository.findById(protectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updated.getCurrentViewCount()).isEqualTo(1);
+            int redisViewCount = getRedisViewCount(protectedCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(1);
         }
 
         @Test
@@ -388,7 +411,7 @@ class CapsuleReadServiceIntegrationTest {
             List<CapsuleOpenLog> logs = capsuleOpenLogRepository.findAll();
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).getStatus()).isEqualTo(CapsuleOpenStatus.FAIL_PERMISSION);
-            assertThat(logs.get(0).getMemberId().getMemberId()).isEqualTo(otherMember.getMemberId());
+            assertThat(logs.get(0).getMemberId()).isEqualTo(otherMember.getMemberId());
         }
 
         @Test
@@ -457,6 +480,30 @@ class CapsuleReadServiceIntegrationTest {
 
             assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
         }
+
+        @Test
+        @Order(5)
+        @DisplayName("보호된 캡슐 재조회 - Redis 조회수 증가 안 됨")
+        void protectedCapsule_reAccess_noRedisIncrement() {
+            // Given
+            setupSecurityContext(testRecipient.getMemberId());
+            Capsule protectedCapsule = createAndSaveProtectedPrivateCapsule(testSender, testRecipient);
+            CapsuleConditionRequestDTO requestDto = createRequestDto(protectedCapsule.getCapsuleId(), null);
+
+            // 첫 조회
+            capsuleReadService.conditionAndRead(requestDto);
+            int firstRedisCount = getRedisViewCount(protectedCapsule.getCapsuleId());
+
+            // When - 재조회
+            CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
+
+            // Then
+            assertNotNull(result);
+
+            // Redis 조회수는 증가하지 않음
+            int secondRedisCount = getRedisViewCount(protectedCapsule.getCapsuleId());
+            assertThat(secondRedisCount).isEqualTo(firstRedisCount);
+        }
     }
 
     // ========== 개인 캡슐 isProtected=0 통합 테스트 ==========
@@ -490,8 +537,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs.get(0).getMemberId()).isNotNull();
 
             // 조회수 증가 확인
-            Capsule updated = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updated.getCurrentViewCount()).isEqualTo(1);
+            int redisViewCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(1);
         }
 
         @Test
@@ -518,8 +565,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs.get(0).getMemberId()).isNull();
 
             // 조회수 증가 확인
-            Capsule updated = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updated.getCurrentViewCount()).isEqualTo(1);
+            int redisViewCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(1);
         }
 
         @Test
@@ -580,7 +627,7 @@ class CapsuleReadServiceIntegrationTest {
             capsuleReadService.conditionAndRead(firstDto);
 
             Capsule afterFirst = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            int firstViewCount = afterFirst.getCurrentViewCount();
+            int firstRedisCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
 
             // When - 재조회 (다른 IP에서 접속)
             CapsuleConditionRequestDTO reAccessDto = createRequestDtoWithIp(
@@ -596,8 +643,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs).hasSize(2);
 
             // 조회수는 증가하지 않음 (재조회이므로)
-            Capsule afterSecond = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(afterSecond.getCurrentViewCount()).isEqualTo(firstViewCount);
+            int secondRedisCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
+            assertThat(secondRedisCount).isEqualTo(firstRedisCount);
         }
 
         @Test
@@ -618,7 +665,7 @@ class CapsuleReadServiceIntegrationTest {
             capsuleReadService.conditionAndRead(firstDto);
 
             Capsule afterFirst = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            int firstViewCount = afterFirst.getCurrentViewCount();
+            int firstRedisCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
 
             // When - 같은 IP에서 재조회
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(firstDto);
@@ -632,8 +679,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(logs).allMatch(log -> log.getIpAddress().equals(firstIp));
 
             // 조회수는 증가하지 않음 (재조회이므로)
-            Capsule afterSecond = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(afterSecond.getCurrentViewCount()).isEqualTo(firstViewCount);
+            int secondRedisCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
+            assertThat(secondRedisCount).isEqualTo(firstRedisCount);
         }
 
         @Test
@@ -673,8 +720,8 @@ class CapsuleReadServiceIntegrationTest {
             assertThat(guestLog.getMemberId()).isNull();
 
             // 조회수는 2로 증가 (각각 첫 조회)
-            Capsule updated = capsuleRepository.findById(unprotectedCapsule.getCapsuleId()).orElseThrow();
-            assertThat(updated.getCurrentViewCount()).isEqualTo(2);
+            int redisViewCount = getRedisViewCount(unprotectedCapsule.getCapsuleId());
+            assertThat(redisViewCount).isEqualTo(2);
         }
     }
 

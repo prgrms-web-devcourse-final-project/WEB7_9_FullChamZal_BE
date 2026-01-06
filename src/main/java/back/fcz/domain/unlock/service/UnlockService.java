@@ -206,7 +206,7 @@ public class UnlockService {
         if (memberId != null) {
             // 회원: memberId로 조회
             recentLogs = capsuleOpenLogRepository
-                    .findTop15ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
+                    .findTop15ByCapsuleId_CapsuleIdAndMemberIdOrderByOpenedAtDesc(
                             capsule.getCapsuleId(),
                             memberId
                     );

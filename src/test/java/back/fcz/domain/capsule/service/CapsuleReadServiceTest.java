@@ -9,11 +9,9 @@ import back.fcz.domain.member.dto.response.MemberDetailResponse;
 import back.fcz.domain.member.entity.Member;
 import back.fcz.domain.member.entity.MemberRole;
 import back.fcz.domain.member.entity.MemberStatus;
-import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
 import back.fcz.domain.sanction.constant.SanctionConstants;
-import back.fcz.domain.sanction.properties.SanctionProperties;
 import back.fcz.domain.sanction.service.MonitoringService;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.domain.unlock.service.FirstComeService;
@@ -31,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -59,9 +58,6 @@ class CapsuleReadServiceTest {
 
     @Mock
     private PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
-
-    @Mock
-    private MemberRepository memberRepository;
 
     @Mock
     private BookmarkRepository bookmarkRepository;
@@ -94,7 +90,7 @@ class CapsuleReadServiceTest {
     private SanctionConstants sanctionConstants;
 
     @Mock
-    private SanctionProperties sanctionProperties;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Mock
     private PresignedUrlProvider presignedUrlProvider;
@@ -126,7 +122,6 @@ class CapsuleReadServiceTest {
                 phoneCrypto,
                 unlockService,
                 firstComeService,
-                memberRepository,
                 publicCapsuleRecipientRepository,
                 capsuleOpenLogRepository,
                 memberService,
@@ -136,7 +131,7 @@ class CapsuleReadServiceTest {
                 capsuleAttachmentRepository,
                 presignedUrlProvider,
                 capsuleOpenLogService,
-                sanctionConstants
+                redisTemplate
         );
 
         lenient().when(capsuleAttachmentRepository.findAllByCapsule_CapsuleIdAndStatus(
@@ -248,7 +243,7 @@ class CapsuleReadServiceTest {
 
             when(capsuleRepository.findById(1L)).thenReturn(Optional.of(publicCapsule));
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(false);
 
@@ -282,6 +277,7 @@ class CapsuleReadServiceTest {
                     eq(1L), eq(1L), any(CapsuleConditionRequestDTO.class)
             );
 
+            verify(capsuleOpenLogRepository, times(1)).save(any(CapsuleOpenLog.class));
             verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
@@ -295,7 +291,7 @@ class CapsuleReadServiceTest {
 
             when(capsuleRepository.findById(1L)).thenReturn(Optional.of(publicCapsule));
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(false);
 
@@ -310,8 +306,6 @@ class CapsuleReadServiceTest {
                     anyString()
             )).thenReturn(failResult);
 
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
 
@@ -319,10 +313,12 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
+            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals(CapsuleOpenStatus.FAIL_LOCATION, savedLog.getStatus());
+
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -335,7 +331,7 @@ class CapsuleReadServiceTest {
 
             when(capsuleRepository.findById(1L)).thenReturn(Optional.of(publicCapsule));
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(false);
 
@@ -354,8 +350,6 @@ class CapsuleReadServiceTest {
                     anyString()
             )).thenReturn(anomalyResult);
 
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
-
             // When & Then
             BusinessException exception = assertThrows(
                     BusinessException.class,
@@ -370,10 +364,11 @@ class CapsuleReadServiceTest {
             );
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogService, times(2)).saveLogInNewTransaction(logCaptor.capture());
+            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
 
-            CapsuleOpenLog anomalyLog = logCaptor.getAllValues().get(1);
-            assertEquals(AnomalyType.IMPOSSIBLE_MOVEMENT, anomalyLog.getAnomalyType());
+            CapsuleOpenLog savedLog = logCaptor.getValue();
+            assertEquals(CapsuleOpenStatus.SUSPICIOUS, savedLog.getStatus());
+            assertEquals(AnomalyType.IMPOSSIBLE_MOVEMENT, savedLog.getAnomalyType());
         }
 
         @Test
@@ -437,7 +432,7 @@ class CapsuleReadServiceTest {
 
             when(phoneCrypto.verifyHash("01012345678", "phoneHash")).thenReturn(true);
 
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(false);
 
@@ -454,7 +449,6 @@ class CapsuleReadServiceTest {
 
             when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
                     .thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -462,8 +456,10 @@ class CapsuleReadServiceTest {
             // Then
             assertNotNull(result);
 
-            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(any(CapsuleOpenLog.class));
+            verify(capsuleOpenLogRepository, times(1)).save(any(CapsuleOpenLog.class));
             verify(capsuleRecipientRepository, times(1)).save(recipient);
+
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -500,7 +496,6 @@ class CapsuleReadServiceTest {
             when(memberService.getDetailMe(userResponse)).thenReturn(detailResponse);
 
             when(phoneCrypto.verifyHash("01012345678", "otherHash")).thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When & Then
             BusinessException exception = assertThrows(
@@ -538,7 +533,7 @@ class CapsuleReadServiceTest {
 
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
 
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(false);
 
@@ -555,7 +550,6 @@ class CapsuleReadServiceTest {
 
             when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
                     .thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -564,11 +558,13 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
+            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals("MEMBER", savedLog.getViewerType());
             assertEquals(CapsuleOpenStatus.SUCCESS, savedLog.getStatus());
+
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -604,12 +600,14 @@ class CapsuleReadServiceTest {
             assertNotNull(result);
 
             ArgumentCaptor<CapsuleOpenLog> logCaptor = ArgumentCaptor.forClass(CapsuleOpenLog.class);
-            verify(capsuleOpenLogService, times(1)).saveLogInNewTransaction(logCaptor.capture());
+            verify(capsuleOpenLogRepository, times(1)).save(logCaptor.capture());
 
             CapsuleOpenLog savedLog = logCaptor.getValue();
             assertEquals("GUEST", savedLog.getViewerType());
             assertEquals(CapsuleOpenStatus.SUCCESS, savedLog.getStatus());
             assertNull(savedLog.getMemberId());
+
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
 
         @Test
@@ -625,7 +623,6 @@ class CapsuleReadServiceTest {
             when(phoneCrypto.verifyHash("wrongPassword", "hashedPassword")).thenReturn(false);
 
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When & Then
             BusinessException exception = assertThrows(
@@ -673,13 +670,12 @@ class CapsuleReadServiceTest {
             when(phoneCrypto.verifyHash("1234", "hashedPassword")).thenReturn(true);
             when(currentUserContext.getCurrentMemberId()).thenReturn(1L);
 
-            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+            when(capsuleOpenLogRepository.existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                     1L, 1L, CapsuleOpenStatus.SUCCESS
             )).thenReturn(true);
 
             when(bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(anyLong(), eq(1L)))
                     .thenReturn(false);
-            when(memberRepository.findById(1L)).thenReturn(Optional.of(testMember));
 
             // When
             CapsuleConditionResponseDTO result = capsuleReadService.conditionAndRead(requestDto);
@@ -690,6 +686,9 @@ class CapsuleReadServiceTest {
             verify(unlockService, never()).validateUnlockConditionsForPrivate(
                     any(), any(), any(), any(), any(), any(), any()
             );
+
+            verify(capsuleOpenLogRepository, times(1)).save(any(CapsuleOpenLog.class));
+            verify(capsuleOpenLogService, never()).saveLogInNewTransaction(any(CapsuleOpenLog.class));
         }
     }
 

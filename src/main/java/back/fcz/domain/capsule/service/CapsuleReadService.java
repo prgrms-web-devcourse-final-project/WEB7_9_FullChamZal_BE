@@ -6,18 +6,10 @@ import back.fcz.domain.capsule.DTO.response.CapsuleAttachmentViewResponse;
 import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleReadResponse;
 import back.fcz.domain.capsule.entity.*;
-import back.fcz.domain.capsule.repository.CapsuleOpenLogRepository;
-import back.fcz.domain.capsule.repository.CapsuleRecipientRepository;
-import back.fcz.domain.capsule.repository.CapsuleRepository;
-import back.fcz.domain.capsule.repository.PublicCapsuleRecipientRepository;
-import back.fcz.domain.capsule.entity.*;
 import back.fcz.domain.capsule.repository.*;
 import back.fcz.domain.member.dto.response.MemberDetailResponse;
-import back.fcz.domain.member.entity.Member;
-import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.member.service.CurrentUserContext;
 import back.fcz.domain.member.service.MemberService;
-import back.fcz.domain.sanction.constant.SanctionConstants;
 import back.fcz.domain.sanction.service.MonitoringService;
 import back.fcz.domain.unlock.dto.UnlockValidationResult;
 import back.fcz.domain.unlock.service.FirstComeService;
@@ -27,15 +19,22 @@ import back.fcz.global.dto.InServerMemberResponse;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.infra.storage.PresignedUrlProvider;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +45,6 @@ public class CapsuleReadService {
     private final PhoneCrypto phoneCrypto;
     private final UnlockService unlockService;
     private final FirstComeService firstComeService;
-    private final MemberRepository memberRepository;
     private final PublicCapsuleRecipientRepository publicCapsuleRecipientRepository;
     private final CapsuleOpenLogRepository capsuleOpenLogRepository;
     private final MemberService memberService;
@@ -56,7 +54,19 @@ public class CapsuleReadService {
     private final CapsuleAttachmentRepository capsuleAttachmentRepository;
     private final PresignedUrlProvider presignedUrlProvider;
     private final CapsuleOpenLogService capsuleOpenLogService;
-    private final SanctionConstants sanctionConstants;
+
+    // PresignedUrl, 개인 캡슐 조회수 Redis 캐싱
+    private final RedisTemplate<String, String> redisTemplate;
+
+    private static final String PRESIGNED_URL_KEY_PREFIX = "presigned:attachment:";
+    private static final Duration PRESIGNED_URL_TTL = Duration.ofMinutes(14);
+    private static final Duration PRESIGNED_URL_VALIDITY = Duration.ofMinutes(15);
+
+    private static final String VIEW_COUNT_KEY_PREFIX = "capsule:view:";
+    private static final Duration VIEW_COUNT_TTL = Duration.ofMinutes(30);
+
+    private final ExecutorService s3ExecutorService = Executors.newFixedThreadPool(10);
+
 
     public CapsuleConditionResponseDTO capsuleRead(Long capsuleId){
         //자신이 작성한 캡슐이면 검증 없이 읽기
@@ -108,7 +118,7 @@ public class CapsuleReadService {
 
         // 성공 기록이 있는지 확인
         boolean hasSuccessfullyViewed = capsuleOpenLogRepository
-                .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                .existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                         capsule.getCapsuleId(),
                         currentMemberId,
                         CapsuleOpenStatus.SUCCESS
@@ -137,16 +147,17 @@ public class CapsuleReadService {
             CapsuleOpenStatus status = determineOpenStatus(validationResult, capsule.getUnlockType());
 
             // 로그 생성
-            CapsuleOpenLog openLog = createOpenLog(
+            CapsuleOpenLog failLog = createOpenLog(
                     capsule,
                     requestDto,
                     status,
                     currentMemberId,
                     "MEMBER"
             );
-            capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
-            detectAndHandleAnomaly(openLog, validationResult, currentMemberId, requestDto.ipAddress());
+            detectAndHandleAnomaly(failLog, validationResult, currentMemberId, requestDto.ipAddress());
+
+            capsuleOpenLogRepository.save(failLog);
 
             if (validationResult.hasAnomaly()) {
                 throwAnomalyException(validationResult, currentMemberId);
@@ -170,7 +181,17 @@ public class CapsuleReadService {
         } else {
             log.info("선착순 없음 - 바로 저장");
 
-            // 선착순 없는 경우도 FirstComeService로
+            // 로그 생성
+            CapsuleOpenLog successLog = createOpenLog(
+                    capsule,
+                    requestDto,
+                    CapsuleOpenStatus.SUCCESS,
+                    currentMemberId,
+                    "MEMBER"
+            );
+            capsuleOpenLogRepository.save(successLog);
+
+            // 수신자 정보 저장 + 조회수 증가
             firstComeService.saveRecipientWithoutFirstCome(
                     capsule.getCapsuleId(),
                     currentMemberId,
@@ -197,7 +218,7 @@ public class CapsuleReadService {
                 currentMemberId,
                 "MEMBER"
         );
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
+        capsuleOpenLogRepository.save(openLog);
 
         log.info("공개 캡슐 재조회 완료");
         return readPublicCapsule(capsule, requestDto, true);
@@ -244,14 +265,14 @@ public class CapsuleReadService {
         if (recipient == null || !phoneCrypto.verifyHash(phoneNumber, recipient.getRecipientPhoneHash())) {
             log.warn("수신자가 아닌 회원의 접근 시도 - memberId: {}", user.memberId());
 
-            CapsuleOpenLog openLog = createOpenLog(
+            CapsuleOpenLog permissionFailLog = createOpenLog(
                     capsule,
                     requestDto,
                     CapsuleOpenStatus.FAIL_PERMISSION,
                     currentMemberId,
                     "MEMBER"
             );
-            capsuleOpenLogService.saveLogInNewTransaction(openLog);
+            capsuleOpenLogService.saveLogInNewTransaction(permissionFailLog);
 
             if (recipient == null) {
                 throw new BusinessException(ErrorCode.RECIPIENT_NOT_FOUND);
@@ -264,7 +285,7 @@ public class CapsuleReadService {
 
         // 성공 기록이 있는지 확인
         boolean hasSuccessfullyViewed = capsuleOpenLogRepository
-                .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                .existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                         capsule.getCapsuleId(),
                         currentMemberId,
                         CapsuleOpenStatus.SUCCESS
@@ -288,20 +309,21 @@ public class CapsuleReadService {
                 requestDto.ipAddress()
         );
 
-        // 로그 생성
         CapsuleOpenStatus status = determineOpenStatus(validationResult, capsule.getUnlockType());
-        CapsuleOpenLog openLog = createOpenLog(
-                capsule,
-                requestDto,
-                status,
-                currentMemberId,
-                "MEMBER"
-        );
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         // 실패 시 이상 탐지 및 제재 처리
         if (!validationResult.isSuccess()) {
-            detectAndHandleAnomaly(openLog, validationResult, currentMemberId, requestDto.ipAddress());
+            CapsuleOpenLog failLog = createOpenLog(
+                    capsule,
+                    requestDto,
+                    status,
+                    currentMemberId,
+                    "MEMBER"
+            );
+
+            detectAndHandleAnomaly(failLog, validationResult, currentMemberId, requestDto.ipAddress());
+
+            capsuleOpenLogRepository.save(failLog);
 
             if (validationResult.hasAnomaly()) {
                 throwAnomalyException(validationResult, currentMemberId);
@@ -310,6 +332,15 @@ public class CapsuleReadService {
             log.warn("조건 미충족 또는 이상 활동 감지");
             return CapsuleConditionResponseDTO.failFrom(capsule);
         }
+
+        CapsuleOpenLog successLog = createOpenLog(
+                capsule,
+                requestDto,
+                CapsuleOpenStatus.SUCCESS,
+                currentMemberId,
+                "MEMBER"
+        );
+        capsuleOpenLogRepository.save(successLog);
 
         log.info("시간/위치 조건 통과 - 캡슐 조회 허용");
         return readMemberCapsule(capsule, requestDto, true, recipient);
@@ -331,7 +362,7 @@ public class CapsuleReadService {
                 currentMemberId,
                 "MEMBER"
         );
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
+        capsuleOpenLogRepository.save(openLog);
 
         log.info("보호된 캡슐 재조회 완료");
         return readMemberCapsule(capsule, requestDto, false, recipient);
@@ -346,32 +377,28 @@ public class CapsuleReadService {
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_REQUIRED);
         }
 
+        // 로그인 상태 확인
+        boolean isLoggedIn = isUserLoggedIn();
+        Long memberId = isLoggedIn ? currentUserContext.getCurrentMemberId() : null;
+        String viewerType = isLoggedIn ? "MEMBER" : "GUEST";
+
         if (!phoneCrypto.verifyHash(requestDto.password(), capsule.getCapPassword())) {
             log.warn("비밀번호 불일치");
 
-            // 로그인 상태 확인
-            boolean isLoggedIn = isUserLoggedIn();
-            Long memberId = isLoggedIn ? currentUserContext.getCurrentMemberId() : null;
-            String viewerType = isLoggedIn ? "MEMBER" : "GUEST";
-
             // 로그 생성 및 저장
-            CapsuleOpenLog openLog = createOpenLog(
+            CapsuleOpenLog passwordFailLog  = createOpenLog(
                     capsule,
                     requestDto,
                     CapsuleOpenStatus.FAIL_PASSWORD,
                     memberId,
                     viewerType
             );
-            capsuleOpenLogService.saveLogInNewTransaction(openLog);
+            capsuleOpenLogService.saveLogInNewTransaction(passwordFailLog );
 
             throw new BusinessException(ErrorCode.CAPSULE_PASSWORD_NOT_MATCH);
         }
 
         log.info("비밀번호 검증 통과");
-
-        boolean isLoggedIn = isUserLoggedIn();
-        Long memberId = isLoggedIn ? currentUserContext.getCurrentMemberId() : null;
-        String viewerType = isLoggedIn ? "MEMBER" : "GUEST";
 
         boolean hasAlreadyViewed = hasAlreadyOpenedUnprotected(capsule.getCapsuleId(), memberId, requestDto.ipAddress());
 
@@ -395,18 +422,20 @@ public class CapsuleReadService {
 
         // 로그 생성
         CapsuleOpenStatus status = determineOpenStatus(validationResult, capsule.getUnlockType());
-        CapsuleOpenLog openLog = createOpenLog(
-                capsule,
-                requestDto,
-                status,
-                memberId,
-                viewerType
-        );
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         // 실패 시 이상 탐지 및 제재 처리
         if (!validationResult.isSuccess()) {
-            detectAndHandleAnomaly(openLog, validationResult, memberId, requestDto.ipAddress());
+            CapsuleOpenLog failLog = createOpenLog(
+                    capsule,
+                    requestDto,
+                    status,
+                    memberId,
+                    viewerType
+            );
+
+            detectAndHandleAnomaly(failLog, validationResult, memberId, requestDto.ipAddress());
+
+            capsuleOpenLogRepository.save(failLog);
 
             if (validationResult.hasAnomaly()) {
                 throwAnomalyException(validationResult, memberId);
@@ -416,7 +445,16 @@ public class CapsuleReadService {
             return CapsuleConditionResponseDTO.failFrom(capsule);
         }
 
-        detectAndHandleAnomaly(openLog, validationResult, memberId, requestDto.ipAddress());
+        CapsuleOpenLog successLog = createOpenLog(
+                capsule,
+                requestDto,
+                CapsuleOpenStatus.SUCCESS,
+                memberId,
+                viewerType
+        );
+        capsuleOpenLogRepository.save(successLog);
+
+        detectAndHandleAnomaly(successLog, validationResult, memberId, requestDto.ipAddress());
         if (validationResult.hasAnomaly()) {
             throwAnomalyException(validationResult, memberId);
         }
@@ -446,7 +484,8 @@ public class CapsuleReadService {
                 memberId,
                 viewerType
         );
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
+        capsuleOpenLogRepository.save(openLog);
+
         log.info("비보호 캡슐 재조회 완료");
 
         boolean isLoggedIn = (memberId != null);
@@ -462,7 +501,7 @@ public class CapsuleReadService {
         // 회원인 경우
         if (memberId != null) {
             return capsuleOpenLogRepository
-                    .existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+                    .existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
                             capsuleId,
                             memberId,
                             CapsuleOpenStatus.SUCCESS
@@ -506,7 +545,7 @@ public class CapsuleReadService {
                 capsuleRecipientRepository.save(recipient);
             }
 
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
@@ -526,7 +565,7 @@ public class CapsuleReadService {
 
         // 첫 조회일 때만 조회수 증가
         if (shouldIncrement) {
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
 
         boolean isBookmarked = bookmarkRepository.existsByMemberIdAndCapsuleIdAndDeletedAtIsNull(
@@ -544,7 +583,7 @@ public class CapsuleReadService {
 
         // 처음 조회하면 조회수 증가
         if (shouldIncrement) {
-            capsuleRepository.incrementViewCount(capsule.getCapsuleId());
+            incrementViewCountViaRedis(capsule.getCapsuleId());
         }
         var attachments = buildAttachmentViews(capsule.getCapsuleId());
         return CapsuleConditionResponseDTO.from(capsule, attachments);
@@ -584,14 +623,9 @@ public class CapsuleReadService {
             Long memberId,
             String viewerType
     ) {
-        Member member = null;
-        if(memberId != null) {
-            member = memberRepository.findById(memberId).orElse(null);
-        }
-
         return CapsuleOpenLog.builder()
                 .capsuleId(capsule)
-                .memberId(member)
+                .memberId(memberId)
                 .viewerType(viewerType)
                 .status(status)
                 .anomalyType(AnomalyType.NONE)
@@ -601,6 +635,30 @@ public class CapsuleReadService {
                 .userAgent(requestDto.userAgent())
                 .ipAddress(requestDto.ipAddress())
                 .build();
+    }
+
+    // Redis 이용 조회수 증가
+    private void incrementViewCountViaRedis(Long capsuleId) {
+        String key = VIEW_COUNT_KEY_PREFIX + capsuleId;
+
+        try {
+            Long newCount = redisTemplate.opsForValue().increment(key);
+
+            if (newCount != null && newCount == 1) {
+                redisTemplate.expire(key, VIEW_COUNT_TTL);
+                log.debug("Redis 조회수 TTL 설정 - capsuleId: {}, TTL: {}분",
+                        capsuleId, VIEW_COUNT_TTL.toMinutes());
+            }
+        } catch (Exception e) {
+            log.error("Redis 장애 발생 - DB 직접 업데이트로 폴백. capsuleId: {}", capsuleId, e);
+
+            try {
+                capsuleRepository.incrementViewCount(capsuleId);
+                log.info("DB 직접 업데이트 성공 - capsuleId: {}", capsuleId);
+            } catch (Exception dbError) {
+                log.error("DB 업데이트도 실패 - capsuleId: {}", capsuleId, dbError);
+            }
+        }
     }
 
     // 이상 활동 감지 및 제재 처리
@@ -616,7 +674,6 @@ public class CapsuleReadService {
 
         // 로그에 이상 유형 기록
         openLog.markAsAnomaly(validationResult.getAnomalyType());
-        capsuleOpenLogService.saveLogInNewTransaction(openLog);
 
         log.info("이상 활동 감지: anomalyType={}, score={}, memberId={}, ip={}",
                 validationResult.getAnomalyType(),
@@ -677,15 +734,85 @@ public class CapsuleReadService {
 
     // 캡슐 첨부파일 Presigned URL 생성
     private List<CapsuleAttachmentViewResponse> buildAttachmentViews(Long capsuleId) {
-        var list = capsuleAttachmentRepository
+        List<CapsuleAttachment> list = capsuleAttachmentRepository
                 .findAllByCapsule_CapsuleIdAndStatus(capsuleId, CapsuleAttachmentStatus.USED);
 
-        return list.stream()
-                .map(a -> new CapsuleAttachmentViewResponse(
-                        presignedUrlProvider.presignGet(a.getS3Key(), Duration.ofMinutes(15)),
-                        a.getId()
+        if (list.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<CompletableFuture<CapsuleAttachmentViewResponse>> futures =  list.stream()
+                .map(attachment -> CompletableFuture.supplyAsync(
+                        () -> getPresignedUrlWithCache(attachment),
+                        s3ExecutorService
                 ))
                 .toList();
+
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+    }
+
+    private CapsuleAttachmentViewResponse getPresignedUrlWithCache(
+            CapsuleAttachment attachment
+    ) {
+        String cacheKey = PRESIGNED_URL_KEY_PREFIX + attachment.getS3Key();
+
+        try {
+            // 1. 캐시 조회
+            String cachedUrl = redisTemplate.opsForValue().get(cacheKey);
+
+            if (cachedUrl != null) {
+                log.debug("Presigned URL 캐시 히트 - S3Key: {}", attachment.getS3Key());
+                return new CapsuleAttachmentViewResponse(cachedUrl, attachment.getId());
+            }
+
+            // 2. 캐시 미스 - S3 API 호출
+            log.debug("Presigned URL 캐시 미스 - S3 API 호출 - S3Key: {}",
+                    attachment.getS3Key());
+
+            String presignedUrl = presignedUrlProvider.presignGet(
+                    attachment.getS3Key(),
+                    PRESIGNED_URL_VALIDITY
+            );
+
+            // 3. 캐시 저장
+            redisTemplate.opsForValue().set(
+                    cacheKey,
+                    presignedUrl,
+                    PRESIGNED_URL_TTL
+            );
+
+            return new CapsuleAttachmentViewResponse(presignedUrl, attachment.getId());
+
+        } catch (Exception e) {
+            log.error("Redis 캐시 오류 - 폴백: S3 직접 호출 - S3Key: {}",
+                    attachment.getS3Key(), e);
+
+            String presignedUrl = presignedUrlProvider.presignGet(
+                    attachment.getS3Key(),
+                    PRESIGNED_URL_VALIDITY
+            );
+
+            return new CapsuleAttachmentViewResponse(presignedUrl, attachment.getId());
+        }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("S3 ExecutorService 종료 시작");
+        s3ExecutorService.shutdown();
+
+        try {
+            if (!s3ExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                log.warn("S3 ExecutorService 정상 종료 실패 - 강제 종료");
+                s3ExecutorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.error("S3 ExecutorService 종료 중 인터럽트 발생", e);
+            s3ExecutorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     // 스토리트랙 캡슐 조회 시, 캡슐 재조회

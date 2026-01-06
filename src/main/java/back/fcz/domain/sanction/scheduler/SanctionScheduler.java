@@ -30,7 +30,7 @@ public class SanctionScheduler {
      * sanctionUntil이 현재 시간 이전인 자동 정지 건을 조회
      * 해당 회원이 여전히 STOP 상태이고, 이후 복구 이력이 없으면 자동 해제
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 5 * * * *")
     @Transactional
     public void releaseExpiredSuspensions() {
         log.info("=== 자동 제재 해제 스케줄러 시작 ===");

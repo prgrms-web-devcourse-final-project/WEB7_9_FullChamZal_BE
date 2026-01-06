@@ -85,7 +85,7 @@ public class CapsuleSaveButtonService {
 
     private LocalDateTime findFirstOpenedAt(Long capsuleId, Long memberId) {
         return capsuleOpenLogRepository
-                .findFirstByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtAsc(capsuleId, memberId)
+                .findFirstByCapsuleId_CapsuleIdAndMemberIdOrderByOpenedAtAsc(capsuleId, memberId)
                 .map(CapsuleOpenLog::getOpenedAt)
                 .orElseGet(() -> {
                     log.warn("CapsuleOpenLog 없음 - 현재 시각으로 fallback, capsuleId: {}", capsuleId);

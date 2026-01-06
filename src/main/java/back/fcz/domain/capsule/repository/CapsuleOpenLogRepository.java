@@ -14,14 +14,14 @@ import java.util.Optional;
 @Repository
 public interface CapsuleOpenLogRepository extends JpaRepository<CapsuleOpenLog, Long>{
 
-    Optional<CapsuleOpenLog> findFirstByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtAsc(Long capsuleId, Long memberId);
+    Optional<CapsuleOpenLog> findFirstByCapsuleId_CapsuleIdAndMemberIdOrderByOpenedAtAsc(Long capsuleId, Long memberId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from CapsuleOpenLog col where col.capsuleId.capsuleId in :capsuleIds")
     int deleteByCapsuleIds(@Param("capsuleIds") List<Long> capsuleIds);
 
     // 특정 캡슐에 대한 특정 회원의 최근 로그 조회
-    List<CapsuleOpenLog> findTop15ByCapsuleId_CapsuleIdAndMemberId_MemberIdOrderByOpenedAtDesc(
+    List<CapsuleOpenLog> findTop15ByCapsuleId_CapsuleIdAndMemberIdOrderByOpenedAtDesc(
             Long capsuleId,
             Long memberId
     );
@@ -33,7 +33,7 @@ public interface CapsuleOpenLogRepository extends JpaRepository<CapsuleOpenLog, 
     );
 
     // 성공 기록 확인 (회원용)
-    boolean existsByCapsuleId_CapsuleIdAndMemberId_MemberIdAndStatus(
+    boolean existsByCapsuleId_CapsuleIdAndMemberIdAndStatus(
             Long capsuleId,
             Long memberId,
             CapsuleOpenStatus status
