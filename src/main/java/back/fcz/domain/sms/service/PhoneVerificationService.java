@@ -1,5 +1,6 @@
 package back.fcz.domain.sms.service;
 
+import back.fcz.domain.member.repository.MemberRepository;
 import back.fcz.domain.sms.dto.request.ConfirmSmsCodeRequest;
 import back.fcz.domain.sms.dto.request.SendSmsCodeRequest;
 import back.fcz.domain.sms.dto.response.ConfirmSmsCodeResponse;
@@ -34,6 +35,7 @@ public class PhoneVerificationService {
     private final PhoneCrypto phoneCrypto;
     private final PhoneVerificationAttemptService phoneVerificationAttemptService;
     private final RedisDailyLimitService redisDailyLimitService;
+    private final MemberRepository memberRepository;
 
     // 인증 코드 발송 로직
     @Transactional
@@ -46,7 +48,7 @@ public class PhoneVerificationService {
         LocalDateTime now = LocalDateTime.now();
 
         // 이미 존재하는 전화번호 여부
-        if(phoneVerificationRepository.existsByPhoneNumberHashAndStatus(phoneNumberHash,PhoneVerificationStatus.VERIFIED)){
+        if(memberRepository.existsByPhoneHashAndDeletedAtIsNull(phoneNumberHash)){
             throw new BusinessException(ErrorCode.SMS_ALREADY_EXIST);
         }
 
