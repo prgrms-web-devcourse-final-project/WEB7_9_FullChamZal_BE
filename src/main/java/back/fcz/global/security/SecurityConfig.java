@@ -6,6 +6,7 @@ import back.fcz.global.security.filter.RateLimitFilter;
 import back.fcz.global.security.filter.JwtAuthenticationFilter;
 import back.fcz.global.security.oauth.GoogleOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +29,9 @@ public class SecurityConfig {
     private final GoogleOAuth2Service googleOAuth2Service;
     private final GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    @Value("${cors.allowed-origins}")
+    private String frontendDomain;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
@@ -91,6 +95,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(googleOAuth2Service))
                         .successHandler(googleOAuth2SuccessHandler)
+                        .failureUrl(frontendDomain + "/auth/login")
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
