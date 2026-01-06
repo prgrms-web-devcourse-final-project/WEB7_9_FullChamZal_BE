@@ -31,7 +31,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findAllByStatusAndDeletedAtBefore(MemberStatus status, LocalDateTime deletedAt);
 
-    // ✅ Admin 검색
+    // Admin 검색
     @Query("""
         select m
         from Member m

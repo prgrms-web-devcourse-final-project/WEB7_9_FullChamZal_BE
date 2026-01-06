@@ -127,9 +127,6 @@ public class AnomalyDetector {
             adjustedSuspiciousThreshold = 150.0;
         }
 
-        log.debug("이동 분석 - 거리: {}km, 시간: {}초, 속도: {}km/h",
-                distance, timeDiffSeconds, speed);
-
         if (speed >= adjustedExtremeThreshold) {
             log.warn("즉시 차단급 이동 감지: {}km/h", speed);
             return 3;
@@ -155,8 +152,6 @@ public class AnomalyDetector {
         }
 
         long diffMinutes = Math.abs(Duration.between(serverTime, clientTime).toMinutes());
-
-        log.debug("서버-클라이언트 시간 차이: {}분", diffMinutes);
 
         return diffMinutes > TIME_SYNC_TOLERANCE_MINUTES;
     }

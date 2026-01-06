@@ -99,6 +99,7 @@ public class AuthController {
 
         response.addHeader("Set-Cookie", accessCookie.toString());
 
+        log.info("로그인 성공 - userId: {}", request.userId());
         return ResponseEntity.ok(ApiResponse.success());
     }
 

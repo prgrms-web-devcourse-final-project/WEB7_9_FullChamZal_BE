@@ -39,7 +39,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     """)
     Page<BookmarkWithCapsule> findBookmarksWithCapsuleInfo(@Param("memberId") Long memberId, Pageable pageable);
 
-    // ✅ 테스트가 원하는 시그니처: countByCapsuleId(Long capsuleId)
+    // 테스트가 원하는 시그니처: countByCapsuleId(Long capsuleId)
     @Query("select count(b) from Bookmark b where b.capsuleId = :capsuleId")
     long countByCapsuleId(@Param("capsuleId") Long capsuleId);
 

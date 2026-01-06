@@ -63,19 +63,4 @@ public class SanctionConstants  {
     public static String buildAutoSanctionReason(String detail) {
         return AUTO_SANCTION_REASON_PREFIX + detail;
     }
-
-    // 자동 제재 여부 확인
-    public static boolean isAutoSanctionReason(String reason) {
-        return reason != null && reason.startsWith(AUTO_SANCTION_REASON_PREFIX);
-    }
-
-    // 시스템 관리자 여부 확인 (userId 기준)
-    public static boolean isSystemAdminByUserId(String userId) {
-        return SYSTEM_ADMIN_USER_ID.equals(userId);
-    }
-
-    // 시스템 관리자 여부 확인 (Member 엔티티 기준)
-    public static boolean isSystemAdmin(Member member) {
-        return member != null && SYSTEM_ADMIN_USER_ID.equals(member.getUserId());
-    }
 }

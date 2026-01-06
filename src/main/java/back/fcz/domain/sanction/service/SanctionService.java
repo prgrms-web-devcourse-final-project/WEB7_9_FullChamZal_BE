@@ -32,20 +32,12 @@ public class SanctionService {
     // 자동 정지 처리 수행
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void applyAutoSuspension(Long memberId, String reason, int days) {
-        log.warn("=== [TRACE] applyAutoSuspension 시작 ===");
-        log.warn("[TRACE] memberId: {}, reason: {}", memberId, reason);
-
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        log.warn("[TRACE] Member 조회 완료: memberId={}, status={}",
-                member.getMemberId(), member.getStatus());
 
         MemberStatus before = member.getStatus();
         MemberStatus after = MemberStatus.STOP;
         LocalDateTime sanctionUntil = LocalDateTime.now().plusDays(days);
-
-        log.warn("[TRACE] 상태 변경 전: before={}, after={}", before, after);
 
         // 회원 상태 변경
         member.updateStatus(after);
@@ -53,14 +45,12 @@ public class SanctionService {
         log.warn("[TRACE] updateStatus() 호출 완료");
         log.warn("[TRACE] Member 엔티티의 현재 status: {}", member.getStatus());
 
-//        log.warn("자동 정지 처리: memberId={}, 사유={}, 기간={}일, 해제일시={}",
-//                memberId, reason, days, sanctionUntil);
+        log.warn("자동 정지 처리: memberId={}, 사유={}, 기간={}일, 해제일시={}",
+                memberId, reason, days, sanctionUntil);
 
         // 시스템 관리자 ID 조회 후 제재 이력 저장
         Long systemAdminId = sanctionConstants.getSystemAdminId();
         String fullReason = sanctionConstants.buildAutoSanctionReason(reason);
-
-        log.warn("[TRACE] 제재 이력 생성 시작");
 
         MemberSanctionHistory history = MemberSanctionHistory.create(
                 memberId,                               // 제재 대상 회원
@@ -72,14 +62,8 @@ public class SanctionService {
                 sanctionUntil                           // 제재 해제 예정 일시
         );
 
-        log.warn("[TRACE] 제재 이력 저장 시작");
         sanctionHistoryRepository.save(history);
-        log.warn("[TRACE] 제재 이력 저장 완료");
-
         memberStatusCache.invalidateCache(memberId);
-        log.warn("[TRACE] 캐시 무효화 완료");
-
-        log.warn("=== [TRACE] applyAutoSuspension 종료 ===");
     }
 
     // 자동 정지 해제

@@ -162,7 +162,6 @@ public class FirstComeService {
                 .existsByCapsuleId_CapsuleIdAndMemberId(capsuleId, memberId);
 
         if (alreadyViewed) {
-            log.info("이미 조회한 사용자 - 선착순 없음 재조회. capsuleId={}, memberId={}", capsuleId, memberId);
             return;
         }
 
@@ -192,8 +191,6 @@ public class FirstComeService {
 
             if (newCount != null && newCount == 1) {
                 redisTemplate.expire(key, VIEW_COUNT_TTL);
-                log.debug("Redis 조회수 TTL 설정 - capsuleId: {}, TTL: {}분",
-                        capsuleId, VIEW_COUNT_TTL.toMinutes());
             }
 
             log.debug("Redis 조회수 증가 성공 - capsuleId: {}", capsuleId);
