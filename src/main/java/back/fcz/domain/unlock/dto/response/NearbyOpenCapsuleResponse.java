@@ -14,6 +14,10 @@ public record NearbyOpenCapsuleResponse(
         String capsuleUnlockType,
         double capsuleLatitude,
         double capsuleLongitude,
+
+        int maxViewCount,         // 선착순 제한 인원(NULL이면 무제한)
+        int currentViewCount,     // 현재 조회 인원
+
         double distanceToCapsule,  // 현재 사용자 위치에서 캡슐까지 남은 거리
         boolean isViewed,          // 캡슐 열람 여부 (열람: true, 미열람: false)
         boolean isUnlockable,      // 캡슐 열람 가능 여부 (가능: true, 불가능: false)
@@ -31,6 +35,10 @@ public record NearbyOpenCapsuleResponse(
                 capsule.getUnlockType(),
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
+
+                capsule.getMaxViewCount(),
+                capsule.getCurrentViewCount(),
+
                 distanceToCapsule,
                 isViewed,
                 isUnlockable,
