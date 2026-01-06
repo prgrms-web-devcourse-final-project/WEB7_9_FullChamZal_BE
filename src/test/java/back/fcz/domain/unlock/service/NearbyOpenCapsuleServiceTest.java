@@ -10,12 +10,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -52,7 +52,7 @@ public class NearbyOpenCapsuleServiceTest {
         Capsule capsule3 = createCapsule(3L, 37.5845, 127.0000);
         List<Capsule> mockCapsules = Arrays.asList(capsule1, capsule2, capsule3);
 
-        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble())).thenReturn(mockCapsules);
+        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble(), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(mockCapsules);
 
         // 사용자와 capsule1 사이의 거리: 100m, 사용자와 capsule2 사이의 거리: 500m, 사용자와 capsule3 사이의 거리: 2000m
         when(unlockService.calculateDistanceInMeters(eq(37.5674), eq(126.9780), eq(userLat), eq(userLng)))
@@ -87,7 +87,7 @@ public class NearbyOpenCapsuleServiceTest {
                 .thenReturn(java.util.Set.of(1L));
 
         Capsule capsule = createCapsule(1L, 37.5709, 126.9780);
-        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+        when(capsuleRepository.findNearbyCapsules(anyDouble(), anyDouble(), anyDouble(), anyDouble(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(capsule));
 
         // 사용자와 capsule 사이의 거리: 500m

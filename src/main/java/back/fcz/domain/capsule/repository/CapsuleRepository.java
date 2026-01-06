@@ -191,11 +191,19 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
     AND c.isDeleted = 0
     AND c.locationLat BETWEEN :minLat AND :maxLat
     AND c.locationLng BETWEEN :minLng AND :maxLng
+    AND (c.maxViewCount = 0 OR c.currentViewCount < c.maxViewCount)
+    AND (c.unlockUntil IS NULL OR :now < c.unlockUntil)
+    AND (
+        (c.unlockType IN ('TIME', 'TIME_AND_LOCATION') AND c.unlockAt IS NOT NULL AND c.unlockAt >= :sixtyDaysAgo)
+        OR (c.unlockType = 'LOCATION' AND c.createdAt >= :sixtyDaysAgo)
+    )
     """)
     List<Capsule> findNearbyCapsules(
             @Param("minLat") double minLat,
             @Param("maxLat") double maxLat,
             @Param("minLng") double minLng,
-            @Param("maxLng") double maxLng
+            @Param("maxLng") double maxLng,
+            @Param("now") LocalDateTime now,
+            @Param("sixtyDaysAgo") LocalDateTime sixtyDaysAgo
     );
 }

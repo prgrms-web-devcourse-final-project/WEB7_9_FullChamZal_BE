@@ -25,6 +25,9 @@ public record CapsuleConditionResponseDTO(
         Double locationLng,         // 해제 세부 조건(경도) : 위치 기반 해제 일시
         int locationRadiusM,
 
+        int maxViewCount,         // 선착순 제한 인원(NULL이면 무제한)
+        int currentViewCount,     // 현재 조회 인원
+
         boolean isBookmarked, // 북마크 여부
         String result, // 해제 성공 여부
 
@@ -52,6 +55,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
                 capsule.getLocationRadiusM(),
+
+                capsule.getMaxViewCount(),
+                capsule.getCurrentViewCount(),
 
                 isBookmarked,
                 "SUCCESS",
@@ -82,6 +88,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationLng(),
                 capsule.getLocationRadiusM(),
 
+                capsule.getMaxViewCount(),
+                capsule.getCurrentViewCount(),
+
                 false,
                 "SUCCESS",
                 attachments
@@ -111,6 +120,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationLng(),
                 capsule.getLocationRadiusM(),
 
+                capsule.getMaxViewCount(),
+                capsule.getCurrentViewCount(),
+
                 isBookmarked,
                 "SUCCESS",
 
@@ -138,6 +150,9 @@ public record CapsuleConditionResponseDTO(
                 capsule.getLocationLat(),
                 capsule.getLocationLng(),
                 0,
+
+                capsule.getMaxViewCount(),
+                capsule.getCurrentViewCount(),
 
                 false,
                 "FAIL",
