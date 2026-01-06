@@ -20,7 +20,6 @@ import back.fcz.domain.storytrack.repository.StorytrackRepository;
 import back.fcz.domain.storytrack.repository.StorytrackStepRepository;
 import back.fcz.global.exception.BusinessException;
 import back.fcz.global.exception.ErrorCode;
-import back.fcz.infra.storage.PresignedUrlProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +51,6 @@ class StorytrackServiceTest {
     @Mock private MemberRepository memberRepository;
     @Mock private CapsuleReadService capsuleReadService;
     @Mock private StorytrackAttachmentRepository storytrackAttachmentRepository;
-    @Mock private PresignedUrlProvider presignedUrlProvider;
 
     @Test
     @DisplayName("스토리트랙 생성 성공")
