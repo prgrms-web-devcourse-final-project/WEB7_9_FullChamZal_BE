@@ -45,6 +45,11 @@ public class PhoneVerificationService {
         PhoneVerificationPurpose purpose = request.purpose();
         LocalDateTime now = LocalDateTime.now();
 
+        // 이미 존재하는 전화번호 여부
+        if(phoneVerificationRepository.existsByPhoneNumberHashAndStatus(phoneNumberHash,PhoneVerificationStatus.VERIFIED)){
+            throw new BusinessException(ErrorCode.SMS_ALREADY_EXIST);
+        }
+
         // 쿨다운 : 이전 코드 발송 후 일정 시간 이내 재발송 불가
         LocalDateTime cooldownThreshold = now.minusSeconds(RESEND_COOLDOWN_SECONDS);
         long recentCount = phoneVerificationRepository.countByPhoneNumberHashAndPurposeAndCreatedAtAfter(

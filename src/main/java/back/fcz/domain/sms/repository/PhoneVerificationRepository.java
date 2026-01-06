@@ -48,4 +48,6 @@ public interface PhoneVerificationRepository extends JpaRepository<PhoneVerifica
             PhoneVerificationStatus status,
             Pageable pageable
     );
+
+    boolean existsByPhoneNumberHashAndStatus(String phoneNumberHash, PhoneVerificationStatus phoneVerificationStatus);
 }
