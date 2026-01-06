@@ -93,9 +93,7 @@ public class StorytrackAttachmentPresignService {
         if(attachment.getFileSize() != null && attachment.getFileSize() != meta.size()){
             throw new BusinessException(ErrorCode.STORYTRACK_FILE_UPLOAD_SIZE_MISMATCH);
         }
-        if(attachment.getFileType() != null && meta.contentType() != null && !attachment.getFileType().equalsIgnoreCase(meta.contentType())){
-            throw new BusinessException(ErrorCode.STORYTRACK_FILE_UPLOAD_TYPE_MISMATCH);
-        }
+        attachment.validateContentType(meta.contentType());
 
         attachment.markPending();
 

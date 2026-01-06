@@ -33,6 +33,8 @@ public class NearbyOpenCapsuleService {
     public List<NearbyOpenCapsuleResponse> getNearbyOpenCapsules(long memberId, NearbyOpenCapsuleRequest request) {
 
         LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime sixtyDaysAgo = currentTime.minusDays(60);
+
         double currentLat = request.currentLatitude();
         double currentLng = request.currentLongitude();
         int searchRadiusM = (request.radius() == null) ? DEFAULT_RADIUS_M : request.radius();
@@ -52,7 +54,7 @@ public class NearbyOpenCapsuleService {
 
         // 공개 캡슐은 위치 정보가 기본이므로, 해제 조건이 시간인지, 위치인지 필터링 불필요
         // 공개 + 삭제되지 않은 + bounding box 범위 내 공개 캡슐 조회
-        List<Capsule> capsules = capsuleRepository.findNearbyCapsules(minLat, maxLat, minLng, maxLng);
+        List<Capsule> capsules = capsuleRepository.findNearbyCapsules(minLat, maxLat, minLng, maxLng, currentTime, sixtyDaysAgo);
 
         // 사용자가 열람한 공개 캡슐의 ID 목록 조회
         Set<Long> viewedCapsuleIds = publicCapsuleRecipientRepository.findViewedCapsuleIdsByMemberId(memberId);
@@ -89,8 +91,12 @@ public class NearbyOpenCapsuleService {
                 // distance > searchRadiusM인 항목 제거
                 .filter(response -> response != null)
 
-                // 사용자와 캡슐간 거리 차이를 기준으로 오름차순 정렬
-                .sorted(Comparator.comparingDouble(NearbyOpenCapsuleResponse::distanceToCapsule))
+                // 1차 정렬: 사용자와 캡슐간 거리 기준 오름차순 (가까운 순)
+                // 2차 정렬: 거리가 같을 경우 좋아요 많은 순 (인기 순)
+                // 3차 정렬: 좋아요도 같으면 최신순
+                .sorted(Comparator.comparingDouble(NearbyOpenCapsuleResponse::distanceToCapsule)
+                        .thenComparing(NearbyOpenCapsuleResponse::likeCount, Comparator.reverseOrder())
+                        .thenComparing(NearbyOpenCapsuleResponse::capsuleCreatedAt, Comparator.reverseOrder()))
 
                 .collect(Collectors.toList());
     }

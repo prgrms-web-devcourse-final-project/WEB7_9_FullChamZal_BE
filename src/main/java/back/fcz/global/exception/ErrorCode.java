@@ -38,6 +38,7 @@ public enum ErrorCode {
     VERIFICATION_PURPOSE_MISMATCH("SMS007", HttpStatus.BAD_REQUEST, "인증 목적이 일치하지 않습니다."),
     SMS_PROVIDER_UNAVAILABLE("SMS008", HttpStatus.SERVICE_UNAVAILABLE, "SMS 서비스가 일시적으로 사용 불가능합니다."),
     SMS_DAILY_LIMIT_EXCEEDED("SMS009", HttpStatus.TOO_MANY_REQUESTS, "하루 발송 한도를 초과했습니다."),
+    SMS_ALREADY_EXIST("SMS010", HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
   
     // ========== JWT 인증 에러 ==========
     TOKEN_EXPIRED("JWT001", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),

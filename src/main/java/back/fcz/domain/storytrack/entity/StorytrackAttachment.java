@@ -1,5 +1,8 @@
 package back.fcz.domain.storytrack.entity;
 
+import back.fcz.domain.capsule.entity.FileType;
+import back.fcz.global.exception.BusinessException;
+import back.fcz.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -31,8 +34,9 @@ public class StorytrackAttachment {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "file_type", nullable = false)
-    private String fileType;
+    private FileType fileType;
 
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
@@ -60,7 +64,7 @@ public class StorytrackAttachment {
         attachment.uploaderId = uploaderId;
         attachment.s3Key = s3Key;
         attachment.fileName = fileName;
-        attachment.fileType = "IMAGE";
+        attachment.fileType = FileType.fromContentType(mimeType);
         attachment.fileSize = size;
         attachment.mimeType = mimeType;
         attachment.status = StorytrackStatus.UPLOADING;
@@ -78,5 +82,10 @@ public class StorytrackAttachment {
     public void attachToStorytrack(Storytrack storytrack){
         this.storytrack = storytrack;
         this.status = StorytrackStatus.THUMBNAIL;
+    }
+    public void validateContentType(String contentType) {
+        if (this.fileType != null && contentType != null && !this.fileType.matches(contentType)) {
+            throw new BusinessException(ErrorCode.CAPSULE_FILE_UPLOAD_TYPE_MISMATCH);
+        }
     }
 }
