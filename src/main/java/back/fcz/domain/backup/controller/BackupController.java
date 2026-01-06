@@ -58,10 +58,24 @@ public class BackupController {
                     "백엔드 서버는 인가 코드를 이용해 연동 토큰을 DB에 저장한 뒤, 프론트엔드 대시보드 페이지로 리다이렉트 합니다.")
     @GetMapping("/connect/callback")
     public void callback(
-            @RequestParam String code,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String error,
             @AuthenticationPrincipal Long memberId,
             HttpServletResponse response
     ) throws IOException {
+
+        // 사용자가 권한 허용 취소한 경우
+        if ("access_denied".equals(error)) {
+            response.sendRedirect(frontendDomain + "/dashboard/receive");
+            return;
+        }
+
+        // 에러가 있는 경우
+        if (error != null) {
+            response.sendRedirect(frontendDomain + "/dashboard/receive");
+            return;
+        }
+
         backupService.saveGoogleToken(memberId, code);
         response.sendRedirect(frontendDomain + "/dashboard");
     }
