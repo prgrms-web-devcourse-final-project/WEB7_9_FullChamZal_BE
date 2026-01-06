@@ -7,6 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -29,7 +31,7 @@ public class StorytrackProgress extends BaseEntity {
     private Storytrack storytrack;
 
     @Column(name = "completed_steps", nullable = false)
-    private int completedSteps;
+    private int completedSteps; // 총 완료한 단계의 합
 
     @Column(name = "last_completed_steps")
     private int lastCompletedStep;
@@ -41,12 +43,38 @@ public class StorytrackProgress extends BaseEntity {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    public void completeStep(int stepOrder, int totalSteps) {
+    public void completeStep(StorytrackStep step, int totalSteps) {
+        if (isStepCompleted(step.getStepOrder())) {
+            return;
+        }
+
+        completedStepSet.add(
+                StorytrackProgressStep.builder()
+                        .progress(this)
+                        .step(step)
+                        .completedAt(LocalDateTime.now())
+                        .build()
+        );
+
         this.completedSteps += 1;
-        this.lastCompletedStep = stepOrder;
+        this.lastCompletedStep = step.getStepOrder();
 
         if (this.completedSteps == totalSteps) {
             this.completedAt = LocalDateTime.now();
         }
+    }
+
+    // 진행 상황에 따른 진행 단계
+    @OneToMany(mappedBy = "progress", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<StorytrackProgressStep> completedStepSet = new HashSet<>();
+
+    public boolean isStepCompleted(int stepOrder) {
+        for (StorytrackProgressStep progressStep : completedStepSet) {
+            if (progressStep.getStep().getStepOrder() == stepOrder) {
+                return true;
+            }
+        }
+        return false;
     }
 }

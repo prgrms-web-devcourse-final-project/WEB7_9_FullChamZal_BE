@@ -5,20 +5,26 @@ import back.fcz.domain.capsule.DTO.response.CapsuleConditionResponseDTO;
 import back.fcz.domain.capsule.DTO.response.CapsuleDashBoardResponse;
 import back.fcz.domain.capsule.service.CapsuleDashBoardService;
 import back.fcz.domain.member.service.CurrentUserContext;
+import back.fcz.domain.sanction.util.RequestInfoExtractor;
 import back.fcz.domain.storytrack.dto.request.CreateStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.JoinStorytrackRequest;
 import back.fcz.domain.storytrack.dto.request.UpdatePathRequest;
 import back.fcz.domain.storytrack.dto.response.*;
 import back.fcz.domain.storytrack.service.StorytrackService;
+import back.fcz.global.aop.AllowDuplicateRequest;
 import back.fcz.global.config.swagger.ApiErrorCodeExample;
 import back.fcz.global.dto.PageResponse;
 import back.fcz.global.exception.ErrorCode;
 import back.fcz.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Tag(name = "스토리트랙 API", description = "스토리트랙 관련 API")
 @RestController
@@ -84,6 +90,7 @@ public class StorytrackController {
             ErrorCode.CAPSULE_NOT_FOUND
     })
     @PutMapping("/update")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<UpdatePathResponse>> updatePath(
             @RequestBody UpdatePathRequest request
     ){
@@ -277,9 +284,11 @@ public class StorytrackController {
             ErrorCode.INVALID_STEP_ORDER
     })
     @PostMapping("/participant/capsuleOpen")
+    @AllowDuplicateRequest
     public ResponseEntity<ApiResponse<CapsuleConditionResponseDTO>> storytrackCapsuleOpen (
             @RequestParam Long storytrackId,
-            @RequestBody CapsuleConditionRequestDTO request
+            @RequestBody CapsuleConditionRequestDTO request,
+            HttpServletRequest httpRequest
     ) {
         Long loginMember = currentUserContext.getCurrentUser().memberId();
 
@@ -294,11 +303,29 @@ public class StorytrackController {
                 request.capsuleId()
         );
 
+
+        String ipAddress = RequestInfoExtractor.extractIp(httpRequest);
+        String userAgent = RequestInfoExtractor.extractUserAgent(httpRequest);
+
+        LocalDateTime serverTime = LocalDateTime.now(ZoneOffset.UTC);
+
+        CapsuleConditionRequestDTO plusDto = new CapsuleConditionRequestDTO(
+                request.capsuleId(),
+                request.unlockAt(),
+                request.locationLat(),
+                request.locationLng(),
+                request.password(),
+                userAgent,
+                ipAddress,
+                serverTime
+        );
+
+
         CapsuleConditionResponseDTO response =
                 storytrackService.openCapsuleAndUpdateProgress(
                         loginMember,
                         storytrackId,
-                        request
+                        plusDto
                 );
 
         return ResponseEntity.ok(ApiResponse.success(response));

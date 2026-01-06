@@ -380,6 +380,7 @@ class StorytrackServiceTest {
         // given
         Storytrack storytrack = Storytrack.builder()
                 .totalSteps(3)
+                .trackType("SEQUENTIAL")
                 .build();
 
         StorytrackProgress progress = spy(
@@ -395,11 +396,11 @@ class StorytrackServiceTest {
                 .build();
 
         CapsuleConditionRequestDTO request =
-                new CapsuleConditionRequestDTO(10L, null, null, null, null);
+                new CapsuleConditionRequestDTO(
+                        10L, null, null, null, null, null, null, null
+                );
 
-        CapsuleConditionResponseDTO response =
-                mock(CapsuleConditionResponseDTO.class);
-
+        CapsuleConditionResponseDTO response = mock(CapsuleConditionResponseDTO.class);
         given(response.result()).willReturn("SUCCESS");
 
         given(storytrackProgressRepository
@@ -417,6 +418,6 @@ class StorytrackServiceTest {
         storytrackService.openCapsuleAndUpdateProgress(1L, 1L, request);
 
         // then
-        verify(progress).completeStep(1, 3);
+        verify(progress).completeStep(step, 3);
     }
 }

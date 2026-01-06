@@ -3,9 +3,6 @@ spring:
     compose:
       enabled: false
 
-  jackson:
-    time-zone: Asia/Seoul
-
   datasource:
     url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}

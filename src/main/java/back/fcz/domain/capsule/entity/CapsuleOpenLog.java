@@ -1,6 +1,5 @@
 package back.fcz.domain.capsule.entity;
 
-import back.fcz.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +13,21 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "capsule_openLog")
+@Table(
+        name = "capsule_openLog",
+        indexes = {
+                @Index(name = "idx_col_capsule_member_time",
+                        columnList = "capsule_id, member_id, opened_at"),
+                @Index(name = "idx_col_capsule_ip_time",
+                        columnList = "capsule_id, ip_address, opened_at"),
+                @Index(name = "idx_col_status",
+                        columnList = "status"),
+                @Index(name = "idx_col_capsule_member_status",
+                        columnList = "capsule_id, member_id, status"),
+                @Index(name = "idx_col_capsule_ip_status",
+                        columnList = "capsule_id, ip_address, status")
+        }
+)
 public class CapsuleOpenLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,10 +37,8 @@ public class CapsuleOpenLog {
     @JoinColumn(name = "capsule_id", nullable = false)
     private Capsule capsuleId;
 
-    //회원 엔티티의 이름이 정해저야 합니다. 임시로 Member로 했습니다.
-    @ManyToOne
-    @JoinColumn(name = "member_id")
-    private Member memberId;
+    @Column(name = "member_id")
+    private Long memberId;
 
     @Column(name = "viewer_type", nullable = false)
     private String viewerType;
@@ -46,4 +57,21 @@ public class CapsuleOpenLog {
 
     @Column(name = "ip_address")
     private String ipAddress;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private CapsuleOpenStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "anomaly_type", length = 50)
+    private AnomalyType anomalyType;
+
+    public void updateStatus(CapsuleOpenStatus status) {
+        this.status = status;
+    }
+
+    public void markAsAnomaly(AnomalyType anomalyType) {
+        this.anomalyType = anomalyType;
+        this.status = CapsuleOpenStatus.SUSPICIOUS;
+    }
 }
