@@ -117,12 +117,10 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
      */
     private void saveGoogleToken(Long memberId, OAuth2AuthorizedClient client) {
         String googleAccessToken = client.getAccessToken().getTokenValue();
-        log.info("Google Access Token present: {}", googleAccessToken != null);
 
         // 구글 보안 정책상 '최초 동의' 시에만 refresh 토큰 제공됨 (이후 로그인 시, null일 수 있음)
         String googleRefreshToken = (client.getRefreshToken() != null)
                 ? client.getRefreshToken().getTokenValue() : null;
-        log.info("Google Refresh Token present: {}", client.getRefreshToken() != null);
 
         // 구글 access 토큰의 만료 시간 계산 (기본값 1시간)
         Instant expiresAt = client.getAccessToken().getExpiresAt();
